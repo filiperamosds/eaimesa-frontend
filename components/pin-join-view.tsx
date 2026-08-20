@@ -48,7 +48,7 @@ export function PinJoinView() {
             className="field text-center font-serif text-4xl tracking-[0.4em]"
             inputMode="numeric"
             autoComplete="one-time-code"
-            pattern="\\d{4}"
+            pattern="\d{4}"
             maxLength={4}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}

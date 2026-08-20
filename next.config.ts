@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const apiUrl = process.env.API_URL ?? "http://localhost:4000";
+const apiUrl = process.env.API_URL ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@eaimesa/shared"],
