@@ -1,10 +1,17 @@
 import { ComandaProfileView } from "../../../components/comanda-profile-view";
-import { requireGuestOrdering } from "../../../lib/load-public-menu";
+import { GuestOrderingGate } from "../../../components/guest-ordering-gate";
+import { venueStaticParams } from "../../../lib/static-slugs";
 
 export const metadata = { title: "Sua comanda" };
 
-export default async function ComandaPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  await requireGuestOrdering(slug);
-  return <ComandaProfileView />;
+export function generateStaticParams() {
+  return venueStaticParams();
+}
+
+export default function ComandaPage() {
+  return (
+    <GuestOrderingGate>
+      <ComandaProfileView />
+    </GuestOrderingGate>
+  );
 }

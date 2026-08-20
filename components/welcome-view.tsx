@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useVenueSlug } from "../lib/venue-path";
 import { OpenComandaForm } from "./open-comanda-form";
 
 const WELCOME_KEY = "eaimesa_welcome";
@@ -14,7 +14,7 @@ type WelcomeData = {
 };
 
 export function WelcomeView() {
-  const params = useParams<{ slug: string }>();
+  const slug = useVenueSlug();
   const [data, setData] = useState<WelcomeData | null>(null);
 
   useEffect(() => {
@@ -22,13 +22,13 @@ export function WelcomeView() {
       const raw = sessionStorage.getItem(WELCOME_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as WelcomeData;
-      if (parsed.slug === params.slug) {
+      if (parsed.slug === slug) {
         setData(parsed);
       }
     } catch {
       /* ignore */
     }
-  }, [params.slug]);
+  }, [slug]);
 
   if (!data) {
     return (
@@ -38,12 +38,16 @@ export function WelcomeView() {
           Escaneie o QR do garçom ou entre com o PIN da mesa para abrir sua comanda.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href={`/${params.slug}/entrar`} className="btn-primary inline-flex">
-            Tenho o PIN
-          </Link>
-          <Link href={`/${params.slug}`} className="btn-secondary inline-flex">
-            Ver cardápio
-          </Link>
+          {slug ? (
+            <>
+              <Link href={`/${slug}/entrar`} className="btn-primary inline-flex">
+                Tenho o PIN
+              </Link>
+              <Link href={`/${slug}`} className="btn-secondary inline-flex">
+                Ver cardápio
+              </Link>
+            </>
+          ) : null}
         </div>
       </div>
     );
@@ -70,10 +74,12 @@ export function WelcomeView() {
       ) : (
         <p className="mt-3 text-ink-soft">Identifique-se para abrir sua comanda nesta mesa.</p>
       )}
-      <OpenComandaForm slug={params.slug} />
-      <Link href={`/${params.slug}`} className="btn-ghost mt-6 inline-flex">
-        Ver cardápio
-      </Link>
+      {slug ? <OpenComandaForm slug={slug} /> : null}
+      {slug ? (
+        <Link href={`/${slug}`} className="btn-ghost mt-6 inline-flex">
+          Ver cardápio
+        </Link>
+      ) : null}
     </div>
   );
 }

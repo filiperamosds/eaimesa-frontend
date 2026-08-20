@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useGuestTab } from "../lib/use-guest-tab";
+import { useVenueSlug } from "../lib/venue-path";
 import { useGuestOrders } from "../lib/use-guest-orders";
 import { GuestPartial } from "./guest-partial";
 import { OpenComandaForm } from "./open-comanda-form";
 
 export function ComandaProfileView() {
-  const params = useParams<{ slug: string }>();
-  const slug = params.slug;
+  const slug = useVenueSlug();
   const tab = useGuestTab(slug ?? "");
   const hasTab = Boolean(tab && !tab.needsProfile);
   const { orders, totalCents, error } = useGuestOrders(hasTab);

@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { JoinTabResponse } from "../lib/types";
+import { useVenueSlug } from "../lib/venue-path";
 
 export function PinJoinView() {
-  const params = useParams<{ slug: string }>();
   const router = useRouter();
-  const slug = params.slug;
+  const slug = useVenueSlug();
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

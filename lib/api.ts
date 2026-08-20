@@ -10,10 +10,10 @@ export class ApiError extends Error {
 }
 
 export function apiBase() {
-  if (typeof window !== "undefined") {
-    return "";
-  }
-  return process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:8000";
+  const explicit = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  if (typeof window !== "undefined") return "";
+  return "http://localhost:8000";
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {

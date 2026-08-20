@@ -14,7 +14,17 @@ pnpm install
 pnpm dev
 ```
 
-Site: http://localhost:3000 — o Next faz proxy de `/v1` para `API_URL`.
+Site: http://localhost:3000 — o browser chama `NEXT_PUBLIC_API_URL` (Laravel). Sem proxy `/v1`.
+
+## Estático (Hostinger)
+
+```bash
+pnpm build
+```
+
+Sai em `out/`. Suba o conteúdo dessa pasta. O `public/.htaccess` vai junto (QR `/{slug}/c/{token}` e slugs novos).
+
+No `.env` de produção: `NEXT_PUBLIC_API_URL` = URL pública da API; no Laravel, `APP_URL` = origem deste front (CORS/cookies).
 
 - Cardápio demo (Auto atendimento): http://localhost:3000/bar-do-tiao
 - Cardápio demo (só Cardápio): http://localhost:3000/cafe-da-lina

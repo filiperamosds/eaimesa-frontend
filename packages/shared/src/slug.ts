@@ -20,6 +20,7 @@ export const RESERVED_SLUGS = [
   "manifest.json",
   "garcom",
   "bem-vindo",
+  "__venue",
 ] as const;
 
 export const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

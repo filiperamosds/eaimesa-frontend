@@ -1,17 +1,17 @@
+import { ClaimRedeemView } from "../../../components/claim-redeem-view";
 import { GuestOrderingGate } from "../../../components/guest-ordering-gate";
-import { PinJoinView } from "../../../components/pin-join-view";
 import { venueStaticParams } from "../../../lib/static-slugs";
 
-export const metadata = { title: "PIN da mesa" };
+export const metadata = { title: "Abrindo comanda" };
 
 export function generateStaticParams() {
   return venueStaticParams();
 }
 
-export default function EntrarPage() {
+export default function ClaimRedeemPage() {
   return (
     <GuestOrderingGate>
-      <PinJoinView />
+      <ClaimRedeemView />
     </GuestOrderingGate>
   );
 }

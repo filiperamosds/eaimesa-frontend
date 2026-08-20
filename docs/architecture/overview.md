@@ -29,7 +29,7 @@ eaimesa-backend/          # https://github.com/filiperamosds/eaimesa-backend
 eaimesa-frontend/         # https://github.com/filiperamosds/eaimesa-frontend
 ├── app/                  # Next.js único (:3000)
 ├── packages/shared/      # zod, slug, planos (só TS)
-└── next.config.ts        # rewrite /v1 → API_URL
+└── next.config.ts        # `output: "export"` → pasta `out/`
 ```
 
 Não existem `apps/guest` nem `apps/staff`.

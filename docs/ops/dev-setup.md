@@ -2,7 +2,7 @@
 
 Next.js neste repositório. API: [eaimesa-backend](https://github.com/filiperamosds/eaimesa-backend) (Laravel `:8000`).
 
-No `.env` deste repo: `API_URL=http://localhost:8000`. O Next faz proxy de `/v1` para a API. Ver [ADR-015](../decisions/ADR-015-dois-repositorios.md).
+No `.env` deste repo: `NEXT_PUBLIC_API_URL=http://localhost:8000`. O browser chama a API Laravel direto (export estático não tem proxy `/v1`). Ver [ADR-015](../decisions/ADR-015-dois-repositorios.md).
 
 ## Pré-requisitos
 
@@ -53,11 +53,11 @@ No Mac: **Ajustes do Sistema → Geral → Compartilhamento → Nome local** (ex
 
 ```env
 NEXT_PUBLIC_APP_URL=http://mac-filipe.local:3000
-API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 - `NEXT_PUBLIC_APP_URL` — URL que o celular usa.
-- `API_URL` — proxy interno do Next (`/v1/*` → `:8000`); pode continuar `localhost` porque só o servidor Next chama a API.
+- `NEXT_PUBLIC_API_URL` — origem da API Laravel. No celular, se o JS rodar no aparelho, use o host alcançável da API **ou** um proxy; em prod o front estático chama o host público da API.
 - No **backend**, `APP_URL` precisa ser o mesmo host que o celular alcança (`http://mac-filipe.local:3000`) — CORS e QR.
 
 O Next já escuta em `0.0.0.0:3000`. Firewall: permitir Node/Terminal.
@@ -85,3 +85,7 @@ Aguarde **`✓ Ready`** do Next. Causas frequentes: API Laravel parada (`:8000`)
 curl -I http://localhost:3000/
 curl http://localhost:8000/health
 ```
+
+## Estático (`out/`)
+
+`pnpm build` gera HTML em `out/` (`output: "export"`). Suba essa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).

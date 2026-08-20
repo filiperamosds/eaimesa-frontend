@@ -1,15 +1,10 @@
 import type { NextConfig } from "next";
 
-const apiUrl = process.env.API_URL ?? "http://localhost:8000";
-
 const nextConfig: NextConfig = {
+  output: "export",
+  trailingSlash: true,
+  images: { unoptimized: true },
   transpilePackages: ["@eaimesa/shared"],
-  async rewrites() {
-    return [
-      { source: "/v1/:path*", destination: `${apiUrl}/v1/:path*` },
-      { source: "/health", destination: `${apiUrl}/health` },
-    ];
-  },
 };
 
 export default nextConfig;

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { useClaimToken, useVenueSlug } from "../lib/venue-path";
 
 const WELCOME_KEY = "eaimesa_welcome";
 
@@ -16,21 +17,22 @@ type RedeemResult = {
 };
 
 export function ClaimRedeemView() {
-  const params = useParams<{ slug: string; token: string }>();
+  const slug = useVenueSlug();
+  const token = useClaimToken();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const slug = params.slug;
-    const token = params.token;
     if (!slug || !token) return;
+    const venueSlug = slug;
+    const claimToken = token;
 
     let cancelled = false;
 
     async function redeem() {
       try {
         const result = await api<RedeemResult>(
-          `/v1/public/venues/${encodeURIComponent(slug)}/c/${encodeURIComponent(token)}/redeem`,
+          `/v1/public/venues/${encodeURIComponent(venueSlug)}/c/${encodeURIComponent(claimToken)}/redeem`,
           { method: "POST" },
         );
         if (cancelled) return;
@@ -53,7 +55,7 @@ export function ClaimRedeemView() {
     return () => {
       cancelled = true;
     };
-  }, [params.slug, params.token, router]);
+  }, [slug, token, router]);
 
   if (error) {
     return (
@@ -61,12 +63,12 @@ export function ClaimRedeemView() {
         <p className="font-serif text-2xl">Comanda</p>
         <p className="mt-4 text-chili">{error}</p>
         <p className="mt-6 text-sm text-ink-soft">Peça um novo QR ao garçom ou entre com o PIN da mesa.</p>
-        {params.slug ? (
+        {slug ? (
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href={`/${params.slug}/entrar`} className="btn-primary inline-flex">
+            <Link href={`/${slug}/entrar`} className="btn-primary inline-flex">
               Tenho o PIN
             </Link>
-            <Link href={`/${params.slug}`} className="btn-secondary inline-flex">
+            <Link href={`/${slug}`} className="btn-secondary inline-flex">
               Ver cardápio
             </Link>
           </div>

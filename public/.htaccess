@@ -1,0 +1,27 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # /{slug}/c/{token} → HTML estático de /{slug}/c/ (token lido no JS)
+  RewriteCond %{DOCUMENT_ROOT}/$1/c/index.html -f
+  RewriteRule ^([^/]+)/c/([^/]+)/?$ /$1/c/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/__venue/c/index.html -f
+  RewriteRule ^([^/]+)/c/([^/]+)/?$ /__venue/c/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/$1/$2/index.html -f
+  RewriteRule ^([^/]+)/(entrar|comanda|bem-vindo)/?$ /$1/$2/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/__venue/$2/index.html -f
+  RewriteRule ^([^/]+)/(entrar|comanda|bem-vindo)/?$ /__venue/$2/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
+  RewriteRule ^([^/]+)/?$ /$1/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/__venue/index.html -f
+  RewriteRule ^([^/]+)/?$ /__venue/index.html [L]
+</IfModule>
