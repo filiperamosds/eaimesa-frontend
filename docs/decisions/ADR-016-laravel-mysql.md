@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceito. Substitui Fastify + Postgres deste repositório (stack Node original: [ADR-001](ADR-001-stack.md)). Dois git: [ADR-015](ADR-015-dois-repositorios.md).
+Aceito. Substitui Fastify + Postgres no **eaimesa-backend** (stack Node original: [ADR-001](ADR-001-stack.md)). Dois git: [ADR-015](ADR-015-dois-repositorios.md).
 
 ## Contexto
 
@@ -12,7 +12,7 @@ Hospedagem típica (PHP + MySQL) e o pedido de um backend Laravel. O contrato HT
 
 | Antes (Fastify, arquivo) | Agora |
 |--------------------------|--------|
-| Fastify + Drizzle | Laravel 13 (PHP 8.3) na **raiz** deste repo |
+| Fastify + Drizzle | Laravel 13 (PHP 8.3) na **raiz** do eaimesa-backend |
 | PostgreSQL 16 | **MySQL 8** |
 | Índices parciais `WHERE status = open` | Colunas geradas `STORED` + UNIQUE (NULL = fechado) |
 | Cookie JWT HS256 | Mesmos nomes (`eaimesa_owner`, `eaimesa_guest`, `eaimesa_platform`) e claims |
