@@ -10,12 +10,12 @@ Login da **plataforma**, não do dono do bar. O operador vê vendas da assinatur
 - `/admin/planos` — criar SKU, nome, tipo (`kind`), preço, **promo opcional**, blurb, features, listado; trial e vigência globais
 - `GET /v1/billing/plans` lê o **banco** (landing, cadastro e checkout usam isso). Com promo: `promoPriceCents` + `effectivePriceCents`
 - `POST /v1/platform/plans` cria plano (id = slug do nome; `kind` = o que o bar pode fazer)
-- Checkout stub cobra o preço **efetivo** (promo se preenchida e menor que o cheio) e grava `billing_events`
+- Checkout cobra o preço **efetivo** (promo se preenchida e menor que o cheio) e grava `billing_events` (stub `success`; Asaas `pending` até o webhook)
 - Seed: `ops@eaimesa.local` / `demo1234`
 
 ## Não inclui
 
-- Gateway real (Asaas)
+- Gateway real nesta fatia (Asaas: [fatia 12](fatia-12-pagamento-asaas.md))
 - SSO / 2FA
 - Impersonate o dono
 - Editar cardápio/mesas do bar

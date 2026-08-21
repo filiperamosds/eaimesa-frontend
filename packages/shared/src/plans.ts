@@ -18,6 +18,16 @@ export const CHECKOUT_STUB_DELAY_MS = 2000;
 export const PAYMENT_METHODS = ["card", "pix"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+export const CHECKOUT_MODES = ["immediate", "hosted"] as const;
+export type CheckoutMode = (typeof CHECKOUT_MODES)[number];
+
+export const CHECKOUT_RETURN = ["ok", "cancel", "expired"] as const;
+export type CheckoutReturn = (typeof CHECKOUT_RETURN)[number];
+
+/** Poll após `?checkout=ok` até `subscriptionStatus === "active"`. */
+export const CHECKOUT_POLL_INTERVAL_MS = 3000;
+export const CHECKOUT_POLL_TIMEOUT_MS = 120_000;
+
 export const PLANS: Record<
   PlanId,
   { id: PlanId; name: string; kind: PlanKind; priceCents: number; blurb: string; features: string[] }

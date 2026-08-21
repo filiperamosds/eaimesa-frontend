@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–11)
+## Implementado (fatias 1–12)
 
 ### Saúde
 
@@ -60,17 +60,55 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 
 Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio.
 
-### Billing (fatia 10)
+### Billing (fatias 10 e 12)
 
-Checkout **stub**: sem Asaas. Espera ~2s e devolve sucesso para o front testar o loading. O body pode trazer `method: card | pix` (não processa). Cartão **não** vai para a API.
+Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas` (Checkout hospedado). Cartão **não** vai para a API. Confirmação Asaas só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
+
+`GET /v1/billing/plans` e `GET /v1/billing/me` incluem:
+
+```json
+{
+  "gateway": {
+    "provider": "stub",
+    "checkoutMode": "immediate",
+    "methods": ["card", "pix"],
+    "requiresPayer": false,
+    "available": true
+  }
+}
+```
+
+No Asaas: `checkoutMode: hosted`, `requiresPayer: true`. `/me` ainda traz `pendingCheckout` (`url`, `plan`, `method`, `amountCents`) se a sessão hosted estiver aberta.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
-| GET | `/v1/billing/plans` | — | Catálogo do banco (`kind`, `priceCents`, `promoPriceCents`, `effectivePriceCents`) + `stubDelayMs` |
-| GET | `/v1/billing/me` | Owner | Plano atual (`planKind`), trial/vigência, `canUpgrade` / `canDowngrade` |
-| POST | `/v1/billing/checkout` | Owner | `{ plan, method? }` → espera 2s → `status: success`, cobra preço efetivo, `active` 30 dias |
+| GET | `/v1/billing/plans` | — | Catálogo + `gateway` + `stubDelayMs` |
+| GET | `/v1/billing/me` | Owner | Plano atual, `canUpgrade` / `canDowngrade`, `gateway`, `pendingCheckout` |
+| POST | `/v1/billing/checkout` | Owner | Inicia cobrança (preço efetivo). Stub → `success`. Asaas → `pending` + `checkoutUrl` |
+| POST | `/v1/webhooks/asaas` | Header `asaas-access-token` | Eventos Asaas. Sem cookie. |
 
-Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`.
+#### POST /v1/billing/checkout (body)
+
+```json
+{
+  "plan": "auto_atendimento",
+  "method": "pix",
+  "payer": {
+    "name": "Maria Silva",
+    "cpfCnpj": "12345678909",
+    "email": "maria@bar.com",
+    "phone": "11999999999"
+  }
+}
+```
+
+`method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer`. CPF/CNPJ só dígitos (11 ou 14); a API não persiste. Front **nunca** envia PAN, CVV nem token de cartão.
+
+Resposta hosted: `status: pending`, `checkoutUrl`, `subscriptionStatus` ainda `trial` até o webhook. Resposta stub: `status: success`, `active`, vigência `paidPeriodDays`.
+
+Callbacks de navegação (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
+
+Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`.
 
 ### Owner — venue e catálogo
 
@@ -362,11 +400,11 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | PATCH | `/v1/platform/plans/{id}` | Platform | Nome, `kind`, preço, promo (`null` limpa), features, `listed` |
 | PATCH | `/v1/platform/settings` | Platform | `trialDays`, `paidPeriodDays` |
 
-`GET /v1/billing/plans` (público) lê `plan_catalog` + settings. Promo preenchida entra como `promoPriceCents` / `effectivePriceCents`. Checkout stub grava `billing_events` com o valor efetivo.
+`GET /v1/billing/plans` (público) lê `plan_catalog` + settings. Promo preenchida entra como `promoPriceCents` / `effectivePriceCents`. Checkout grava `billing_events` (stub `success`; Asaas `pending` até o webhook).
 
-### Webhooks (futuro)
+### Webhooks
 
-- `POST /v1/webhooks/asaas` — assinatura B2B (HMAC). Checkout da fatia 10 é stub.
+- `POST /v1/webhooks/asaas` — assinatura B2B. Auth: header `asaas-access-token` (`ASAAS_WEBHOOK_TOKEN`). Redirect `?checkout=ok` **não** confirma. Ver [fatia 12](../product/fatia-12-pagamento-asaas.md).
 
 ## Códigos de erro (amostra)
 
@@ -389,6 +427,9 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | `PLAN_NOT_LISTED` | 400 |
 | `PLAN_DOWNGRADE_LOCKED` | 409 |
 | `BILLING_INACTIVE` | 403 |
+| `PAYER_REQUIRED` | 400 |
+| `PAYMENT_UNAVAILABLE` | 503 |
+| `PAYMENT_GATEWAY_ERROR` | 502 |
 | `CLAIM_EXPIRED` | 410 |
 | `CLAIM_ALREADY_USED` | 409 |
 | `PIN_INVALID` | 401 |

@@ -1,8 +1,8 @@
 # Pricing
 
-Mensalidade fixa; **sem comissão** sobre consumo. Trial e vigência (default **7** e **30** dias) vêm de `platform_settings`. Preço e copy da vitrine vêm de `plan_catalog` (editáveis em `/admin/planos`). O operador pode **criar SKUs** novos: cada um tem `kind` (`cardapio` | `auto_atendimento`) e, opcionalmente, `promo_price_cents`. Se a promo estiver preenchida e for menor que o preço cheio, landing, cadastro e checkout mostram **de R$ X por R$ Y** e a cobrança stub usa o valor da promo.
+Mensalidade fixa; **sem comissão** sobre consumo. Trial e vigência (default **7** e **30** dias) vêm de `platform_settings`. Preço e copy da vitrine vêm de `plan_catalog` (editáveis em `/admin/planos`). O operador pode **criar SKUs** novos: cada um tem `kind` (`cardapio` | `auto_atendimento`) e, opcionalmente, `promo_price_cents`. Se a promo estiver preenchida e for menor que o preço cheio, landing, cadastro e checkout mostram **de R$ X por R$ Y** e a cobrança usa o valor da promo.
 
-Nesta fatia o checkout é **stub**: o front mostra cartão/PIX e o valor; a API espera ~2s e devolve sucesso, sem gateway.
+Checkout: `GET /v1/billing/plans` → `gateway`. Stub (`immediate`) devolve sucesso após ~2s. Asaas (`hosted`) redireciona; o plano só fica `active` no webhook. Landing e cadastro **não** pedem pagador. PAN nunca vai à API.
 
 ## Planos vendáveis
 
@@ -21,7 +21,7 @@ O catálogo não está mais limitado a dois ids. Os seed:
 
 SKUs extras no `/admin/planos` herdam o que o `kind` libera. Máximo **12** planos. Sem DELETE: unlist esconde da vitrine.
 
-Vigência paga no stub: **30 dias** a partir do checkout.
+Vigência paga: **30 dias** a partir da confirmação (stub na hora; Asaas no webhook).
 
 ## Em breve (não vender agora)
 
@@ -46,7 +46,7 @@ Fora desta fatia (o “Plano Bar” único e o desconto de R$ 119 saem).
 
 - Percentual sobre consumo
 - Taxa por pedido
-- Gateway nesta fatia (checkout devolve sucesso após ~2s; UI de cartão/PIX não processa)
+- Gateway de cartão no EaiMesa (hosted Asaas; PAN não entra no app)
 
 ## Referência de mercado (2026)
 

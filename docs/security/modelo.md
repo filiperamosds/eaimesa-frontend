@@ -49,6 +49,7 @@
 | Redeem claim | 20/min/IP |
 | PIN join | 5 falhas / 15 min / IP+venue |
 | Pedido guest | 20/min/IP |
+| Checkout / pagador | 10/min/venue |
 
 Na fatia 1 o limiter de login pode ser in-memory (um processo).
 
@@ -56,9 +57,10 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 
 - **Controlador:** estabelecimento (quando houver pedidos).
 - **Operador:** EaiMesa (infra, processamento).
-- Cadastro B2B na fatia 1: só e-mail + senha + nome do bar. CNPJ/CPF na fatia KYC.
+- Cadastro B2B na fatia 1: só e-mail + senha + nome do bar. CNPJ/CPF de **pagador** só no checkout hosted (trânsito; API não persiste). KYC do responsável entra em fatia posterior.
 - CPF do **consumidor** não coletar no MVP para pedir.
 - **Telefone + nome** na comanda pessoal (fatia 6): PII do estabelecimento (controlador). API staff devolve telefone **mascarado**. Não logar telefone.
+- PAN / CVV / token de cartão: nunca no Next nem na API. Checkout Asaas é página hospedada.
 
 ## Cadastro B2B (KYC — fatia posterior)
 
@@ -78,5 +80,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - `/mesa/1` sequencial como auth
 - Um JWT para guest e owner
 - Confiar em `venueId` enviado pelo client no CRUD
+- Enviar PAN, CVV ou token de cartão para a API
+- Tratar `?checkout=ok` como pagamento confirmado
 - Impressora do bar exposta na internet (fase 2: agente outbound)
 - Commitar senha FTP, `.env` de staging ou `out/`
