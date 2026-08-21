@@ -66,6 +66,12 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - CPF mascarado na UI (`***.***.***-12`).
 - Secrets em env local / SSM em prod — ver `.env.example`.
 
+## CI / deploy
+
+- Senha FTP e demais secrets só em **GitHub Actions secrets**, nunca no git nem no `out/`.
+- `NEXT_PUBLIC_*` vai para o HTML no `pnpm build` (não é secret). Staging usa Variables do GitHub; ver [dev-setup](../ops/dev-setup.md) e [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
+- O job de `develop` apaga o diretório FTP de destino: o usuário FTP deve enxergar **somente** o `public_html` deste front.
+
 ## Nunca
 
 - Token de sessão na query string
@@ -73,3 +79,4 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Um JWT para guest e owner
 - Confiar em `venueId` enviado pelo client no CRUD
 - Impressora do bar exposta na internet (fase 2: agente outbound)
+- Commitar senha FTP, `.env` de staging ou `out/`

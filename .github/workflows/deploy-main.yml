@@ -1,0 +1,15 @@
+name: Deploy main (Hostinger)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-reusable.yml
+    with:
+      ftp_dir: ${{ vars.FTP_SERVER_DIR_PRD }}
+      app_url: ${{ vars.NEXT_PUBLIC_APP_URL_PRD }}
+      api_url: ${{ vars.NEXT_PUBLIC_API_URL_PRD }}
+    secrets: inherit

@@ -14,7 +14,7 @@
 | Auth platform | Cookie **httpOnly** `eaimesa_platform` | JWT próprio (`PLATFORM_JWT_SECRET`) |
 | Cache/fila | Redis | Fase 2 |
 
-Ver [ADR-001](../decisions/ADR-001-stack.md) (histórico), [ADR-003](../decisions/ADR-003-frontend-unico.md), [ADR-004](../decisions/ADR-004-slug-publico.md), [ADR-015](../decisions/ADR-015-dois-repositorios.md), [ADR-016](../decisions/ADR-016-laravel-mysql.md).
+Ver [ADR-001](../decisions/ADR-001-stack.md) (histórico), [ADR-003](../decisions/ADR-003-frontend-unico.md), [ADR-004](../decisions/ADR-004-slug-publico.md), [ADR-015](../decisions/ADR-015-dois-repositorios.md), [ADR-016](../decisions/ADR-016-laravel-mysql.md), [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
 
 ## Repositórios
 
@@ -72,12 +72,12 @@ Não existem `apps/guest` nem `apps/staff`.
 
 ## Ambientes
 
-| Env | Uso |
-|-----|-----|
-| `local` | MySQL 8 + **dois terminais**: backend `:8000`, frontend `:3000` |
-| `cursor-cloud` | MySQL nativo (apt) via `.cursor/environment.json`; sem Docker |
-| `staging` | Piloto 1 bar |
-| `prod` | SaaS |
+| Env | Uso | Front |
+|-----|-----|-------|
+| `local` | MySQL 8 + **dois terminais**: backend `:8000`, frontend `:3000` | `pnpm dev` |
+| `cursor-cloud` | MySQL nativo (apt) via `.cursor/environment.json`; sem Docker | `pnpm dev` |
+| `staging` | Piloto 1 bar | GitHub Actions em `develop` → `FTP_SERVER_DIR_DEV` ([ADR-017](../decisions/ADR-017-github-actions-hostinger.md)) |
+| `prod` | SaaS | GitHub Actions em `main` → `FTP_SERVER_DIR_PRD`. Só PR explícito |
 
 Setup: [docs/ops/dev-setup.md](../ops/dev-setup.md).
 

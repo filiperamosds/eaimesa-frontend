@@ -88,4 +88,49 @@ curl http://localhost:8000/health
 
 ## Estático (`out/`)
 
-`pnpm build` gera HTML em `out/` (`output: "export"`). Suba essa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
+`pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
+
+## Git
+
+| Branch | Papel |
+|--------|--------|
+| `develop` | Padrão. Staging. PRs do Cursor mergeiam aqui. Push → FTP `FTP_SERVER_DIR_DEV` |
+| `main` | Produção. Só com PR explícito. Push → FTP `FTP_SERVER_DIR_PRD` |
+
+No GitHub: **Settings → General → Default branch → `develop`**.
+
+## Deploy — GitHub Actions
+
+Push em `develop` ou `main` (e **Run workflow** na branch certa). Callers: `.github/workflows/deploy-develop.yml` e `deploy-main.yml`. Decisão: [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
+
+No GitHub: **Settings → Secrets and variables → Actions**.
+
+### Secrets
+
+| Nome | Valor (hPanel → Contas FTP) |
+|------|----------------------|
+| `FTP_SERVER` | Só o **IP** (sem `ftp://`) |
+| `FTP_USERNAME` | Usuário FTP |
+| `FTP_PASSWORD` | Senha FTP |
+
+`FTP_SERVER` pode ser Variable em vez de Secret. Vale para os dois ambientes.
+
+### Variables
+
+| Nome | Ambiente | Valor |
+|------|----------|--------|
+| `FTP_SERVER_DIR_DEV` | `develop` | Pasta FTP de staging (ex. `domains/eaimesa.com/public_html/dev/`) |
+| `FTP_SERVER_DIR_PRD` | `main` | Pasta FTP de produção (ex. `domains/eaimesa.com/public_html/`) |
+| `NEXT_PUBLIC_APP_URL` | `develop` | Origem do front de staging (ex. `https://dev.eaimesa.com`) |
+| `NEXT_PUBLIC_API_URL` | `develop` | API Laravel de staging (ex. `https://apidev.eaimesa.com`) |
+| `NEXT_PUBLIC_APP_URL_PRD` | `main` | Origem do front de produção (ex. `https://eaimesa.com`) |
+| `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
+| `STATIC_SLUGS` | ambos | Opcional. Default do código: `bar-do-tiao,cafe-da-lina` |
+
+O job faz sync incremental. Antes do upload, `scripts/ftp-prepare.py` recria as pastas do `out/` e apaga `.ftp-deploy-sync-state.json` se o wipe anterior deixou o servidor inconsistente (FTP 550 em `__venue/bem-vindo/`). As pastas DEV e PRD têm que ser **diferentes**. Hashes antigos em `_next/` podem sobrar; o HTML novo aponta só para os arquivos do último build.
+
+No Laravel de cada ambiente, `APP_URL` = o `NEXT_PUBLIC_APP_URL` correspondente (CORS/cookies).
+
+A action exige barra no **final** do path; o workflow acrescenta se faltar. Path sem `/` no começo é relativo ao home FTP.
+
+Antes do primeiro push em `main`, grave `NEXT_PUBLIC_APP_URL_PRD` e `NEXT_PUBLIC_API_URL_PRD` — senão o job de produção recusa o build (não reutiliza as URLs de staging).
