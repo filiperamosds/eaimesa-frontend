@@ -88,4 +88,33 @@ curl http://localhost:8000/health
 
 ## Estático (`out/`)
 
-`pnpm build` gera HTML em `out/` (`output: "export"`). Suba essa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
+`pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
+
+## Deploy — GitHub Actions (`develop`)
+
+Staging sobe sozinho em push na branch `develop` (e no botão **Run workflow**). Workflow: `.github/workflows/deploy-develop.yml`. Decisão: [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
+
+No GitHub: **Settings → Secrets and variables → Actions**.
+
+### Secrets
+
+| Nome | Valor (hPanel → FTP) |
+|------|----------------------|
+| `FTP_SERVER` | Host FTP (ex. `ftp.seudominio.com`) |
+| `FTP_USERNAME` | Usuário FTP |
+| `FTP_PASSWORD` | Senha FTP |
+
+### Variables
+
+| Nome | Valor |
+|------|--------|
+| `NEXT_PUBLIC_APP_URL` | Origem pública deste front (ex. `https://dev.eaimesa.com`) |
+| `NEXT_PUBLIC_API_URL` | Origem pública da API Laravel |
+| `FTP_SERVER_DIR` | Opcional. Destino no servidor; default `/public_html/` |
+| `STATIC_SLUGS` | Opcional. Default do código: `bar-do-tiao,cafe-da-lina` |
+
+O job apaga o destino FTP (`dangerous-clean-slate`) e manda só `out/`. Use um `public_html` (ou subdomínio) **só deste front**.
+
+No Laravel de staging, `APP_URL` = o mesmo `NEXT_PUBLIC_APP_URL` (CORS/cookies).
+
+FTP falhou? No hPanel confira host/usuário; se a Hostinger exigir TLS, troque `protocol: ftp` por `ftps` no workflow. Produção em `main` ainda é upload manual (ou um segundo workflow depois).

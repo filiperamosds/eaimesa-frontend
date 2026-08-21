@@ -18,11 +18,13 @@ Site: http://localhost:3000 — o browser chama `NEXT_PUBLIC_API_URL` (Laravel).
 
 ## Estático (Hostinger)
 
+Staging: push em `develop` dispara GitHub Actions (build + FTP). Secrets/variáveis: [`docs/ops/dev-setup.md`](docs/ops/dev-setup.md). ADR: [`docs/decisions/ADR-017-github-actions-hostinger.md`](docs/decisions/ADR-017-github-actions-hostinger.md).
+
 ```bash
 pnpm build
 ```
 
-Sai em `out/`. Suba o **conteúdo** dessa pasta para `public_html`. O arquivo **`.htaccess` é oculto** — no FileZilla ative “mostrar arquivos ocultos”, senão o QR `/{slug}/c/{token}` cai no 404 da Hostinger.
+Sai em `out/`. Upload manual (prod, por enquanto): suba o **conteúdo** dessa pasta para `public_html`. O arquivo **`.htaccess` é oculto** — no FileZilla ative “mostrar arquivos ocultos”, senão o QR `/{slug}/c/{token}` cai no 404 da Hostinger.
 
 No painel Hostinger, desative página de erro 404 personalizada (a do skate) se ela sobrescrever o `.htaccess`.
 
