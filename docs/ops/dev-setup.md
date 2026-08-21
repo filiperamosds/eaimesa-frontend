@@ -127,7 +127,7 @@ No GitHub: **Settings → Secrets and variables → Actions**.
 | `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
 | `STATIC_SLUGS` | ambos | Opcional. Default do código: `bar-do-tiao,cafe-da-lina` |
 
-O job faz sync incremental para a pasta daquele ambiente (não apaga o destino inteiro — na Hostinger o DELETE FTP é lento e o job de `develop` estourou 15 min). As pastas DEV e PRD têm que ser **diferentes**. Hashes antigos em `_next/` podem sobrar; o HTML novo aponta só para os arquivos do último build.
+O job faz sync incremental. Antes do upload, `scripts/ftp-prepare.py` recria as pastas do `out/` e apaga `.ftp-deploy-sync-state.json` se o wipe anterior deixou o servidor inconsistente (FTP 550 em `__venue/bem-vindo/`). As pastas DEV e PRD têm que ser **diferentes**. Hashes antigos em `_next/` podem sobrar; o HTML novo aponta só para os arquivos do último build.
 
 No Laravel de cada ambiente, `APP_URL` = o `NEXT_PUBLIC_APP_URL` correspondente (CORS/cookies).
 
