@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ORDER_STATUSES } from "./orders";
+import { isCpfOrCnpj, normalizeCpfCnpj } from "./payer";
 import { normalizePhone } from "./phone";
 import { isReservedSlug, normalizeSlug, SLUG_MAX, SLUG_MIN, SLUG_REGEX } from "./slug";
 import {
@@ -37,6 +38,34 @@ export const registerSchema = z.object({
     .regex(PLAN_ID_REGEX, "Plano inválido."),
 });
 
+export const payerSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome do pagador (3 a 80 caracteres).")
+    .max(80),
+  cpfCnpj: z
+    .string()
+    .transform(normalizeCpfCnpj)
+    .refine(isCpfOrCnpj, { message: "Informe um CPF ou CNPJ válido." }),
+  email: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z
+      .string()
+      .trim()
+      .email("Informe um e-mail de cobrança válido.")
+      .transform((e) => e.toLowerCase())
+      .optional(),
+  ),
+  phone: z.preprocess((v) => {
+    if (typeof v !== "string" || v.trim() === "") return undefined;
+    const digits = normalizePhone(v);
+    return digits === "" ? undefined : digits;
+  }, z.string().min(10, "Telefone inválido.").max(13, "Telefone inválido.").optional()),
+});
+
+export type CheckoutPayer = z.infer<typeof payerSchema>;
+
 export const checkoutSchema = z.object({
   plan: z
     .string()
@@ -48,6 +77,7 @@ export const checkoutSchema = z.object({
     .enum(PAYMENT_METHODS, { errorMap: () => ({ message: "Escolha cartão ou PIX." }) })
     .optional()
     .default("card"),
+  payer: payerSchema.optional(),
 });
 
 export const loginSchema = z.object({

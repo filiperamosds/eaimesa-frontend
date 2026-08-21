@@ -70,7 +70,7 @@ sequenceDiagram
 
 1. Dono cria conta (e-mail + senha).
 2. Cadastra venue: nome e **slug** (`bar-do-tiao`). CNPJ, CPF responsável e OTP entram em fatia posterior.
-3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias). Checkout stub (`POST /v1/billing/checkout`) marca `active` por 30 dias — cobra o preço efetivo (promo se preenchida) — sem gateway.
+3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias). Pagamento em `/painel/pagamento` — stub marca `active` na hora; Asaas só depois do webhook. Landing/cadastro não pedem pagador.
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
 6. Divulga `/{slug}` — **não** o claim.
@@ -166,7 +166,7 @@ Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 
 ## 5b. Fatia 10 — planos e checkout stub
 
-Detalhe em [fatia-10-planos.md](fatia-10-planos.md).
+Detalhe em [fatia-10-planos.md](fatia-10-planos.md). Gateway Asaas: [fatia 12](fatia-12-pagamento-asaas.md).
 
 ```mermaid
 sequenceDiagram
@@ -177,23 +177,29 @@ sequenceDiagram
   D->>W: /cadastro?plano={id do catálogo}
   W->>API: POST /v1/auth/register (plan)
   API-->>W: trial 7 dias
-  D->>W: /painel/pagamento (valor + cartão ou PIX)
-  W->>API: POST /v1/billing/checkout {plan, method}
-  Note over API: stub espera 2s
-  API-->>W: status success, active 30 dias
+  D->>W: /painel/pagamento (valor + método)
+  W->>API: POST /v1/billing/checkout {plan, method, payer?}
+  alt checkoutMode immediate
+    Note over API: stub espera 2s
+    API-->>W: status success, active
+  else checkoutMode hosted
+    API-->>W: status pending, checkoutUrl
+    W->>D: redirect ao provedor
+  end
 ```
 
-1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias). Cartão só no pagamento, depois.
-2. Checkout stub (~2s) aprova e grava `active` + `current_period_ends_at` (+30 dias) com `amount_cents` efetivo. Front mostra cartão/PIX; a API não recebe o cartão.
-3. Subir `kind` Cardápio → Auto atendimento: sempre. Troca lateral (mesmo kind): sempre. Descer: só depois do fim da vigência **paga**.
-4. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em mesas, equipe, pedidos, claim, PIN e comanda. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.
+1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias). Pagador só no `/painel/pagamento` se `requiresPayer`.
+2. Stub (`immediate`): (~2s) aprova e grava `active` + vigência. Front mostra cartão/PIX; a API não recebe o cartão.
+3. Asaas (`hosted`): nome + CPF/CNPJ, redirect, poll até `active`. `?checkout=ok` não confirma.
+4. Subir `kind` Cardápio → Auto atendimento: sempre. Troca lateral (mesmo kind): sempre. Descer: só depois do fim da vigência **paga**.
+5. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em mesas, equipe, pedidos, claim, PIN e comanda. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.
 
 ## 5c. Fatia 11 — console SaaS
 
 Detalhe em [fatia-11-console-saas.md](fatia-11-console-saas.md).
 
 1. Operador entra em `/admin/login` (cookie `eaimesa_platform`).
-2. Dashboard: bares, MRR estimado, checkouts stub. Status/plano em português (Em trial, Ativo, Cardápio…).
+2. Dashboard: bares, MRR estimado, checkouts (stub e Asaas). Status/plano em português (Em trial, Ativo, Cardápio…).
 3. `/admin/bares`: suspender / reativar.
 4. `/admin/planos`: criar SKU, preço, promo; `GET /v1/billing/plans` alimenta landing, cadastro e checkout (de/por se houver promo).
 

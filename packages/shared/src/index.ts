@@ -6,5 +6,6 @@ export * from "./orders";
 export * from "./tables";
 export * from "./staff";
 export * from "./phone";
+export * from "./payer";
 export * from "./uuid";
 export * from "./plans";

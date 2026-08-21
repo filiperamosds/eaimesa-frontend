@@ -1,6 +1,15 @@
 "use client";
 
-import { formatBrlFromCents, hasPromoPrice, type PaymentMethod } from "@eaimesa/shared";
+import {
+  formatBrlFromCents,
+  formatCpfCnpjInput,
+  formatPhoneInput,
+  hasPromoPrice,
+  payerSchema,
+  type CheckoutMode,
+  type CheckoutPayer,
+  type PaymentMethod,
+} from "@eaimesa/shared";
 import { useState } from "react";
 import { PlanPrice } from "./plan-price";
 
@@ -11,8 +20,13 @@ type Props = {
   listPriceCents?: number;
   promoPriceCents?: number | null;
   pending: boolean;
+  checkoutMode: CheckoutMode;
+  requiresPayer: boolean;
+  methods: PaymentMethod[];
+  defaultEmail?: string;
+  provider?: string;
   onCancel: () => void;
-  onPay: (method: PaymentMethod) => void;
+  onPay: (method: PaymentMethod, payer?: CheckoutPayer) => void;
 };
 
 function onlyDigits(value: string, max: number) {
@@ -26,17 +40,29 @@ export function PaymentForm({
   listPriceCents,
   promoPriceCents,
   pending,
+  checkoutMode,
+  requiresPayer,
+  methods,
+  defaultEmail = "",
+  provider,
   onCancel,
   onPay,
 }: Props) {
-  const [method, setMethod] = useState<PaymentMethod>("card");
+  const available = methods.length ? methods : (["card", "pix"] as PaymentMethod[]);
+  const [method, setMethod] = useState<PaymentMethod>(available[0] ?? "card");
   const [holder, setHolder] = useState("");
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
+  const [payerName, setPayerName] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [email, setEmail] = useState(defaultEmail);
+  const [phone, setPhone] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const amount = formatBrlFromCents(amountCents);
   const pixCode = `eaimesa-stub-${planId}-${amountCents}`;
+  const hosted = checkoutMode === "hosted";
+  const providerLabel = provider === "asaas" ? "Asaas" : provider || "provedor";
 
   function formatCard(raw: string) {
     const digits = onlyDigits(raw, 16);
@@ -52,7 +78,7 @@ export function PaymentForm({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setLocalError(null);
-    if (method === "card") {
+    if (!hosted && method === "card") {
       const digits = onlyDigits(number, 16);
       if (digits.length < 13) {
         setLocalError("Informe o número do cartão.");
@@ -70,6 +96,20 @@ export function PaymentForm({
         setLocalError("Informe o CVV.");
         return;
       }
+    }
+    if (hosted && requiresPayer) {
+      const parsed = payerSchema.safeParse({
+        name: payerName,
+        cpfCnpj,
+        email,
+        phone,
+      });
+      if (!parsed.success) {
+        setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do pagador.");
+        return;
+      }
+      onPay(method, parsed.data);
+      return;
     }
     onPay(method);
   }
@@ -91,17 +131,15 @@ export function PaymentForm({
           ) : (
             <span className="font-medium text-ink">{amount}</span>
           )}{" "}
-          (mensal). Sem gateway nesta fatia — o formulário não envia dados do cartão.
+          (mensal).{" "}
+          {hosted
+            ? `Você conclui o pagamento na página segura do ${providerLabel}. O EaiMesa não recebe número de cartão, validade nem CVV.`
+            : "Sem gateway nesta fatia — o formulário não envia dados do cartão."}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {(
-          [
-            ["card", "Cartão"],
-            ["pix", "PIX"],
-          ] as const
-        ).map(([id, label]) => (
+        {available.map((id) => (
           <button
             key={id}
             type="button"
@@ -111,12 +149,63 @@ export function PaymentForm({
               method === id ? "border-chili bg-chili/5 font-medium" : "border-line"
             }`}
           >
-            {label}
+            {id === "pix" ? "PIX" : "Cartão"}
           </button>
         ))}
       </div>
 
-      {method === "card" ? (
+      {hosted ? (
+        requiresPayer ? (
+          <div className="space-y-3">
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium">Nome do pagador</span>
+              <input
+                className="field"
+                autoComplete="name"
+                placeholder="Como no documento"
+                value={payerName}
+                disabled={pending}
+                onChange={(e) => setPayerName(e.target.value)}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium">CPF ou CNPJ</span>
+              <input
+                className="field font-mono tracking-wide"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="000.000.000-00"
+                value={cpfCnpj}
+                disabled={pending}
+                onChange={(e) => setCpfCnpj(formatCpfCnpjInput(e.target.value))}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium">E-mail de cobrança (opcional)</span>
+              <input
+                className="field"
+                type="email"
+                autoComplete="email"
+                value={email}
+                disabled={pending}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium">Telefone (opcional)</span>
+              <input
+                className="field"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="(11) 98888-7777"
+                value={phone}
+                disabled={pending}
+                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+              />
+            </label>
+          </div>
+        ) : null
+      ) : method === "card" ? (
         <div className="space-y-3">
           <label className="block text-sm">
             <span className="mb-1 block font-medium">Número do cartão</span>
@@ -182,7 +271,13 @@ export function PaymentForm({
 
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={pending} className="btn-primary">
-          {pending ? "Confirmando pagamento…" : `Pagar ${amount}`}
+          {pending
+            ? hosted
+              ? "Abrindo o pagamento…"
+              : "Confirmando pagamento…"
+            : hosted
+              ? `Continuar para pagar ${amount}`
+              : `Pagar ${amount}`}
         </button>
         <button type="button" disabled={pending} onClick={onCancel} className="btn-ghost">
           Cancelar

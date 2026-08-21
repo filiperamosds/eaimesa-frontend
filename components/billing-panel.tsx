@@ -1,9 +1,19 @@
 "use client";
 
-import { formatBrlFromCents, PLAN_FUTURE, planRank, type PaymentMethod } from "@eaimesa/shared";
-import { useEffect, useState } from "react";
+import {
+  CHECKOUT_POLL_INTERVAL_MS,
+  CHECKOUT_POLL_TIMEOUT_MS,
+  formatBrlFromCents,
+  PLAN_FUTURE,
+  planRank,
+  type CheckoutMode,
+  type CheckoutPayer,
+  type PaymentMethod,
+} from "@eaimesa/shared";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
-import type { Venue } from "../lib/types";
+import type { BillingGateway, PendingCheckout } from "../lib/load-billing-plans";
+import type { Session, Venue } from "../lib/types";
 import { PaymentForm } from "./payment-form";
 import { PlanPrice, planCtaPrice } from "./plan-price";
 
@@ -24,50 +34,198 @@ type BillingMe = {
   canUpgrade: boolean;
   canDowngrade: boolean;
   plans: BillingPlanRow[];
+  gateway?: BillingGateway;
+  pendingCheckout?: PendingCheckout | null;
 };
 
 type CheckoutResult = {
-  status: "success";
+  status: "success" | "pending";
   provider: string;
   method?: string;
   plan: string;
   planName: string;
   amountCents: number;
   subscriptionStatus: string;
-  currentPeriodEndsAt: string;
+  currentPeriodEndsAt?: string | null;
+  checkoutUrl?: string | null;
   message: string;
 };
 
+type NoticeKind = "waiting" | "confirmed" | "cancel" | "expired";
+
+const FALLBACK_GATEWAY: BillingGateway = {
+  provider: "stub",
+  checkoutMode: "immediate",
+  methods: ["card", "pix"],
+  requiresPayer: false,
+  available: true,
+};
+
+function resolveGateway(data: BillingMe | null): BillingGateway {
+  const g = data?.gateway;
+  if (!g) return FALLBACK_GATEWAY;
+  const methods = (g.methods ?? []).filter((m): m is PaymentMethod => m === "card" || m === "pix");
+  return {
+    provider: g.provider || FALLBACK_GATEWAY.provider,
+    checkoutMode: g.checkoutMode === "hosted" ? "hosted" : "immediate",
+    methods: methods.length ? methods : FALLBACK_GATEWAY.methods,
+    requiresPayer: Boolean(g.requiresPayer),
+    available: g.available !== false,
+  };
+}
+
+function checkoutErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) return err.message;
+  return "Não foi possível concluir o pagamento.";
+}
+
+function stripCheckoutQuery() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("checkout")) return;
+  url.searchParams.delete("checkout");
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState({}, "", next);
+}
+
 export function BillingPanel() {
   const [data, setData] = useState<BillingMe | null>(null);
+  const [accountEmail, setAccountEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<CheckoutResult | null>(null);
+  const [notice, setNotice] = useState<{ kind: NoticeKind; text: string } | null>(null);
   const [pending, setPending] = useState(false);
+  const [polling, setPolling] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
+  const pollAbort = useRef(false);
 
-  async function load() {
+  async function load(): Promise<BillingMe> {
     const me = await api<BillingMe>("/v1/billing/me");
     setData(me);
+    return me;
+  }
+
+  function stopPoll() {
+    pollAbort.current = true;
+    setPolling(false);
+  }
+
+  function startPoll() {
+    pollAbort.current = false;
+    setPolling(true);
+    const started = Date.now();
+
+    const tick = async () => {
+      if (pollAbort.current) return;
+      await new Promise((resolve) => setTimeout(resolve, CHECKOUT_POLL_INTERVAL_MS));
+      if (pollAbort.current) return;
+      if (Date.now() - started >= CHECKOUT_POLL_TIMEOUT_MS) {
+        setPolling(false);
+        setNotice({
+          kind: "waiting",
+          text: "Ainda não confirmamos o pagamento. Atualize a página em alguns instantes.",
+        });
+        return;
+      }
+      try {
+        const me = await load();
+        if (me.venue.subscriptionStatus === "active") {
+          setPolling(false);
+          setNotice({
+            kind: "confirmed",
+            text: "Pagamento confirmado. O plano está ativo.",
+          });
+          return;
+        }
+        await tick();
+      } catch (err) {
+        setPolling(false);
+        setError(checkoutErrorMessage(err));
+      }
+    };
+
+    void tick();
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : "Falha ao carregar o plano."));
+    let cancelled = false;
+    (async () => {
+      try {
+        const [me, session] = await Promise.all([
+          api<BillingMe>("/v1/billing/me"),
+          api<Session>("/v1/auth/me").catch(() => null),
+        ]);
+        if (cancelled) return;
+        setData(me);
+        if (session?.account.email) setAccountEmail(session.account.email);
+
+        const flag = new URLSearchParams(window.location.search).get("checkout");
+        stripCheckoutQuery();
+        if (flag === "ok") {
+          if (me.venue.subscriptionStatus === "active") {
+            setNotice({ kind: "confirmed", text: "Pagamento confirmado. O plano está ativo." });
+          } else {
+            setNotice({
+              kind: "waiting",
+              text: "Estamos confirmando o pagamento. Isso pode levar alguns instantes.",
+            });
+            startPoll();
+          }
+        } else if (flag === "cancel") {
+          setNotice({
+            kind: "cancel",
+            text: "Pagamento cancelado. Você pode tentar de novo quando quiser.",
+          });
+        } else if (flag === "expired") {
+          setNotice({
+            kind: "expired",
+            text: "O link de pagamento expirou. Inicie um novo pagamento.",
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Falha ao carregar o plano.");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+      stopPoll();
+    };
+    // Poll is started only from this mount path.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function pay(plan: string, method: PaymentMethod) {
+  async function pay(plan: string, method: PaymentMethod, payer?: CheckoutPayer) {
+    const gateway = resolveGateway(data);
+    if (!gateway.available) {
+      setError("Pagamento indisponível no momento.");
+      return;
+    }
     setError(null);
     setSuccess(null);
+    setNotice(null);
     setPending(true);
     try {
+      const body: { plan: string; method: PaymentMethod; payer?: CheckoutPayer } = { plan, method };
+      if (payer) body.payer = payer;
       const result = await api<CheckoutResult>("/v1/billing/checkout", {
         method: "POST",
-        body: JSON.stringify({ plan, method }),
+        body: JSON.stringify(body),
       });
-      setSuccess(result);
-      setCheckoutPlan(null);
-      await load();
+      if (result.status === "pending" && result.checkoutUrl) {
+        window.location.assign(result.checkoutUrl);
+        return;
+      }
+      if (result.status === "success") {
+        setSuccess(result);
+        setCheckoutPlan(null);
+        await load();
+        return;
+      }
+      setError(result.message || "Não foi possível iniciar o pagamento.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível concluir o pagamento.");
+      setError(checkoutErrorMessage(err));
     } finally {
       setPending(false);
     }
@@ -77,10 +235,20 @@ export function BillingPanel() {
     return <p className="text-ink-soft">{error ?? "Carregando plano…"}</p>;
   }
 
+  const gateway = resolveGateway(data);
   const current = data.venue.plan;
   const currentKind = data.venue.planKind ?? data.venue.plan;
   const selected = data.plans.find((p) => p.id === checkoutPlan);
   const cols = data.plans.length >= 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2";
+  const hosted = gateway.checkoutMode === "hosted";
+  const checkoutMode: CheckoutMode = gateway.checkoutMode;
+  const payDisabled = pending || polling || !gateway.available;
+  const noticeClass =
+    notice?.kind === "confirmed"
+      ? "border-sage/40 bg-sage/10"
+      : notice?.kind === "waiting"
+        ? "border-line bg-paper-2/60"
+        : "border-chili/30 bg-chili/5";
 
   return (
     <section className="space-y-4">
@@ -101,13 +269,42 @@ export function BillingPanel() {
         ) : null}
       </div>
 
+      {!gateway.available ? (
+        <p className="rounded-2xl border border-chili/30 bg-chili/5 p-4 text-sm text-chili">
+          Pagamento indisponível no momento. Tente de novo mais tarde.
+        </p>
+      ) : null}
+
+      {notice ? (
+        <div className={`rounded-2xl border p-5 ${noticeClass}`}>
+          <p className="text-sm">{notice.text}</p>
+          {polling ? <p className="mt-1 text-sm text-ink-soft">Aguardando confirmação…</p> : null}
+        </div>
+      ) : null}
+
+      {data.pendingCheckout?.url && gateway.available ? (
+        <div className="rounded-2xl border border-line bg-paper-2/60 p-5">
+          <p className="text-sm font-medium">Há um pagamento em andamento.</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Continue na página do provedor. O plano só fica ativo depois da confirmação.
+          </p>
+          <button
+            type="button"
+            className="btn-primary mt-3 !py-2 text-sm"
+            onClick={() => window.location.assign(data.pendingCheckout!.url)}
+          >
+            Continuar pagamento
+          </button>
+        </div>
+      ) : null}
+
       {success ? (
         <div className="rounded-2xl border border-sage/40 bg-sage/10 p-5">
           <p className="text-sm font-medium text-sage">Pagamento aprovado</p>
           <p className="mt-1 text-sm">
             {success.planName} · {formatBrlFromCents(success.amountCents)}
-            {success.method ? ` · ${success.method === "pix" ? "PIX" : "cartão"}` : null} · stub (
-            {success.provider})
+            {success.method ? ` · ${success.method === "pix" ? "PIX" : "cartão"}` : null}
+            {success.provider ? ` · ${success.provider}` : null}
           </p>
           <p className="mt-1 text-sm text-ink-soft">{success.message}</p>
         </div>
@@ -123,10 +320,15 @@ export function BillingPanel() {
           listPriceCents={selected.priceCents}
           promoPriceCents={selected.promoPriceCents}
           pending={pending}
+          checkoutMode={checkoutMode}
+          requiresPayer={gateway.requiresPayer}
+          methods={gateway.methods}
+          defaultEmail={accountEmail}
+          provider={gateway.provider}
           onCancel={() => {
             if (!pending) setCheckoutPlan(null);
           }}
-          onPay={(method) => void pay(selected.id, method)}
+          onPay={(method, payer) => void pay(selected.id, method, payer)}
         />
       ) : (
         <div className={`grid gap-3 ${cols}`}>
@@ -158,7 +360,7 @@ export function BillingPanel() {
                 </ul>
                 <button
                   type="button"
-                  disabled={!enabled || pending}
+                  disabled={!enabled || payDisabled}
                   onClick={() => {
                     setSuccess(null);
                     setError(null);
@@ -182,7 +384,10 @@ export function BillingPanel() {
         </div>
       )}
       <p className="text-xs text-ink-soft">
-        {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb} Cartão e PIX são só UI; a API espera ~2s e devolve sucesso.
+        {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb}{" "}
+        {hosted
+          ? "Cartão e PIX são cobrados na página do provedor. O EaiMesa não envia PAN, CVV nem token de cartão."
+          : "Cartão e PIX são só UI; a API espera ~2s e devolve sucesso."}
       </p>
     </section>
   );

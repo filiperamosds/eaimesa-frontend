@@ -128,13 +128,30 @@ Catálogo vendável. `id` = slug do SKU (3–48; kebab ou underscore, para o see
 - `name`, `price_cents`, `promo_price_cents` (nullable; se preenchido e menor que o cheio, vitrine e checkout usam a promo)
 - `blurb`, `features` (json), `listed`, `sort_order`
 
-`GET /v1/billing/plans` lê daqui. Landing, cadastro e checkout não usam só a constante do código. Sem DELETE: `listed=false` esconde. Máximo 12 linhas.
+`GET /v1/billing/plans` lê daqui. Landing, cadastro e checkout não usam só a constante do código. Sem DELETE: `listed=false` esconde. Máximo 12 linhas. `gateway` no payload vem do driver (`stub` | `asaas`), não do catálogo.
 
 ### BillingEvent
 
-Histórico do checkout stub.
+Histórico de checkout (stub e Asaas).
 
-- `venue_id`, `plan`, `plan_name`, `method`, `amount_cents`, `provider`, `status`, `created_at`
+- `venue_id`, `plan`, `plan_name`, `method`, `amount_cents`
+- `provider` (`stub` | `asaas` | futuro)
+- `provider_ref` nullable — id da cobrança no provedor
+- `status`: `pending` | `success` | `failed`
+- `created_at`
+
+Não guardar CPF/CNPJ nem PAN. O front só envia pagador no POST de checkout hosted.
+
+### VenueBilling
+
+1:1 com o venue. Expõe `pendingCheckout` em `GET /v1/billing/me` (`url`, `plan`, `method`, `amountCents`).
+
+- `venue_id` UNIQUE
+- `provider`
+- `customer_id`, `subscription_id`, `checkout_id`
+- `pending_plan`, `pending_method`, `pending_amount_cents`, `pending_event_id`, `checkout_url`
+
+Pendente some quando o webhook confirma.
 
 ## Entidades — planejadas
 
@@ -161,6 +178,8 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 - `platform_users(lower(email))` UNIQUE
 - `billing_events(created_at DESC)`
 - `billing_events(venue_id, created_at DESC)`
+- `billing_events(provider, provider_ref)` UNIQUE (NULLs repetíveis)
+- `venue_billing(venue_id)` UNIQUE
 
 ## Regras de negócio
 
@@ -175,6 +194,8 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`.
+12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
+13. CPF/CNPJ do pagador não é persistido. PAN nunca entra no front nem na API.
 
 ## Diagrama ER
 
@@ -192,6 +213,7 @@ erDiagram
   Tab ||--o{ Order : parcial
   Venue ||--o{ Order : has
   Venue ||--o{ BillingEvent : checkouts
+  Venue ||--o| VenueBilling : gateway
   Order ||--|{ OrderItem : contains
   PlatformUser
   PlatformSettings

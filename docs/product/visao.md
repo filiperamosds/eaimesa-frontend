@@ -27,7 +27,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Landing** | `/` | Visitante B2B | Cards do catálogo (de/por se houver promo) | Sim |
 | **Auth estabelecimento** | `/cadastro`, `/login` | Dono / garçom | Trial 7 dias no plano escolhido | Sim |
 | **Painel** | `/painel/*` | Dono | Cardápio; resto só no Auto atendimento | — |
-| **Pagamento** | `/painel/pagamento` | Dono | Checkout stub (sucesso) | Gateway |
+| **Pagamento** | `/painel/pagamento` | Dono | Checkout stub ou Asaas hosted | Conta da mesa |
 | **Garçom** | `/garcom` | Staff | Só Auto atendimento | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
 | **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos | SSO/2FA |
@@ -37,11 +37,11 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 - **Dono** — 1 bar, ~10 mesas, quer menos hardware e pedido confiável. Publica o cardápio, vê a fila, cadastra o salão e a equipe.
 - **Garçom** — gera QR na mesa; vê parciais; avança a fila; encerra a mesa quando todas as comandas fecham.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
-- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, stub de vendas e catálogo. Não atende o salão nem edita o cardápio de um bar.
+- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, vendas da assinatura e catálogo. Não atende o salão nem edita o cardápio de um bar.
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 11 — console SaaS](fatia-11-console-saas.md).
+Implementação **agora**: [fatia 12 — pagamento Asaas](fatia-12-pagamento-asaas.md).
 
 ### MVP (quando as fatias somarem)
 
@@ -50,7 +50,7 @@ Implementação **agora**: [fatia 11 — console SaaS](fatia-11-console-saas.md)
 - Cardápio CRUD (texto, preço no servidor)
 - Auto atendimento: mesas + claim + PIN + pedido guest + fila staff
 - Multi-tenant com `venue_id` em toda query
-- Billing stub + console: trial/vigência/suspensão; catálogo de planos no banco
+- Billing: trial/vigência/suspensão; catálogo no banco; checkout stub ou Asaas hosted (PAN nunca no app)
 
 ### Fora do MVP
 
