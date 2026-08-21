@@ -1,8 +1,7 @@
 # Deploy do export estático (`out/`) para a Hostinger.
 # Roda só em `develop` (staging). Produção (`main`) fica para depois.
 #
-# Secrets: FTP_USERNAME, FTP_PASSWORD
-#          FTP_SERVER (secret ou variable: IP ou domínio, sem ftp://)
+# Secrets: FTP_SERVER (só o IP, sem ftp://), FTP_USERNAME, FTP_PASSWORD
 # Variables: NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_API_URL
 #            FTP_SERVER_DIR (opcional, default /public_html/)
 #            STATIC_SLUGS (opcional)
@@ -43,42 +42,24 @@ jobs:
           [ -n "$NEXT_PUBLIC_API_URL" ] || { echo "Falta variable NEXT_PUBLIC_API_URL"; missing=1; }
           exit "$missing"
 
-      - name: Conferir e normalizar FTP
-        id: ftp
+      - name: Conferir secrets FTP
         env:
           FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR }}
         run: |
           missing=0
           [ -n "$FTP_SERVER" ] || { echo "Falta secret/variable FTP_SERVER"; missing=1; }
           [ -n "$FTP_USERNAME" ] || { echo "Falta secret FTP_USERNAME"; missing=1; }
           [ -n "$FTP_PASSWORD" ] || { echo "Falta secret FTP_PASSWORD"; missing=1; }
           [ "$missing" -eq 0 ] || exit 1
-
-          # hPanel copia "ftp://IP" ou "ftp://ftp.dominio.com" — o cliente FTP quer só o host.
-          host="$(printf '%s' "$FTP_SERVER" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-          host="${host#ftp://}"
-          host="${host#ftps://}"
-          host="${host#sftp://}"
-          host="${host%%/*}"
-          # "1.2.3.4:21" → IP; não cortar IPv6 (vários ':').
-          if [[ "$host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$ ]]; then
-            host="${host%:*}"
-          fi
-          echo "::add-mask::$host"
-          echo "host=$host" >> "$GITHUB_OUTPUT"
-
-          # IP não precisa de DNS. getent hosts em IPv4 sem PTR falha (exit 2).
-          if [[ "$host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "FTP host é IPv4; DNS ignorado."
-          elif getent ahostsv4 "$host" >/dev/null; then
-            echo "FTP host resolve em IPv4."
-          else
-            echo "FTP_SERVER não resolve no DNS (depois de tirar ftp://)."
-            echo "Na Hostinger use o IP do hPanel (ftp://IP vira só o IP aqui) ou um hostname com A record."
-            exit 1
-          fi
+          d="${FTP_SERVER_DIR:-/public_html/}"
+          d="${d%"${d##*[![:space:]]}"}"
+          d="${d#"${d%%[![:space:]]*}"}"
+          d="${d%/}/"
+          echo "FTP_REMOTE_DIR=$d" >> "$GITHUB_ENV"
+          echo "FTP destino: $d"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -106,12 +87,12 @@ jobs:
       - name: Deploy FTP (Hostinger)
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
-          server: ${{ steps.ftp.outputs.host }}
+          server: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
           local-dir: ./out/
-          server-dir: ${{ vars.FTP_SERVER_DIR || '/public_html/' }}
+          server-dir: ${{ env.FTP_REMOTE_DIR }}
           dangerous-clean-slate: true
           timeout: 600000

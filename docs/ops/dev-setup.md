@@ -100,7 +100,7 @@ No GitHub: **Settings → Secrets and variables → Actions**.
 
 | Nome | Valor (hPanel → Contas FTP) |
 |------|----------------------|
-| `FTP_SERVER` | IP ou domínio. `ftp://IP` do hPanel vale: o workflow tira o esquema |
+| `FTP_SERVER` | Só o **IP** (sem `ftp://`) |
 | `FTP_USERNAME` | Usuário FTP |
 | `FTP_PASSWORD` | Senha FTP |
 
@@ -112,11 +112,11 @@ No GitHub: **Settings → Secrets and variables → Actions**.
 |------|--------|
 | `NEXT_PUBLIC_APP_URL` | Origem pública deste front (ex. `https://dev.eaimesa.com`) |
 | `NEXT_PUBLIC_API_URL` | Origem pública da API Laravel |
-| `FTP_SERVER_DIR` | Opcional. Destino no servidor; default `/public_html/` |
+| `FTP_SERVER_DIR` | Destino no FTP; a action exige barra no **final**. Relativo ao home do usuário (ex. `domains/eaimesa.com/public_html/dev/`). Default `/public_html/` |
 | `STATIC_SLUGS` | Opcional. Default do código: `bar-do-tiao,cafe-da-lina` |
 
 O job apaga o destino FTP (`dangerous-clean-slate`) e manda só `out/`. Use um `public_html` (ou subdomínio) **só deste front**.
 
 No Laravel de staging, `APP_URL` = o mesmo `NEXT_PUBLIC_APP_URL` (CORS/cookies).
 
-O hPanel costuma mostrar `ftp://IP`. Cole isso em `FTP_SERVER`; o job usa só o IP. TLS: troque `protocol: ftp` por `ftps` no workflow. Produção em `main` ainda é upload manual (ou um segundo workflow depois).
+`FTP_SERVER` é o IP puro (sem `ftp://`). `FTP_SERVER_DIR` sem `/` no começo é caminho relativo ao login FTP — isso não causa `ENOTFOUND`. O workflow só garante a barra no final.
