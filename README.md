@@ -22,6 +22,8 @@ Staging: push em `develop` → `FTP_SERVER_DIR_DEV`. Produção: push em `main` 
 
 Branch padrão **`develop`**. `main` só com PR explícito.
 
+Branch padrão **`develop`**. `main` (prod) só com PR explícito.
+
 ```bash
 pnpm build
 ```
