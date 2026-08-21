@@ -98,11 +98,13 @@ No GitHub: **Settings → Secrets and variables → Actions**.
 
 ### Secrets
 
-| Nome | Valor (hPanel → FTP) |
+| Nome | Valor (hPanel → Contas FTP) |
 |------|----------------------|
-| `FTP_SERVER` | Host FTP (ex. `ftp.seudominio.com`) |
+| `FTP_SERVER` | **IP** ou domínio (`eaimesa.com`). Sem `ftp://`. `ftp.seudominio.com` só se esse registro existir no DNS |
 | `FTP_USERNAME` | Usuário FTP |
 | `FTP_PASSWORD` | Senha FTP |
+
+`FTP_SERVER` pode ser Variable em vez de Secret (o hostname não é senha). O workflow aceita os dois.
 
 ### Variables
 
@@ -117,4 +119,4 @@ O job apaga o destino FTP (`dangerous-clean-slate`) e manda só `out/`. Use um `
 
 No Laravel de staging, `APP_URL` = o mesmo `NEXT_PUBLIC_APP_URL` (CORS/cookies).
 
-FTP falhou? No hPanel confira host/usuário; se a Hostinger exigir TLS, troque `protocol: ftp` por `ftps` no workflow. Produção em `main` ainda é upload manual (ou um segundo workflow depois).
+FTP falhou com `ENOTFOUND`? O host não resolve. Tire `ftp://` do valor; se `ftp.eaimesa.com` não tiver DNS, use o IP do hPanel ou `eaimesa.com`. TLS: troque `protocol: ftp` por `ftps` no workflow. Produção em `main` ainda é upload manual (ou um segundo workflow depois).

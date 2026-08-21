@@ -1,7 +1,8 @@
 # Deploy do export estático (`out/`) para a Hostinger.
 # Roda só em `develop` (staging). Produção (`main`) fica para depois.
 #
-# Secrets: FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
+# Secrets: FTP_USERNAME, FTP_PASSWORD
+#          FTP_SERVER (secret ou variable: IP ou domínio, sem ftp://)
 # Variables: NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_API_URL
 #            FTP_SERVER_DIR (opcional, default /public_html/)
 #            STATIC_SLUGS (opcional)
@@ -42,17 +43,37 @@ jobs:
           [ -n "$NEXT_PUBLIC_API_URL" ] || { echo "Falta variable NEXT_PUBLIC_API_URL"; missing=1; }
           exit "$missing"
 
-      - name: Conferir secrets FTP
+      - name: Conferir e normalizar FTP
+        id: ftp
         env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           missing=0
-          [ -n "$FTP_SERVER" ] || { echo "Falta secret FTP_SERVER"; missing=1; }
+          [ -n "$FTP_SERVER" ] || { echo "Falta secret/variable FTP_SERVER"; missing=1; }
           [ -n "$FTP_USERNAME" ] || { echo "Falta secret FTP_USERNAME"; missing=1; }
           [ -n "$FTP_PASSWORD" ] || { echo "Falta secret FTP_PASSWORD"; missing=1; }
-          exit "$missing"
+          [ "$missing" -eq 0 ] || exit 1
+
+          # hPanel copia "ftp://ftp.dominio.com" ou "ftp://IP" — isso não é hostname.
+          host="$(printf '%s' "$FTP_SERVER" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          host="${host#ftp://}"
+          host="${host#ftps://}"
+          host="${host#sftp://}"
+          host="${host%%/*}"
+          case "$host" in
+            *:*) host="${host%%:*}" ;;
+          esac
+          echo "::add-mask::$host"
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+
+          if ! getent hosts "$host" >/dev/null; then
+            echo "FTP_SERVER não resolve no DNS (depois de tirar ftp:// e porta)."
+            echo "Na Hostinger, ftp.seudominio.com muitas vezes não tem registro."
+            echo "Use o IP em hPanel → Contas FTP → Hostname, ou o domínio (ex. eaimesa.com)."
+            exit 1
+          fi
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -80,7 +101,7 @@ jobs:
       - name: Deploy FTP (Hostinger)
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          server: ${{ steps.ftp.outputs.host }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
