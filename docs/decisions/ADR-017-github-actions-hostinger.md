@@ -34,6 +34,6 @@ Contrato: [docs/ops/dev-setup.md](../ops/dev-setup.md). Workflow: `.github/workf
 ## Consequências
 
 - Criar a branch `develop` e apontá-la para o domínio/subdomínio de staging.
-- No GitHub: Secrets `FTP_USERNAME` / `FTP_PASSWORD` e Variables `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_API_URL` **antes** do primeiro push útil em `develop`. `FTP_SERVER` é o IP do hPanel ou o domínio; `ftp.seudominio.com` na Hostinger costuma **não** ter DNS.
+- No GitHub: Secrets `FTP_USERNAME` / `FTP_PASSWORD` e Variables `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_API_URL` **antes** do primeiro push útil em `develop`. `FTP_SERVER` é o IP (hPanel costuma prefixar `ftp://`; o workflow remove) ou um hostname com DNS.
 - No Laravel de staging, `APP_URL` = origem deste front (CORS/cookies).
 - Pipeline de `main` (prod) fica para um workflow à parte, com outro `public_html` / domínio.
