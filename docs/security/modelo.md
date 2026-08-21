@@ -37,7 +37,7 @@
 - HTTPS + HSTS em produção
 - Cookie dono: `Secure` (prod); `HttpOnly`; `SameSite=Lax`; `Path=/`
 - Cookie platform: `eaimesa_platform` — mesmo atributo, **JWT e secret distintos**
-- CORS: **uma** origin (`APP_URL` = origem do Next), `credentials: true`
+- CORS: origens do front (`APP_URL` e `CORS_ALLOWED_ORIGINS`), `credentials: true`. `APP_URL` é o site (ex. `https://eaimesa.com`), **não** `https://api.eaimesa.com`.
 - Não usar o mesmo JWT para dono e guest
 
 ## Rate limits (inicial)

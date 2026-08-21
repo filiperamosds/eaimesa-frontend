@@ -5,7 +5,7 @@ O grupo entra na **mesma mesa** sem o garçom voltar. O PIN é da ocupação da 
 ## Inclui
 
 - API `POST /v1/guest/tabs/join` — body `{ slug, pin }` → `GuestSession` na **TableSession** open + cookie `eaimesa_guest`
-- API `GET /v1/guest/tab` — sessão atual (mesa, slug) para o cardápio mostrar que o aparelho já entrou
+- API `GET /v1/guest/tab` — sessão atual (mesa, slug, PIN). No cardápio o PIN fica oculto; o olho abre um dialog.
 - Página `/{slug}/entrar` — PIN de 4 dígitos
 - Cardápio `/{slug}`: atalho “Já tenho o PIN” e faixa “Você está na Mesa X” se houver sessão
 - Rate limit: **5 falhas / 15 min / IP + venue** (o body não traz `tabId`; o PIN resolve a mesa)

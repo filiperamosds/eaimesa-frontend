@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { useClaimToken, useVenueSlug } from "../lib/venue-path";
 
-const WELCOME_KEY = "eaimesa_welcome";
+import { WELCOME_KEY } from "../lib/welcome-storage";
 
 type RedeemResult = {
   pinDisplay: string | null;

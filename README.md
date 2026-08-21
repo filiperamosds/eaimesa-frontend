@@ -22,7 +22,9 @@ Site: http://localhost:3000 — o browser chama `NEXT_PUBLIC_API_URL` (Laravel).
 pnpm build
 ```
 
-Sai em `out/`. Suba o conteúdo dessa pasta. O `public/.htaccess` vai junto (QR `/{slug}/c/{token}` e slugs novos).
+Sai em `out/`. Suba o **conteúdo** dessa pasta para `public_html`. O arquivo **`.htaccess` é oculto** — no FileZilla ative “mostrar arquivos ocultos”, senão o QR `/{slug}/c/{token}` cai no 404 da Hostinger.
+
+No painel Hostinger, desative página de erro 404 personalizada (a do skate) se ela sobrescrever o `.htaccess`.
 
 No `.env` de produção: `NEXT_PUBLIC_API_URL` = URL pública da API; no Laravel, `APP_URL` = origem deste front (CORS/cookies).
 

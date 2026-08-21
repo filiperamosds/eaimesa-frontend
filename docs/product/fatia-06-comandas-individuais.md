@@ -10,7 +10,7 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 - **Tab** = comanda pessoal: `guest_name`, `guest_phone`, ligada à sessão da mesa
 - Várias comandas `open` na mesma mesa
 - Guest: após claim ou PIN, formulário nome + telefone (`/{slug}/comanda`) — máscara `(11) 98888-7777`; a API grava só dígitos
-- Mesmo telefone na mesma sessão retoma a comanda (outro aparelho)
+- Telefone único enquanto a comanda está `open`: mesmo número não abre outra (nesta mesa ou em outra do bar) → 409 `TAB_ALREADY_OPEN`
 - Garçom `/garcom`: o salão mostra os **nomes** nas mesas ocupadas e atualiza sozinho; toque abre **dialog** com as contas e a parcial
 - Guest `/{slug}/comanda` e a cesta: a **própria** parcial ([fatia 9](fatia-09-parcial-guest.md))
 - `POST /v1/staff/tabs/{id}/close` — fecha uma comanda
@@ -26,7 +26,7 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 
 1. Garçom gera QR (mesa livre) ou a mesa já tem PIN.
 2. Primeiro aparelho: redeem → PIN da **mesa** + nome e telefone → comanda pessoal.
-3. Outros: PIN em `/{slug}/entrar` → nome e telefone (mesmo telefone = mesma comanda).
+3. Outros: PIN em `/{slug}/entrar` → nome e telefone. Mesmo número com comanda `open` → bloqueio.
 4. Garçom **não** precisa de um QR por pessoa; PIN serve o grupo.
 
 ## Fluxo garçom

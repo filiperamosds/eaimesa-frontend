@@ -123,6 +123,7 @@ export type GuestTab = {
   needsProfile: boolean;
   guestName: string | null;
   tableLabel: string;
+  pinDisplay: string | null;
   slug: string;
   venueName: string;
   expiresAt: string;

@@ -47,7 +47,7 @@ Após redirect, **token não permanece** na barra de endereço.
 ## 3. PIN da Tab
 
 - PIN **da mesa** (TableSession), 4 dígitos, ex. `4821`.
-- Mostrado no primeiro aparelho.
+- Mostrado no primeiro aparelho; depois fica atrás de um ícone de olho no cardápio/comanda (dialog com o PIN).
 - `POST /guest/tabs/join` com `{ slug, pin }` → cookie na ocupação da mesa.
 - Comanda pessoal: `POST /guest/tabs` `{ name, phone }`.
 
@@ -67,7 +67,7 @@ Servidor resolve session → `tab_id`, `venue_id`, `device_id`.
 | Cenário | Fluxo |
 |---------|--------|
 | Primeiro na mesa | Claim → PIN da mesa → nome+telefone (comanda) |
-| Outro aparelho / pessoa | PIN join → nome+telefone (retoma se o telefone já existe) |
+| Outro aparelho / pessoa | PIN join → nome+telefone (409 se o número já tem comanda `open`) |
 | Sem PIN, sem claim | Cardápio read-only |
 
 ## O que o claim substitui

@@ -3,15 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useVenueSlug } from "../lib/venue-path";
+import { WELCOME_KEY, type WelcomeData } from "../lib/welcome-storage";
 import { OpenComandaForm } from "./open-comanda-form";
-
-const WELCOME_KEY = "eaimesa_welcome";
-
-type WelcomeData = {
-  slug: string;
-  pin: string | null;
-  tableLabel: string;
-};
 
 export function WelcomeView() {
   const slug = useVenueSlug();

@@ -14,7 +14,7 @@ Hospedagem típica (PHP + MySQL) e o pedido de um backend Laravel. O contrato HT
 |--------------------------|--------|
 | Fastify + Drizzle | Laravel 13 (PHP 8.3) na **raiz** do eaimesa-backend |
 | PostgreSQL 16 | **MySQL 8** |
-| Índices parciais `WHERE status = open` | Colunas geradas `STORED` + UNIQUE (NULL = fechado) |
+| Índices parciais `WHERE status = open` | Colunas nullable + UNIQUE (NULL = fechado). Hostinger/MariaDB **não aceita** `GENERATED ALWAYS` com `IF`/`CASE` (erro 1901); o Eloquent preenche `open_table_id` / `open_session_phone` no `saving`. |
 | Cookie JWT HS256 | Mesmos nomes (`eaimesa_owner`, `eaimesa_guest`, `eaimesa_platform`) e claims |
 
 Front único (ADR-003) não muda; no Next, `API_URL=http://localhost:8000`.

@@ -113,7 +113,7 @@ sequenceDiagram
   API->>API: TableSession open + PIN
   API-->>C2: Set-Cookie eaimesa_guest
   C2->>API: POST /v1/guest/tabs { name, phone }
-  API-->>C2: comanda pessoal (ou retoma se o telefone já existe)
+  API-->>C2: comanda pessoal (409 se o telefone já tem comanda aberta)
 ```
 
 1. Cliente abre `/{slug}` (QR fixo) ou `/{slug}/entrar`.

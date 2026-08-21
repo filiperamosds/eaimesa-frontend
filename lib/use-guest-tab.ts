@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import type { GuestTab } from "./types";
+import { readWelcomePin } from "./welcome-storage";
 
 export function useGuestTab(slug: string, enabled = true) {
   const [tab, setTab] = useState<GuestTab | null | undefined>(enabled ? undefined : null);
@@ -17,7 +18,11 @@ export function useGuestTab(slug: string, enabled = true) {
       try {
         const data = await api<GuestTab>("/v1/guest/tab");
         if (cancelled) return;
-        setTab(data.slug === slug ? data : null);
+        setTab(
+          data.slug === slug
+            ? { ...data, pinDisplay: data.pinDisplay ?? readWelcomePin(slug) }
+            : null,
+        );
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && (err.status === 401 || err.status === 409)) {

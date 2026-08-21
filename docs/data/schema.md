@@ -79,7 +79,7 @@ Máximo **5 membros staff ativos** por venue no plano Auto atendimento.
 Ocupação da mesa + PIN do grupo.
 
 - `id`, `venue_id`, `table_id` → VenueTable
-- `pin_hash` (bcrypt, 4 dígitos)
+- `pin_hash` (bcrypt) e `pin_display` (criptografado, para mostrar o PIN a quem já está na mesa)
 - `status`: `open` | `closed`
 - `closed_at`, timestamps
 
@@ -92,7 +92,7 @@ No máximo **uma** sessão `open` por mesa.
 - `status`: `open` | `closed`
 - `closed_at`, timestamps
 
-Várias tabs `open` por sessão. Telefone único entre as `open` da mesma sessão (retoma a conta noutro aparelho).
+Várias tabs `open` por sessão. Telefone único entre as `open` do **bar** (`open_venue_phone`): cadastrar o mesmo número com comanda ainda aberta → 409 `TAB_ALREADY_OPEN`.
 
 ### TableClaim
 
@@ -152,9 +152,10 @@ Histórico do checkout stub.
 - `venue_tables(venue_id, sort_order)`
 - `venue_tables(venue_id, label)` UNIQUE
 - `venue_members(venue_id, account_id)` UNIQUE
-Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL (Laravel, [ADR-016](../decisions/ADR-016-laravel-mysql.md)): coluna gerada `open_table_id` UNIQUE.
+Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Laravel, [ADR-016](../decisions/ADR-016-laravel-mysql.md)): colunas nullable `open_table_id` / `open_session_phone` UNIQUE (NULL = fechado). Preenchidas no Eloquent — Hostinger rejeita coluna gerada com `IF`/`CASE` (erro 1901).
 
 - `table_sessions(table_id) WHERE status = open` UNIQUE
+- `tabs(venue_id, guest_phone) WHERE status = open` UNIQUE (`open_venue_phone`)
 - `tabs(table_session_id, guest_phone) WHERE status = open` UNIQUE
 - `orders(venue_id, idempotency_key) WHERE idempotency_key IS NOT NULL` UNIQUE
 - `platform_users(lower(email))` UNIQUE
@@ -170,7 +171,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL (Laravel, [AD
 5. Pedido público pelo slug **exige** comanda pessoal `open` (fatia 7). Slug sozinho não autoriza.
 6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo.
 7. PIN join casa o PIN com uma **TableSession** `open`.
-8. Nome+telefone abre ou retoma comanda pessoal na sessão.
+8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no bar, 409 `TAB_ALREADY_OPEN`.
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`.
