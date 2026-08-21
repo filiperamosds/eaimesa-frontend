@@ -31,7 +31,7 @@ jobs:
   build-and-deploy:
     name: Build e FTP (${{ github.ref_name }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       NEXT_PUBLIC_APP_URL: ${{ inputs.app_url }}
       NEXT_PUBLIC_API_URL: ${{ inputs.api_url }}
@@ -101,5 +101,5 @@ jobs:
           port: 21
           local-dir: ./out/
           server-dir: ${{ env.FTP_REMOTE_DIR }}
-          dangerous-clean-slate: true
-          timeout: 600000
+          dangerous-clean-slate: false
+          timeout: 1200000
