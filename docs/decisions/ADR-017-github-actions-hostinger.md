@@ -15,7 +15,8 @@ Staging (`develop`) e produção (`main`) compartilham a conta FTP e diferem pel
 | Escolha | Por quê |
 |---------|---------|
 | `develop` → staging, `main` → prod | Mesmo job reutilizável; destinos FTP separados |
-| `FTP_SERVER_DIR_DEV` / `FTP_SERVER_DIR_PRD` | Um `public_html` (ou pasta) por ambiente; `dangerous-clean-slate` não mistura os dois |
+| `FTP_SERVER_DIR_DEV` / `FTP_SERVER_DIR_PRD` | Um diretório por ambiente; o sync FTP não mistura staging e prod |
+| Sync incremental (`dangerous-clean-slate: false`) | Na Hostinger o wipe arquivo a arquivo estoura o timeout do Actions (15 min no run `32521649034`) |
 | URLs de staging: `NEXT_PUBLIC_*` (sem sufixo) | Já configuradas e em uso |
 | URLs de prod: `NEXT_PUBLIC_*_PRD` | O HTML do `pnpm build` não pode apontar para `dev.eaimesa.com` |
 | FTP (`SamKirkland/FTP-Deploy-Action`), IP sem `ftp://` | Hostinger shared, porta 21 |
