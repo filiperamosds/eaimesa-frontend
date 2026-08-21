@@ -1,0 +1,105 @@
+# Reuso interno. Não dispara sozinho.
+# Callers: deploy-develop.yml, deploy-main.yml
+# Ver docs/ops/dev-setup.md e docs/decisions/ADR-017-github-actions-hostinger.md
+
+name: Deploy Hostinger (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      ftp_dir:
+        description: Destino FTP (variable FTP_SERVER_DIR_DEV ou _PRD)
+        required: true
+        type: string
+      app_url:
+        description: NEXT_PUBLIC_APP_URL deste ambiente
+        required: true
+        type: string
+      api_url:
+        description: NEXT_PUBLIC_API_URL deste ambiente
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Build e FTP (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_APP_URL: ${{ inputs.app_url }}
+      NEXT_PUBLIC_API_URL: ${{ inputs.api_url }}
+      API_URL: ${{ inputs.api_url }}
+      STATIC_SLUGS: ${{ vars.STATIC_SLUGS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Conferir variáveis públicas
+        run: |
+          missing=0
+          [ -n "$NEXT_PUBLIC_APP_URL" ] || { echo "Falta APP_URL deste ambiente"; missing=1; }
+          [ -n "$NEXT_PUBLIC_API_URL" ] || { echo "Falta API_URL deste ambiente"; missing=1; }
+          exit "$missing"
+
+      - name: Conferir secrets FTP
+        env:
+          FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ inputs.ftp_dir }}
+        run: |
+          missing=0
+          [ -n "$FTP_SERVER" ] || { echo "Falta secret/variable FTP_SERVER"; missing=1; }
+          [ -n "$FTP_USERNAME" ] || { echo "Falta secret FTP_USERNAME"; missing=1; }
+          [ -n "$FTP_PASSWORD" ] || { echo "Falta secret FTP_PASSWORD"; missing=1; }
+          [ -n "$FTP_SERVER_DIR" ] || { echo "Falta FTP_SERVER_DIR deste ambiente"; missing=1; }
+          [ "$missing" -eq 0 ] || exit 1
+          d="${FTP_SERVER_DIR}"
+          d="${d%"${d##*[![:space:]]}"}"
+          d="${d#"${d%%[![:space:]]*}"}"
+          d="${d%/}/"
+          echo "FTP_REMOTE_DIR=$d" >> "$GITHUB_ENV"
+          echo "FTP destino: $d"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build (export estático)
+        run: pnpm build
+
+      - name: Conferir out/ e .htaccess
+        run: |
+          test -f out/index.html
+          test -f out/.htaccess
+
+      - name: Deploy FTP (Hostinger)
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./out/
+          server-dir: ${{ env.FTP_REMOTE_DIR }}
+          dangerous-clean-slate: true
+          timeout: 600000
