@@ -20,6 +20,8 @@ Site: http://localhost:3000 — o browser chama `NEXT_PUBLIC_API_URL` (Laravel).
 
 Staging: push em `develop` dispara GitHub Actions (build + FTP). Secrets/variáveis: [`docs/ops/dev-setup.md`](docs/ops/dev-setup.md). ADR: [`docs/decisions/ADR-017-github-actions-hostinger.md`](docs/decisions/ADR-017-github-actions-hostinger.md).
 
+Branch padrão **`develop`**. `main` (prod) só com PR explícito.
+
 ```bash
 pnpm build
 ```

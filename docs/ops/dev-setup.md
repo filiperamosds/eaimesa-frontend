@@ -90,6 +90,15 @@ curl http://localhost:8000/health
 
 `pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
 
+## Git
+
+| Branch | Papel |
+|--------|--------|
+| `develop` | Padrão. Staging. PRs do Cursor mergeiam aqui. Push dispara o deploy Hostinger |
+| `main` | Produção. Só com pedido explícito ou PR aberto no GitHub contra `main` |
+
+No GitHub: **Settings → General → Default branch → `develop`**.
+
 ## Deploy — GitHub Actions (`develop`)
 
 Staging sobe sozinho em push na branch `develop` (e no botão **Run workflow**). Workflow: `.github/workflows/deploy-develop.yml`. Decisão: [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).

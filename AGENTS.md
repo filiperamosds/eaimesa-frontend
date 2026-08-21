@@ -6,6 +6,8 @@ Produto e contratos: [`docs/`](docs/README.md). Spec e código mudam juntos (`.c
 
 Não invente endpoint. Um único app: `/` landing, `/login` `/cadastro` `/painel/*`, `/{slug}` cardápio, `/garcom`, `/admin`.
 
+Branch padrão: **`develop`** (staging). PRs do Cursor mergeiam em `develop`. **`main`** só com pedido explícito ou PR aberto no GitHub contra `main`.
+
 `packages/shared` (zod) vive neste repo. O backend Laravel reimplementa as regras em PHP (`app/Support`).
 
 ## Cursor Cloud

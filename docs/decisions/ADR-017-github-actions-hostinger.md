@@ -33,6 +33,7 @@ Contrato: [docs/ops/dev-setup.md](../ops/dev-setup.md). Workflow: `.github/workf
 
 ## Consequências
 
+- Branch padrão **`develop`**. PRs (Cursor incluso) mergeiam em `develop`. **`main`** só com PR explícito no GitHub ou pedido para promover a prod.
 - Criar a branch `develop` e apontá-la para o domínio/subdomínio de staging.
 - No GitHub: Secrets `FTP_SERVER` (IP sem `ftp://`), `FTP_USERNAME`, `FTP_PASSWORD` e Variables `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_API_URL` **antes** do primeiro push útil em `develop`.
 - No Laravel de staging, `APP_URL` = origem deste front (CORS/cookies).
