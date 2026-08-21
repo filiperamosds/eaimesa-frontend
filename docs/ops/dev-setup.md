@@ -94,14 +94,14 @@ curl http://localhost:8000/health
 
 | Branch | Papel |
 |--------|--------|
-| `develop` | Padrão. Staging. PRs do Cursor mergeiam aqui. Push dispara o deploy Hostinger |
-| `main` | Produção. Só com pedido explícito ou PR aberto no GitHub contra `main` |
+| `develop` | Padrão. Staging. PRs do Cursor mergeiam aqui. Push → FTP `FTP_SERVER_DIR_DEV` |
+| `main` | Produção. Só com PR explícito. Push → FTP `FTP_SERVER_DIR_PRD` |
 
 No GitHub: **Settings → General → Default branch → `develop`**.
 
-## Deploy — GitHub Actions (`develop`)
+## Deploy — GitHub Actions
 
-Staging sobe sozinho em push na branch `develop` (e no botão **Run workflow**). Workflow: `.github/workflows/deploy-develop.yml`. Decisão: [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
+Push em `develop` ou `main` (e **Run workflow** na branch certa). Callers: `.github/workflows/deploy-develop.yml` e `deploy-main.yml`. Decisão: [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
 
 No GitHub: **Settings → Secrets and variables → Actions**.
 
@@ -113,19 +113,24 @@ No GitHub: **Settings → Secrets and variables → Actions**.
 | `FTP_USERNAME` | Usuário FTP |
 | `FTP_PASSWORD` | Senha FTP |
 
-`FTP_SERVER` pode ser Variable em vez de Secret (o hostname não é senha). O workflow aceita os dois.
+`FTP_SERVER` pode ser Variable em vez de Secret. Vale para os dois ambientes.
 
 ### Variables
 
-| Nome | Valor |
-|------|--------|
-| `NEXT_PUBLIC_APP_URL` | Origem pública deste front (ex. `https://dev.eaimesa.com`) |
-| `NEXT_PUBLIC_API_URL` | Origem pública da API Laravel |
-| `FTP_SERVER_DIR` | Destino no FTP; a action exige barra no **final**. Relativo ao home do usuário (ex. `domains/eaimesa.com/public_html/dev/`). Default `/public_html/` |
-| `STATIC_SLUGS` | Opcional. Default do código: `bar-do-tiao,cafe-da-lina` |
+| Nome | Ambiente | Valor |
+|------|----------|--------|
+| `FTP_SERVER_DIR_DEV` | `develop` | Pasta FTP de staging (ex. `domains/eaimesa.com/public_html/dev/`) |
+| `FTP_SERVER_DIR_PRD` | `main` | Pasta FTP de produção (ex. `domains/eaimesa.com/public_html/`) |
+| `NEXT_PUBLIC_APP_URL` | `develop` | Origem do front de staging (ex. `https://dev.eaimesa.com`) |
+| `NEXT_PUBLIC_API_URL` | `develop` | API Laravel de staging (ex. `https://apidev.eaimesa.com`) |
+| `NEXT_PUBLIC_APP_URL_PRD` | `main` | Origem do front de produção (ex. `https://eaimesa.com`) |
+| `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
+| `STATIC_SLUGS` | ambos | Opcional. Default do código: `bar-do-tiao,cafe-da-lina` |
 
-O job apaga o destino FTP (`dangerous-clean-slate`) e manda só `out/`. Use um `public_html` (ou subdomínio) **só deste front**.
+O job apaga o destino FTP daquele ambiente (`dangerous-clean-slate`) e manda só `out/`. As pastas DEV e PRD têm que ser **diferentes**.
 
-No Laravel de staging, `APP_URL` = o mesmo `NEXT_PUBLIC_APP_URL` (CORS/cookies).
+No Laravel de cada ambiente, `APP_URL` = o `NEXT_PUBLIC_APP_URL` correspondente (CORS/cookies).
 
-`FTP_SERVER` é o IP puro (sem `ftp://`). `FTP_SERVER_DIR` sem `/` no começo é caminho relativo ao login FTP — isso não causa `ENOTFOUND`. O workflow só garante a barra no final.
+A action exige barra no **final** do path; o workflow acrescenta se faltar. Path sem `/` no começo é relativo ao home FTP.
+
+Antes do primeiro push em `main`, grave `NEXT_PUBLIC_APP_URL_PRD` e `NEXT_PUBLIC_API_URL_PRD` — senão o job de produção recusa o build (não reutiliza as URLs de staging).
