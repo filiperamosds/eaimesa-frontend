@@ -4,6 +4,7 @@ import {
   CHECKOUT_POLL_INTERVAL_MS,
   CHECKOUT_POLL_TIMEOUT_MS,
   formatBrlFromCents,
+  PAID_PERIOD_DAYS,
   PLAN_FUTURE,
   planRank,
   type CheckoutMode,
@@ -13,6 +14,7 @@ import {
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { stackedPeriodCopy } from "../lib/billing-prompt";
 import type { BillingGateway, PendingCheckout } from "../lib/load-billing-plans";
 import type { Session, Venue } from "../lib/types";
 import { PaymentForm } from "./payment-form";
@@ -37,6 +39,7 @@ type BillingMe = {
   plans: BillingPlanRow[];
   gateway?: BillingGateway;
   pendingCheckout?: PendingCheckout | null;
+  paidPeriodDays?: number;
 };
 
 type CheckoutResult = {
@@ -259,6 +262,8 @@ export function BillingPanel() {
   const hosted = gateway.checkoutMode === "hosted";
   const checkoutMode: CheckoutMode = gateway.checkoutMode;
   const payDisabled = pending || polling || !gateway.available;
+  const paidDays = data.paidPeriodDays ?? PAID_PERIOD_DAYS;
+  const stacked = stackedPeriodCopy(data.venue, paidDays);
   const noticeClass =
     notice?.kind === "confirmed"
       ? "border-sage/40 bg-sage/10"
@@ -341,6 +346,7 @@ export function BillingPanel() {
           methods={gateway.methods}
           defaultEmail={accountEmail}
           provider={gateway.provider}
+          coverageNote={stacked.text}
           onCancel={() => {
             if (!pending) setCheckoutPlan(null);
           }}

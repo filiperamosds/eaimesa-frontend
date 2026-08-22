@@ -70,7 +70,7 @@ sequenceDiagram
 
 1. Dono cria conta (e-mail + senha).
 2. Cadastra venue: nome e **slug** (`bar-do-tiao`). CNPJ, CPF responsável e OTP entram em fatia posterior.
-3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre `/painel/pagamento` com **cartão e PIX**. Landing/cadastro **não** pedem pagador. Stub marca `active` na hora; Asaas só depois do webhook.
+3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem pagador. O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
 6. Divulga `/{slug}` — **não** o claim.
@@ -177,6 +177,8 @@ sequenceDiagram
   D->>W: /cadastro?plano={id do catálogo}
   W->>API: POST /v1/auth/register (plan)
   API-->>W: trial 7 dias
+  D->>W: /painel/cardapio ou /painel/pedidos
+  Note over D,W: nos últimos 3 dias do trial (ou past_due): banner + Pagamento na nav
   D->>W: /painel/pagamento (cartão ou PIX + valor)
   W->>API: POST /v1/billing/checkout {plan, method, payer?}
   alt checkoutMode immediate
@@ -188,8 +190,8 @@ sequenceDiagram
   end
 ```
 
-1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias) e cai em `/painel/pagamento` com cartão e PIX visíveis. Pagador (CPF) só se `requiresPayer`.
-2. Stub (`immediate`): (~2s) aprova e grava `active` + vigência. Front mostra cartão/PIX; a API não recebe o cartão.
+1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias) e vai para o produto. Pagamento **não** abre no cadastro. Nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) — ou com status `past_due` — o painel mostra banner e o item **Pagamento**. Quem quiser pagar antes usa **Meu bar**. Pagador (CPF) só se `requiresPayer`.
+2. Stub (`immediate`): (~2s) aprova e grava `active`. `currentPeriodEndsAt` = `max(agora, trial_ends_at, current_period_ends_at) + paidPeriodDays`. Front mostra cartão/PIX; a API não recebe o cartão.
 3. Asaas (`hosted`): nome + CPF/CNPJ, redirect, poll até `active`. `?checkout=ok` não confirma.
 4. Subir `kind` Cardápio → Auto atendimento: sempre. Troca lateral (mesmo kind): sempre. Descer: só depois do fim da vigência **paga**.
 5. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em mesas, equipe, pedidos, claim, PIN e comanda. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.

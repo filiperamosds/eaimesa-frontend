@@ -51,7 +51,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel` | Redirect pedidos ou cardápio conforme o plano |
 | `/painel/pedidos` | Kanban do dono (Auto atendimento) |
 | `/painel/cardapio`, `/painel/mesas`, `/painel/bar` | Cardápio, salão e dados do bar |
-| `/painel/pagamento` | Checkout (cartão ou PIX; stub ou Asaas hosted) |
+| `/painel/pagamento` | Checkout (cartão ou PIX; destaque no fim do trial) |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |
 | `/{slug}/c/{token}` | Redeem do claim (redirect se plano Cardápio) |
 | `/{slug}/bem-vindo` | PIN no primeiro aparelho |

@@ -27,7 +27,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Landing** | `/` | Visitante B2B | Cards do catálogo (de/por se houver promo) | Sim |
 | **Auth estabelecimento** | `/cadastro`, `/login` | Dono / garçom | Trial 7 dias no plano escolhido | Sim |
 | **Painel** | `/painel/*` | Dono | Cardápio; resto só no Auto atendimento | — |
-| **Pagamento** | `/painel/pagamento` | Dono | Checkout stub ou Asaas hosted | Conta da mesa |
+| **Pagamento** | `/painel/pagamento` | Dono | Destaque no fim do trial; checkout stub ou Asaas | Conta da mesa |
 | **Garçom** | `/garcom` | Staff | Só Auto atendimento | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
 | **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos, logs | SSO/2FA |
