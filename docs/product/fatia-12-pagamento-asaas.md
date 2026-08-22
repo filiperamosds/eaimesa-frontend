@@ -2,7 +2,7 @@
 
 O dono paga a mensalidade em `/painel/pagamento`. A API **não** processa cartão: com `checkoutMode=hosted` o Asaas hospeda o checkout. O stub da [fatia 10](fatia-10-planos.md) continua quando `checkoutMode=immediate`.
 
-Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual.
+Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Depois do cadastro o front abre `/painel/pagamento` já no checkout (cartão e PIX).
 
 ## Inclui
 

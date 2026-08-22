@@ -105,11 +105,11 @@ export function RegisterForm() {
     setError(null);
     setPending(true);
     try {
-      const result = await api<LoginResponse>("/v1/auth/register", {
+      await api<LoginResponse>("/v1/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, password, venueName, slug, plan }),
       });
-      router.push(result.redirectPath || "/painel/cardapio");
+      router.push(`/painel/pagamento?plano=${encodeURIComponent(plan)}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível cadastrar.");

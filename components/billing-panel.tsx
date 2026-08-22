@@ -10,6 +10,7 @@ import {
   type CheckoutPayer,
   type PaymentMethod,
 } from "@eaimesa/shared";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { BillingGateway, PendingCheckout } from "../lib/load-billing-plans";
@@ -64,7 +65,10 @@ const FALLBACK_GATEWAY: BillingGateway = {
 function resolveGateway(data: BillingMe | null): BillingGateway {
   const g = data?.gateway;
   if (!g) return FALLBACK_GATEWAY;
-  const methods = (g.methods ?? []).filter((m): m is PaymentMethod => m === "card" || m === "pix");
+  const raw = g.methods;
+  const methods = (Array.isArray(raw) ? raw : []).filter(
+    (m): m is PaymentMethod => m === "card" || m === "pix",
+  );
   return {
     provider: g.provider || FALLBACK_GATEWAY.provider,
     checkoutMode: g.checkoutMode === "hosted" ? "hosted" : "immediate",
@@ -89,6 +93,7 @@ function stripCheckoutQuery() {
 }
 
 export function BillingPanel() {
+  const path = usePathname();
   const [data, setData] = useState<BillingMe | null>(null);
   const [accountEmail, setAccountEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +164,18 @@ export function BillingPanel() {
         setData(me);
         if (session?.account.email) setAccountEmail(session.account.email);
 
-        const flag = new URLSearchParams(window.location.search).get("checkout");
+        const params = new URLSearchParams(window.location.search);
+        const wanted = params.get("plano") ?? params.get("plan");
+        const fromQuery = wanted && me.plans.some((p) => p.id === wanted) ? wanted : null;
+        const onPagamento = path.includes("/pagamento");
+        const openId =
+          fromQuery ??
+          (onPagamento
+            ? (me.plans.some((p) => p.id === me.venue.plan) ? me.venue.plan : (me.plans[0]?.id ?? null))
+            : null);
+        if (openId) setCheckoutPlan(openId);
+
+        const flag = params.get("checkout");
         stripCheckoutQuery();
         if (flag === "ok") {
           if (me.venue.subscriptionStatus === "active") {
@@ -194,7 +210,7 @@ export function BillingPanel() {
     };
     // Poll is started only from this mount path.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [path]);
 
   async function pay(plan: string, method: PaymentMethod, payer?: CheckoutPayer) {
     const gateway = resolveGateway(data);
