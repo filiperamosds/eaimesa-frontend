@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogoMark } from "./logo-mark";
 
 export function Logo({ className = "", invert = false }: { className?: string; invert?: boolean }) {
   return (
@@ -10,7 +11,7 @@ export function Logo({ className = "", invert = false }: { className?: string; i
         className={`grid h-8 w-8 place-items-center rounded-full ${invert ? "bg-white/15 text-white" : "bg-chili text-white"}`}
         aria-hidden
       >
-        <span className="font-serif text-sm leading-none">é</span>
+        <LogoMark className="h-5 w-5" />
       </span>
       <span className="font-serif text-xl">
         Eai<span className={invert ? "text-amber" : "text-chili"}>Mesa</span>
