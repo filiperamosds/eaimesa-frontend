@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/bares", label: "Bares" },
   { href: "/admin/planos", label: "Planos" },
+  { href: "/admin/logs", label: "Logs" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -58,7 +59,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 px-5 pb-3">
+        <nav className="mx-auto flex max-w-6xl flex-wrap gap-1 px-5 pb-3">
           {LINKS.map((l) => {
             const active = l.href === "/admin" ? path === "/admin" : path.startsWith(l.href);
             return (

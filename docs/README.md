@@ -1,6 +1,6 @@
 # Documentação EaiMesa
 
-Índice. Fatia atual: **pagamento Asaas**; fatias 1–11 já estão no repo.
+Índice. Fatia atual: **log viewer no console**; fatias 1–12 já estão no repo.
 
 1. [Fatia 1 — Cardápio](product/fatia-01-cardapio.md)
 1b. [Fatia 2 — Pedidos](product/fatia-02-pedidos.md) — Kanban / KDS no painel
@@ -14,6 +14,7 @@
 1j. [Fatia 10 — Planos](product/fatia-10-planos.md) — Cardápio vs Auto atendimento, trial, checkout stub
 1k. [Fatia 11 — Console SaaS](product/fatia-11-console-saas.md) — login da plataforma, dashboard, bares, catálogo (criar plano + promo)
 1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — checkout hosted, pagador, poll; stub local
+1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, tail Laravel
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
 4. [Pricing](product/pricing.md) — Cardápio e Auto atendimento
@@ -21,7 +22,7 @@
 6. [Sessão claim + PIN](architecture/sessao-claim-pin.md) — claim, PIN join, cookie guest
 7. [Segurança](security/modelo.md) — tenancy, cookies, ameaças
 8. [Modelo de dados](data/schema.md) — entidades fatia 1–12 + planejadas
-9. [API](api/endpoints.md) — REST fatia 1–12 + contrato futuro
+9. [API](api/endpoints.md) — REST fatia 1–13 + contrato futuro
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
 11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**
 
