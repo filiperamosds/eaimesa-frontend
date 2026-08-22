@@ -8,6 +8,21 @@ export function isCpfOrCnpj(raw: string): boolean {
   return d.length === 11 || d.length === 14;
 }
 
+export function normalizeCep(raw: string): string {
+  return raw.replace(/\D/g, "").slice(0, 8);
+}
+
+export function isCep(raw: string): boolean {
+  return normalizeCep(raw).length === 8;
+}
+
+/** Máscara `00000-000`. */
+export function formatCepInput(raw: string): string {
+  const d = normalizeCep(raw);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
 /** Máscara de digitação: `000.000.000-00` ou `00.000.000/0000-00`. */
 export function formatCpfCnpjInput(raw: string): string {
   const d = normalizeCpfCnpj(raw);

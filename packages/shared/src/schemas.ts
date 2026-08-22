@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ORDER_STATUSES } from "./orders";
-import { isCpfOrCnpj, normalizeCpfCnpj } from "./payer";
+import { isCep, isCpfOrCnpj, normalizeCep, normalizeCpfCnpj } from "./payer";
 import { normalizePhone } from "./phone";
 import { isReservedSlug, normalizeSlug, SLUG_MAX, SLUG_MIN, SLUG_REGEX } from "./slug";
 import {
@@ -62,9 +62,42 @@ export const payerSchema = z.object({
     const digits = normalizePhone(v);
     return digits === "" ? undefined : digits;
   }, z.string().min(10, "Telefone inválido.").max(13, "Telefone inválido.").optional()),
+  postalCode: z.preprocess((v) => {
+    if (typeof v !== "string" || v.trim() === "") return undefined;
+    const digits = normalizeCep(v);
+    return digits === "" ? undefined : digits;
+  }, z.string().refine(isCep, { message: "Informe um CEP válido." }).optional()),
+  addressNumber: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().trim().min(1, "Informe o número do endereço.").max(20).optional(),
+  ),
 });
 
 export type CheckoutPayer = z.infer<typeof payerSchema>;
+
+export const creditCardSchema = z.object({
+  holderName: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome impresso no cartão.")
+    .max(80),
+  number: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => v.length >= 13 && v.length <= 19, {
+      message: "Informe o número do cartão.",
+    }),
+  expiryMonth: z
+    .string()
+    .regex(/^(0[1-9]|1[0-2])$/, "Validade no formato MM/AA."),
+  expiryYear: z.string().regex(/^\d{4}$/, "Validade no formato MM/AA."),
+  ccv: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => v.length >= 3 && v.length <= 4, { message: "Informe o CVV." }),
+});
+
+export type CheckoutCreditCard = z.infer<typeof creditCardSchema>;
 
 export const checkoutSchema = z.object({
   plan: z
@@ -78,6 +111,7 @@ export const checkoutSchema = z.object({
     .optional()
     .default("card"),
   payer: payerSchema.optional(),
+  creditCard: creditCardSchema.optional(),
 });
 
 export const loginSchema = z.object({

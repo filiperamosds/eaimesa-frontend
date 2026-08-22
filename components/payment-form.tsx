@@ -1,11 +1,14 @@
 "use client";
 
 import {
+  creditCardSchema,
   formatBrlFromCents,
+  formatCepInput,
   formatCpfCnpjInput,
   formatPhoneInput,
   hasPromoPrice,
   payerSchema,
+  type CheckoutCreditCard,
   type CheckoutMode,
   type CheckoutPayer,
   type PaymentMethod,
@@ -26,8 +29,31 @@ type Props = {
   provider?: string;
   coverageNote?: string;
   onCancel: () => void;
-  onPay: (method: PaymentMethod, payer?: CheckoutPayer) => void;
+  onPay: (method: PaymentMethod, payer?: CheckoutPayer, creditCard?: CheckoutCreditCard) => void;
 };
+
+function onlyDigits(value: string, max: number) {
+  return value.replace(/\D/g, "").slice(0, max);
+}
+
+function formatCard(raw: string) {
+  const digits = onlyDigits(raw, 16);
+  return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+}
+
+function formatExpiry(raw: string) {
+  const digits = onlyDigits(raw, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+function expiryParts(raw: string): { expiryMonth: string; expiryYear: string } | null {
+  const digits = onlyDigits(raw, 4);
+  if (digits.length !== 4) return null;
+  const month = digits.slice(0, 2);
+  const year = `20${digits.slice(2)}`;
+  return { expiryMonth: month, expiryYear: year };
+}
 
 export function PaymentForm({
   planName,
@@ -46,33 +72,79 @@ export function PaymentForm({
 }: Props) {
   const available = methods.length ? methods : (["card", "pix"] as PaymentMethod[]);
   const [method, setMethod] = useState<PaymentMethod>(available[0] ?? "card");
+  const [holder, setHolder] = useState("");
+  const [number, setNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
   const [payerName, setPayerName] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [email, setEmail] = useState(defaultEmail);
   const [phone, setPhone] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [addressNumber, setAddressNumber] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const amount = formatBrlFromCents(amountCents);
   const hosted = checkoutMode === "hosted";
+  const asaas = provider === "asaas" || hosted;
+  const captureCard = method === "card";
+  const needPayer = asaas && (requiresPayer || captureCard);
   const providerLabel = provider === "asaas" ? "Asaas" : provider || "provedor";
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setLocalError(null);
-    if (hosted && requiresPayer) {
+
+    let payer: CheckoutPayer | undefined;
+    if (needPayer) {
       const parsed = payerSchema.safeParse({
         name: payerName,
         cpfCnpj,
         email,
         phone,
+        postalCode: captureCard ? postalCode : undefined,
+        addressNumber: captureCard ? addressNumber : undefined,
       });
       if (!parsed.success) {
         setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do pagador.");
         return;
       }
-      onPay(method, parsed.data);
-      return;
+      if (captureCard && !parsed.data.phone) {
+        setLocalError("Informe o telefone do titular.");
+        return;
+      }
+      if (captureCard && !parsed.data.postalCode) {
+        setLocalError("Informe o CEP do titular.");
+        return;
+      }
+      if (captureCard && !parsed.data.addressNumber) {
+        setLocalError("Informe o número do endereço.");
+        return;
+      }
+      payer = parsed.data;
     }
-    onPay(method);
+
+    let card: CheckoutCreditCard | undefined;
+    if (captureCard) {
+      const parts = expiryParts(expiry);
+      if (!parts) {
+        setLocalError("Validade no formato MM/AA.");
+        return;
+      }
+      const parsed = creditCardSchema.safeParse({
+        holderName: holder,
+        number,
+        expiryMonth: parts.expiryMonth,
+        expiryYear: parts.expiryYear,
+        ccv: cvv,
+      });
+      if (!parsed.success) {
+        setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do cartão.");
+        return;
+      }
+      card = parsed.data;
+    }
+
+    onPay(method, payer, card);
   }
 
   return (
@@ -93,20 +165,19 @@ export function PaymentForm({
             <span className="font-medium text-ink">{amount}</span>
           )}{" "}
           (mensal).{" "}
-          {hosted
-            ? `Você informa cartão ou PIX na página segura do ${providerLabel}. O EaiMesa só envia plano, meio e dados do pagador — nunca número, validade nem CVV. No cartão, o ${providerLabel} guarda o meio e cobra a mensalidade no ciclo seguinte.`
-            : "Este ambiente aprova na hora. O POST leva só o plano e o meio (cartão ou PIX). Número, validade e CVV não existem neste fluxo e não vão para a API."}
+          {captureCard
+            ? asaas
+              ? `Você digita o cartão aqui. O EaiMesa envia número, validade e CVV ao ${providerLabel} em HTTPS e não grava PAN — só o token para as próximas cobranças.`
+              : "Ambiente de teste: o POST leva plano, meio e os dados do cartão. O stub não cobra de verdade."
+            : asaas
+              ? `PIX na página segura do ${providerLabel}.`
+              : "PIX simulado neste ambiente."}
         </p>
         {coverageNote ? <p className="mt-2 text-sm text-ink-soft">{coverageNote}</p> : null}
       </div>
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Meio de pagamento</legend>
-        <p className="text-sm text-ink-soft">
-          {hosted
-            ? "Cartão ou PIX. Número e CVV ficam só na página do provedor, que guarda o cartão na assinatura."
-            : "Cartão ou PIX. A API não recebe dados do cartão — só esta escolha."}
-        </p>
         <div className="grid grid-cols-2 gap-2">
           {available.map((id) => (
             <button
@@ -121,18 +192,20 @@ export function PaymentForm({
             >
               <span className="block">{id === "pix" ? "PIX" : "Cartão"}</span>
               <span className="mt-0.5 block text-xs font-normal text-ink-soft">
-                {hosted
-                  ? id === "pix"
+                {id === "pix"
+                  ? asaas
                     ? "QR na próxima página"
-                    : "Digitado e salvo na próxima página"
-                  : "Simulado neste ambiente"}
+                    : "Simulado neste ambiente"
+                  : asaas
+                    ? `Enviado ao ${providerLabel}`
+                    : "Enviado no POST (teste)"}
               </span>
             </button>
           ))}
         </div>
       </fieldset>
 
-      {hosted && requiresPayer ? (
+      {needPayer ? (
         <div className="space-y-3">
           <label className="block text-sm">
             <span className="mb-1 block font-medium">Nome do pagador</span>
@@ -169,7 +242,9 @@ export function PaymentForm({
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium">Telefone (opcional)</span>
+            <span className="mb-1 block font-medium">
+              Telefone{captureCard ? "" : " (opcional)"}
+            </span>
             <input
               className="field"
               inputMode="tel"
@@ -180,7 +255,90 @@ export function PaymentForm({
               onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
             />
           </label>
+          {captureCard ? (
+            <>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">CEP do titular</span>
+                <input
+                  className="field font-mono tracking-wide"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  placeholder="00000-000"
+                  value={postalCode}
+                  disabled={pending}
+                  onChange={(e) => setPostalCode(formatCepInput(e.target.value))}
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">Número do endereço</span>
+                <input
+                  className="field"
+                  autoComplete="address-line2"
+                  placeholder="123"
+                  value={addressNumber}
+                  disabled={pending}
+                  onChange={(e) => setAddressNumber(e.target.value)}
+                />
+              </label>
+            </>
+          ) : null}
         </div>
+      ) : null}
+
+      {captureCard ? (
+        <div className="space-y-3">
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium">Número do cartão</span>
+            <input
+              className="field font-mono tracking-wide"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder="ACCT-000003"
+              value={number}
+              disabled={pending}
+              onChange={(e) => setNumber(formatCard(e.target.value))}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium">Nome no cartão</span>
+            <input
+              className="field"
+              autoComplete="cc-name"
+              placeholder="Como está impresso"
+              value={holder}
+              disabled={pending}
+              onChange={(e) => setHolder(e.target.value)}
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium">Validade</span>
+              <input
+                className="field"
+                inputMode="numeric"
+                autoComplete="cc-exp"
+                placeholder="MM/AA"
+                value={expiry}
+                disabled={pending}
+                onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium">CVV</span>
+              <input
+                className="field"
+                inputMode="numeric"
+                autoComplete="cc-csc"
+                placeholder="•••"
+                value={cvv}
+                disabled={pending}
+                onChange={(e) => setCvv(onlyDigits(e.target.value, 4))}
+              />
+            </label>
+          </div>
+        </div>
+      ) : asaas ? (
+        <p className="text-sm text-ink-soft">Você confirma o PIX na página do {providerLabel}.</p>
       ) : null}
 
       {localError ? <p className="text-sm text-chili">{localError}</p> : null}
@@ -188,12 +346,12 @@ export function PaymentForm({
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={pending} className="btn-primary">
           {pending
-            ? hosted
-              ? "Abrindo o pagamento…"
-              : "Confirmando pagamento…"
-            : hosted
-              ? `Continuar para pagar ${amount}`
-              : `Pagar ${amount}`}
+            ? captureCard
+              ? "Enviando pagamento…"
+              : "Abrindo o pagamento…"
+            : captureCard
+              ? `Pagar ${amount}`
+              : `Continuar para pagar ${amount}`}
         </button>
         <button type="button" disabled={pending} onClick={onCancel} className="btn-ghost">
           Cancelar

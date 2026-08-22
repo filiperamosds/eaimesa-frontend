@@ -141,7 +141,7 @@ Histórico de checkout (stub e Asaas).
 - `status`: `pending` | `success` | `failed`
 - `created_at`
 
-Não guardar CPF/CNPJ nem PAN. O front só envia pagador no POST de checkout hosted.
+Não guardar CPF/CNPJ nem PAN. O front envia pagador + cartão no POST de checkout (cartão); a API encaminha ao Asaas e descarta o PAN.
 
 ### VenueBilling
 
@@ -149,7 +149,8 @@ Não guardar CPF/CNPJ nem PAN. O front só envia pagador no POST de checkout hos
 
 - `venue_id` UNIQUE
 - `provider`
-- `customer_id`, `subscription_id`, `checkout_id` — ids do Asaas. `subscription_id` liga a assinatura mensal (cartão fica no cofre do Asaas, não aqui)
+- `customer_id`, `subscription_id`, `checkout_id` — ids do Asaas
+- `credit_card_token` (cifrado), `card_last4`, `card_brand` — cofre Asaas; nunca PAN/CVV
 - `pending_plan`, `pending_method`, `pending_amount_cents`, `pending_event_id`, `checkout_url`
 
 Pendente some quando o webhook confirma.
@@ -196,7 +197,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`.
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
-13. CPF/CNPJ do pagador não é persistido. PAN nunca entra no front nem na API.
+13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado).
 
 ## Diagrama ER
 

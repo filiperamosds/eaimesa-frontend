@@ -180,19 +180,22 @@ sequenceDiagram
   D->>W: /painel/cardapio ou /painel/pedidos
   Note over D,W: nos últimos 3 dias do trial (ou past_due): banner + Pagamento na nav
   D->>W: /painel/pagamento (cartão ou PIX + valor)
-  W->>API: POST /v1/billing/checkout {plan, method, payer?}
-  alt checkoutMode immediate
-    Note over API: stub espera 2s
+  W->>API: POST /v1/billing/checkout {plan, method, payer?, creditCard?}
+  alt stub
+    Note over API: espera 2s (ignora cartão)
     API-->>W: status success, active
-  else checkoutMode hosted
+  else cartão Asaas
+    Note over API: encaminha PAN ao Asaas; grava token
+    API-->>W: status success, active
+  else PIX Asaas
     API-->>W: status pending, checkoutUrl
     W->>D: redirect ao provedor
   end
 ```
 
 1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias) e vai para o produto. Pagamento **não** abre no cadastro. Nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) — ou com status `past_due` — o painel mostra banner e o item **Pagamento**. Quem quiser pagar antes usa **Meu bar**. Pagador (CPF) só se `requiresPayer`.
-2. Stub (`immediate`): (~2s) aprova e grava `active`. `currentPeriodEndsAt` = `max(agora, trial_ends_at, current_period_ends_at) + paidPeriodDays`. Front mostra cartão/PIX; a API não recebe o cartão.
-3. Asaas (`hosted`): nome + CPF/CNPJ, redirect para checkout **recorrente**. O cartão é digitado e salvo no Asaas; poll até `active`. `?checkout=ok` não confirma.
+2. Stub (`immediate`): (~2s) aprova e grava `active`. `currentPeriodEndsAt` = `max(agora, trial_ends_at, current_period_ends_at) + paidPeriodDays`. Front envia o cartão no POST; o stub ignora.
+3. Asaas cartão: form no painel envia `creditCard`; Laravel cobra e guarda token. PIX: redirect hosted. `?checkout=ok` não confirma.
 4. Subir `kind` Cardápio → Auto atendimento: sempre. Troca lateral (mesmo kind): sempre. Descer: só depois do fim da vigência **paga**.
 5. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em mesas, equipe, pedidos, claim, PIN e comanda. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.
 

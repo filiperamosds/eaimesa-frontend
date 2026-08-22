@@ -1,28 +1,28 @@
 # Fatia 12 — Pagamento dos planos (checkout Asaas)
 
-O dono paga a mensalidade em `/painel/pagamento`. A API **não** processa cartão: com `checkoutMode=hosted` o Asaas hospeda o checkout. O stub da [fatia 10](fatia-10-planos.md) continua quando `checkoutMode=immediate`.
+O dono paga a mensalidade em `/painel/pagamento`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas. **PIX** usa checkout hospedado. O stub da [fatia 10](fatia-10-planos.md) continua quando `checkoutMode=immediate`.
 
 Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Depois do cadastro o front abre o produto (cardápio/pedidos). O checkout em `/painel/pagamento` (cartão e PIX) é destacado nos últimos 3 dias do trial ou se a assinatura estiver `past_due`.
 
 ## Inclui
 
 - Ler `GET /v1/billing/plans` e `GET /v1/billing/me` → `gateway` (`provider`, `checkoutMode`, `methods`, `requiresPayer`, `available`)
-- `checkoutMode === 'immediate'`: fluxo da fatia 10 (`{ plan, method }`, `status: success`). Sem PAN. Payer opcional.
-- `checkoutMode === 'hosted'`: nome + CPF/CNPJ obrigatórios; e-mail (default da conta) e telefone opcionais. Sem número de cartão, validade, CVV nem “copia PIX”
-- Checkout Asaas é **recorrente** (`chargeTypes: RECURRENT`, ciclo `MONTHLY`). O dono digita o cartão na página do Asaas; o Asaas **guarda o cartão** e cobra o mês seguinte. O EaiMesa guarda `customer_id` + `subscription_id` (não PAN, não `creditCardToken`)
-- `POST /v1/billing/checkout` com `{ plan, method: "card"|"pix", payer }`
-- `status: pending` + `checkoutUrl` → `window.location.assign(checkoutUrl)`
-- Volta em `?checkout=ok|cancel|expired`: espera / cancelado / expirado. **`ok` não marca pago**
-- Poll `GET /v1/billing/me` a cada ~3s até `venue.subscriptionStatus === 'active'` (para em erro ou ~2 min)
-- Vigência: 30 dias a partir do fim da cobertura atual ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)), não a partir do instante do pagamento
-- `pendingCheckout.url` → botão “continuar pagamento”
+- `checkoutMode === 'immediate'`: `{ plan, method, creditCard? }`, `status: success`. Stub ignora o cartão.
+- `method: card` + Asaas: nome, CPF/CNPJ, CEP, número do endereço + número/validade/CVV no painel. `POST /v1/billing/checkout` com `{ plan, method, payer, creditCard }`. API cobra no Asaas e grava `creditCardToken` (não o PAN)
+- `method: pix` + Asaas: pagador; `status: pending` + `checkoutUrl` → redirect
+- Volta PIX em `?checkout=ok|cancel|expired`: espera / cancelado / expirado. **`ok` não marca pago**
+- Cartão aprovado: `status: success` na hora (webhook pode repetir; é idempotente)
+- Poll `GET /v1/billing/me` a cada ~3s até `venue.subscriptionStatus === 'active'` (PIX)
+- Vigência: 30 dias a partir do fim da cobertura atual ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md))
+- `pendingCheckout.url` → botão “continuar pagamento” (PIX)
 - `gateway.available === false`: aviso e não chama checkout
-- Erros: `PAYER_REQUIRED` 400, `PAYMENT_UNAVAILABLE` 503, `PAYMENT_GATEWAY_ERROR` 502, `PLAN_DOWNGRADE_LOCKED` 409
+- Erros: `PAYER_REQUIRED` 400, `CARD_REQUIRED` 400, `PAYMENT_UNAVAILABLE` 503, `PAYMENT_GATEWAY_ERROR` 502, `PLAN_DOWNGRADE_LOCKED` 409
 - Painel: banner + item **Pagamento** nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) ou `past_due`. Cadastro **não** redireciona ao checkout
 
 ## Não inclui
 
-- PAN / CVV no Next nem na API. Sem tokenização server-side (`POST /v3/creditCard/tokenize`) — exigiria PCI SAQ-D; o Asaas **não** oferece tokenização no browser
+- Guardar PAN/CVV no banco ou em log
+- Tokenização no browser (Asaas não oferece)
 - Prorrata, NF, cupom, reembolso self-serve
 - Pagamento da conta do cliente no bar
 - Pedir pagador no cadastro ou na landing
@@ -31,28 +31,25 @@ Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Dep
 
 | Path | Quem | O que muda |
 |------|------|------------|
-| `/painel/pagamento` | Dono | Hosted: pagador + redirect. Immediate: stub. Nav/banner no fim do trial |
+| `/painel/pagamento` | Dono | Cartão no form. PIX: pagador + redirect. Nav/banner no fim do trial |
 | `/painel/bar` | Dono | Mesmo `BillingPanel` (pagamento antecipado) |
 | `/`, `/preco`, `/cadastro` | Visitante | Sem pagador; trial inalterado; cadastro vai ao produto |
 
 ## Contrato
 
-Ver [endpoints](../api/endpoints.md) e [ADR-018](../decisions/ADR-018-payment-gateway-asaas.md).
+Ver [endpoints](../api/endpoints.md) e [ADR-020](../decisions/ADR-020-cartao-no-painel.md).
 
 ```mermaid
 sequenceDiagram
   participant D as Dono
   participant W as Next
   participant API as API Laravel
-  participant A as Asaas Checkout
+  participant A as Asaas
 
-  D->>W: /painel/pagamento (plano + PIX/cartão + CPF)
-  W->>API: POST /v1/billing/checkout
-  API-->>W: status pending, checkoutUrl
-  W->>A: redirect (checkout RECURRENT)
-  D->>A: digita o cartão (Asaas guarda na assinatura)
-  A->>API: webhook PAYMENT_RECEIVED (+ subscription id)
-  A->>W: /painel/pagamento?checkout=ok
-  W->>API: GET /v1/billing/me (poll)
-  API-->>W: subscriptionStatus active
+  D->>W: /painel/pagamento (cartão + CPF + CEP)
+  W->>API: POST /v1/billing/checkout {plan, method, payer, creditCard}
+  API->>A: POST /v3/payments (PAN em trânsito)
+  A-->>API: creditCardToken + last4
+  API-->>W: status success
+  A->>API: webhook PAYMENT_RECEIVED
 ```

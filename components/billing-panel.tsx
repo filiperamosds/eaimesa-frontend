@@ -8,6 +8,7 @@ import {
   PLAN_FUTURE,
   planRank,
   type CheckoutMode,
+  type CheckoutCreditCard,
   type CheckoutPayer,
   type PaymentMethod,
 } from "@eaimesa/shared";
@@ -215,7 +216,7 @@ export function BillingPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path]);
 
-  async function pay(plan: string, method: PaymentMethod, payer?: CheckoutPayer) {
+  async function pay(plan: string, method: PaymentMethod, payer?: CheckoutPayer, creditCard?: CheckoutCreditCard) {
     const gateway = resolveGateway(data);
     if (!gateway.available) {
       setError("Pagamento indisponível no momento.");
@@ -226,13 +227,19 @@ export function BillingPanel() {
     setNotice(null);
     setPending(true);
     try {
-      const body: { plan: string; method: PaymentMethod; payer?: CheckoutPayer } = { plan, method };
+      const body: {
+        plan: string;
+        method: PaymentMethod;
+        payer?: CheckoutPayer;
+        creditCard?: CheckoutCreditCard;
+      } = { plan, method };
       if (payer) body.payer = payer;
+      if (creditCard) body.creditCard = creditCard;
       const result = await api<CheckoutResult>("/v1/billing/checkout", {
         method: "POST",
         body: JSON.stringify(body),
       });
-      if (result.status === "pending" && result.checkoutUrl) {
+      if (method === "pix" && result.status === "pending" && result.checkoutUrl) {
         window.location.assign(result.checkoutUrl);
         return;
       }
@@ -349,7 +356,7 @@ export function BillingPanel() {
           onCancel={() => {
             if (!pending) setCheckoutPlan(null);
           }}
-          onPay={(method, payer) => void pay(selected.id, method, payer)}
+          onPay={(method, payer, creditCard) => void pay(selected.id, method, payer, creditCard)}
         />
       ) : (
         <div className={`grid gap-3 ${cols}`}>
@@ -407,8 +414,8 @@ export function BillingPanel() {
       <p className="text-xs text-ink-soft">
         {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb}{" "}
         {hosted
-          ? "Cartão e PIX são cobrados na página do provedor. O Asaas guarda o cartão na assinatura mensal. O EaiMesa não envia PAN, CVV nem token."
-          : "O POST leva plano e meio (cartão ou PIX). Número, validade e CVV não entram na API."}
+          ? "Cartão é digitado neste painel e enviado ao Asaas. Guardamos só o token (não o número). PIX continua na página do provedor."
+          : "O POST de cartão leva plano, meio e os dados do cartão. O stub não cobra de verdade."}
       </p>
     </section>
   );
