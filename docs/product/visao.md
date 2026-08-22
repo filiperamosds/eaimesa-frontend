@@ -50,7 +50,7 @@ Implementação **agora**: [fatia 13 — log viewer](fatia-13-log-viewer.md).
 - Cardápio CRUD (texto, preço no servidor)
 - Auto atendimento: mesas + claim + PIN + pedido guest + fila staff
 - Multi-tenant com `venue_id` em toda query
-- Billing: trial/vigência/suspensão; catálogo no banco; checkout stub ou Asaas hosted (PAN nunca no app)
+- Billing: trial/vigência/suspensão; catálogo no banco; cartão no painel (token Asaas) ou PIX hosted
 
 ### Fora do MVP
 

@@ -13,7 +13,7 @@
 1i. [Fatia 9 — Parcial do cliente](product/fatia-09-parcial-guest.md) — comanda no celular: itens, status, total
 1j. [Fatia 10 — Planos](product/fatia-10-planos.md) — Cardápio vs Auto atendimento, trial, checkout stub
 1k. [Fatia 11 — Console SaaS](product/fatia-11-console-saas.md) — login da plataforma, dashboard, bares, catálogo (criar plano + promo)
-1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — checkout hosted, pagador, poll; stub local
+1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — cartão no painel + token; PIX hosted; stub local
 1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, tail Laravel
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
@@ -24,7 +24,7 @@
 8. [Modelo de dados](data/schema.md) — entidades fatia 1–12 + planejadas
 9. [API](api/endpoints.md) — REST fatia 1–13 + contrato futuro
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**
+11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**
 
 ## Cursor
 

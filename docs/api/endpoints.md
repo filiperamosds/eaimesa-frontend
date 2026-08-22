@@ -62,7 +62,7 @@ Itens inativos e categorias inativas **não** entram na resposta pública. Venue
 
 ### Billing (fatias 10 e 12)
 
-Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas` (Checkout hospedado **recorrente**). Cartão **não** vai para a API — o dono digita na página do Asaas, que guarda o cartão. Confirmação Asaas só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
+Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas ([ADR-020](../decisions/ADR-020-cartao-no-painel.md)). **PIX** usa checkout hospedado. Confirmação PIX só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
 
 `GET /v1/billing/plans` e `GET /v1/billing/me` incluem:
 
@@ -78,13 +78,13 @@ Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas` (Che
 }
 ```
 
-No Asaas: `checkoutMode: hosted`, `requiresPayer: true`. Checkout **recorrente** (cartão salvo no Asaas; `subscription_id` no `venue_billing`). `/me` ainda traz `pendingCheckout` (`url`, `plan`, `method`, `amountCents`) se a sessão hosted estiver aberta.
+No Asaas: `checkoutMode: hosted` (PIX), `requiresPayer: true`. Cartão: captura no painel + token em `venue_billing`. `/me` ainda traz `pendingCheckout` (`url`, `plan`, `method`, `amountCents`) se a sessão PIX hosted estiver aberta.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | GET | `/v1/billing/plans` | — | Catálogo + `gateway` + `stubDelayMs` |
 | GET | `/v1/billing/me` | Owner | Plano atual, `canUpgrade` / `canDowngrade`, `gateway`, `pendingCheckout` |
-| POST | `/v1/billing/checkout` | Owner | Inicia cobrança (preço efetivo). Stub → `success`. Asaas → `pending` + `checkoutUrl` |
+| POST | `/v1/billing/checkout` | Owner | Inicia cobrança. Stub → `success`. Cartão Asaas → `success` + token. PIX Asaas → `pending` + `checkoutUrl` |
 | POST | `/v1/webhooks/asaas` | Header `asaas-access-token` | Eventos Asaas. Sem cookie. |
 
 #### POST /v1/billing/checkout (body)
@@ -92,23 +92,32 @@ No Asaas: `checkoutMode: hosted`, `requiresPayer: true`. Checkout **recorrente**
 ```json
 {
   "plan": "auto_atendimento",
-  "method": "pix",
+  "method": "card",
   "payer": {
     "name": "Maria Silva",
     "cpfCnpj": "12345678909",
     "email": "maria@bar.com",
-    "phone": "11999999999"
+    "phone": "11999999999",
+    "postalCode": "01310100",
+    "addressNumber": "100"
+  },
+  "creditCard": {
+    "holderName": "MARIA SILVA",
+    "number": "5162••••••••8829",
+    "expiryMonth": "05",
+    "expiryYear": "2028",
+    "ccv": "318"
   }
 }
 ```
 
-`method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer`. CPF/CNPJ só dígitos (11 ou 14); a API não persiste. Front **nunca** envia PAN, CVV nem token de cartão.
+`method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer`. No cartão Asaas: `creditCard` obrigatório (`CARD_REQUIRED`); CEP e número do endereço no pagador. CPF/CNPJ e PAN **não** são persistidos. O Asaas devolve `creditCardToken`; gravamos token cifrado + last4 + bandeira.
 
-Resposta hosted: `status: pending`, `checkoutUrl`, `subscriptionStatus` ainda `trial` até o webhook. Resposta stub: `status: success`, `active`, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
+PIX: body sem `creditCard`; resposta `status: pending`, `checkoutUrl`. Cartão Asaas: `status: success` se a cobrança autorizar. Stub: `status: success`, ignora o cartão, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
 
-Callbacks de navegação (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
+Callbacks de navegação do PIX (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
 
-Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`.
+Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`. Sem cartão no Asaas → 400 `CARD_REQUIRED`.
 
 ### Owner — venue e catálogo
 

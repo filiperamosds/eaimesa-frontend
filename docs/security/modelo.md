@@ -60,7 +60,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Cadastro B2B na fatia 1: só e-mail + senha + nome do bar. CNPJ/CPF de **pagador** só no checkout hosted (trânsito; API não persiste). KYC do responsável entra em fatia posterior.
 - CPF do **consumidor** não coletar no MVP para pedir.
 - **Telefone + nome** na comanda pessoal (fatia 6): PII do estabelecimento (controlador). API staff devolve telefone **mascarado**. Não logar telefone.
-- PAN / CVV / token de cartão: nunca no Next nem na API. Checkout Asaas é página hospedada (recorrente); o cartão fica no Asaas. Guardamos só `customer_id` / `subscription_id`.
+- PAN / CVV: só em trânsito HTTPS no `POST /v1/billing/checkout` (cartão) até o Asaas. Não persistir, não logar. Guardamos `credit_card_token` cifrado + last4. PIX continua na página hosted. [ADR-020](../decisions/ADR-020-cartao-no-painel.md).
 
 ## Cadastro B2B (KYC — fatia posterior)
 
@@ -80,7 +80,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - `/mesa/1` sequencial como auth
 - Um JWT para guest e owner
 - Confiar em `venueId` enviado pelo client no CRUD
-- Enviar PAN, CVV ou token de cartão para a API
+- Enviar PAN/CVV para a API fora do checkout, persistir PAN ou logar cartão
 - Tratar `?checkout=ok` como pagamento confirmado
 - Expor `/admin/logs` sem cookie `eaimesa_platform`
 - Impressora do bar exposta na internet (fase 2: agente outbound)

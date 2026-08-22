@@ -2,7 +2,7 @@
 
 Mensalidade fixa; **sem comissão** sobre consumo. Trial e vigência (default **7** e **30** dias) vêm de `platform_settings`. Preço e copy da vitrine vêm de `plan_catalog` (editáveis em `/admin/planos`). O operador pode **criar SKUs** novos: cada um tem `kind` (`cardapio` | `auto_atendimento`) e, opcionalmente, `promo_price_cents`. Se a promo estiver preenchida e for menor que o preço cheio, landing, cadastro e checkout mostram **de R$ X por R$ Y** e a cobrança usa o valor da promo.
 
-Checkout: `GET /v1/billing/plans` → `gateway`. Stub (`immediate`) devolve sucesso após ~2s. Asaas (`hosted`) redireciona; o plano só fica `active` no webhook. Landing e cadastro **não** pedem pagador. PAN nunca vai à API.
+Checkout: `GET /v1/billing/plans` → `gateway`. Stub (`immediate`) devolve sucesso após ~2s. Cartão Asaas é digitado no painel e enviado à API. PIX Asaas redireciona. Landing e cadastro **não** pedem pagador.
 
 ## Planos vendáveis
 
@@ -46,7 +46,7 @@ Fora desta fatia (o “Plano Bar” único e o desconto de R$ 119 saem).
 
 - Percentual sobre consumo
 - Taxa por pedido
-- Gateway de cartão no EaiMesa (hosted Asaas; PAN não entra no app)
+- Gateway de cartão no EaiMesa (PAN em trânsito até o Asaas; token salvo, não o número)
 
 ## Referência de mercado (2026)
 
