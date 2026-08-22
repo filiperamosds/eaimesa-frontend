@@ -16,7 +16,7 @@
 | Owner | Cookie `eaimesa_owner` | Cardápio; resto conforme o plano | Sim |
 | Guest | Cookie `eaimesa_guest` | Mesa + comanda + pedidos (Auto atendimento) | Sim |
 | Staff | Cookie `eaimesa_owner` (`role: staff`) | Mesas, claims, fila (Auto atendimento) | Sim |
-| Platform | Cookie `eaimesa_platform` | Tenants, catálogo, dashboard | Sim (senha; 2FA depois) |
+| Platform | Cookie `eaimesa_platform` | Tenants, catálogo, dashboard, logs | Sim (senha; 2FA depois) |
 
 ## Ameaças SaaS
 
@@ -29,7 +29,7 @@
 | XSS no cardápio | Texto; escape no React; CSP depois |
 | Guest → admin | Cookies distintos; RBAC server-side |
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
-| PII em log | Não logar senha; e-mail só em auth errors genéricos |
+| PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React |
 | Secret na URL | Cookie httpOnly após login |
 
 ## Headers e cookies
@@ -82,5 +82,6 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Confiar em `venueId` enviado pelo client no CRUD
 - Enviar PAN, CVV ou token de cartão para a API
 - Tratar `?checkout=ok` como pagamento confirmado
+- Expor `/admin/logs` sem cookie `eaimesa_platform`
 - Impressora do bar exposta na internet (fase 2: agente outbound)
 - Commitar senha FTP, `.env` de staging ou `out/`

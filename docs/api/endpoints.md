@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–12)
+## Implementado (fatias 1–13)
 
 ### Saúde
 
@@ -399,6 +399,10 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | POST | `/v1/platform/plans` | Platform | Cria SKU: `{ name, kind, priceCents, promoPriceCents?, blurb, features?, listed? }` |
 | PATCH | `/v1/platform/plans/{id}` | Platform | Nome, `kind`, preço, promo (`null` limpa), features, `listed` |
 | PATCH | `/v1/platform/settings` | Platform | `trialDays`, `paidPeriodDays` |
+| GET | `/v1/platform/logs` | Platform | Lista `*.log` em `storage/logs` (`name`, `sizeBytes`, `modifiedAt`) |
+| GET | `/v1/platform/logs/{name}` | Platform | Tail + entries Monolog; query `lines` (1–2000, default 200), `level`, `q` |
+
+`GET /v1/platform/logs/{name}`: só basename `*.log` sob `storage/logs` (sem path traversal). Resposta: `content` (texto do tail), `entries[]` (`timestamp`, `env`, `level`, `message`, `raw`), `truncated`. `level`/`q` filtram `entries`. Front: `/admin/logs`. Ver [fatia 13](../product/fatia-13-log-viewer.md).
 
 `GET /v1/billing/plans` (público) lê `plan_catalog` + settings. Promo preenchida entra como `promoPriceCents` / `effectivePriceCents`. Checkout grava `billing_events` (stub `success`; Asaas `pending` até o webhook).
 
@@ -443,5 +447,7 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | `TABS_STILL_OPEN` | 409 |
 | `SESSION_REQUIRED` | 401 |
 | `FORBIDDEN_CROSS_VENUE` | 403 |
+| `LOG_NOT_FOUND` | 404 |
+| `LOG_READ_ERROR` | 500 |
 
 OpenAPI: gerar a partir de `routes/api.php` quando o contrato da fatia 1 estabilizar.

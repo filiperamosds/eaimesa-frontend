@@ -34,6 +34,7 @@ Mesmo `eaimesa-frontend`. Rotas `/admin/*` (slug `admin` já é reservado).
 | `/admin` | Dashboard |
 | `/admin/bares` | Tenants |
 | `/admin/planos` | Catálogo |
+| `/admin/logs` | Logs Laravel ([fatia 13](fatia-13-log-viewer.md)) |
 
 ## Fluxo
 

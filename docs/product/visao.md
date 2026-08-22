@@ -30,18 +30,18 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Pagamento** | `/painel/pagamento` | Dono | Checkout stub ou Asaas hosted | Conta da mesa |
 | **Garçom** | `/garcom` | Staff | Só Auto atendimento | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
-| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos | SSO/2FA |
+| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos, logs | SSO/2FA |
 
 ## Personas
 
 - **Dono** — 1 bar, ~10 mesas, quer menos hardware e pedido confiável. Publica o cardápio, vê a fila, cadastra o salão e a equipe.
 - **Garçom** — gera QR na mesa; vê parciais; avança a fila; encerra a mesa quando todas as comandas fecham.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
-- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, vendas da assinatura e catálogo. Não atende o salão nem edita o cardápio de um bar.
+- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, vendas da assinatura, catálogo e logs da API. Não atende o salão nem edita o cardápio de um bar.
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 12 — pagamento Asaas](fatia-12-pagamento-asaas.md).
+Implementação **agora**: [fatia 13 — log viewer](fatia-13-log-viewer.md).
 
 ### MVP (quando as fatias somarem)
 
