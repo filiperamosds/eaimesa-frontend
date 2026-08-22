@@ -104,7 +104,7 @@ No Asaas: `checkoutMode: hosted`, `requiresPayer: true`. `/me` ainda traz `pendi
 
 `method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer`. CPF/CNPJ só dígitos (11 ou 14); a API não persiste. Front **nunca** envia PAN, CVV nem token de cartão.
 
-Resposta hosted: `status: pending`, `checkoutUrl`, `subscriptionStatus` ainda `trial` até o webhook. Resposta stub: `status: success`, `active`, vigência `paidPeriodDays`.
+Resposta hosted: `status: pending`, `checkoutUrl`, `subscriptionStatus` ainda `trial` até o webhook. Resposta stub: `status: success`, `active`, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
 
 Callbacks de navegação (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
 

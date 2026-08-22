@@ -132,6 +132,37 @@ export function addDays(from: Date, days: number): Date {
   return new Date(from.getTime() + days * MS_PER_DAY);
 }
 
+function toTime(value: string | Date | null | undefined): number | null {
+  if (value == null) return null;
+  const t = value instanceof Date ? value.getTime() : new Date(value).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+/**
+ * Fim da cobertura ainda válida: o mais tarde entre agora, trial e vigência paga.
+ * Datas no passado são ignoradas. Não há tabela de períodos — só essas datas no venue.
+ */
+export function coverageEndsAt(
+  input: { trialEndsAt?: string | Date | null; currentPeriodEndsAt?: string | Date | null },
+  now: Date = new Date(),
+): Date {
+  let end = now.getTime();
+  const trial = toTime(input.trialEndsAt);
+  const paid = toTime(input.currentPeriodEndsAt);
+  if (trial != null && trial > end) end = trial;
+  if (paid != null && paid > end) end = paid;
+  return new Date(end);
+}
+
+/** Próximo vencimento após um pagamento: cobertura atual + `paidPeriodDays`. */
+export function nextPaidPeriodEndsAt(
+  input: { trialEndsAt?: string | Date | null; currentPeriodEndsAt?: string | Date | null },
+  paidPeriodDays: number = PAID_PERIOD_DAYS,
+  now: Date = new Date(),
+): Date {
+  return addDays(coverageEndsAt(input, now), paidPeriodDays);
+}
+
 export function trialMsRemaining(
   trialEndsAt: string | Date | null | undefined,
   now: Date = new Date(),

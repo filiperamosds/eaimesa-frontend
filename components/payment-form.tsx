@@ -25,6 +25,7 @@ type Props = {
   methods: PaymentMethod[];
   defaultEmail?: string;
   provider?: string;
+  coverageNote?: string;
   onCancel: () => void;
   onPay: (method: PaymentMethod, payer?: CheckoutPayer) => void;
 };
@@ -45,6 +46,7 @@ export function PaymentForm({
   methods,
   defaultEmail = "",
   provider,
+  coverageNote,
   onCancel,
   onPay,
 }: Props) {
@@ -136,6 +138,7 @@ export function PaymentForm({
             ? `Você conclui o pagamento na página segura do ${providerLabel}. O EaiMesa não recebe número de cartão, validade nem CVV.`
             : "Sem gateway nesta fatia — o formulário não envia dados do cartão."}
         </p>
+        {coverageNote ? <p className="mt-2 text-sm text-ink-soft">{coverageNote}</p> : null}
       </div>
 
       <fieldset className="space-y-2">

@@ -1,4 +1,10 @@
-import { shouldPromptSubscriptionPayment, trialMsRemaining, MS_PER_DAY } from "@eaimesa/shared";
+import {
+  coverageEndsAt,
+  nextPaidPeriodEndsAt,
+  shouldPromptSubscriptionPayment,
+  trialMsRemaining,
+  MS_PER_DAY,
+} from "@eaimesa/shared";
 import type { Venue } from "./types";
 
 export type PaymentPrompt = {
@@ -6,6 +12,25 @@ export type PaymentPrompt = {
   body: string;
   cta: string;
 };
+
+function formatPtDate(value: Date): string {
+  return value.toLocaleDateString("pt-BR");
+}
+
+export function stackedPeriodCopy(
+  venue: Pick<Venue, "trialEndsAt" | "currentPeriodEndsAt">,
+  paidPeriodDays: number,
+  now: Date = new Date(),
+): { leftoverUntil: string | null; until: string; text: string } {
+  const leftover = coverageEndsAt(venue, now);
+  const untilDate = nextPaidPeriodEndsAt(venue, paidPeriodDays, now);
+  const until = formatPtDate(untilDate);
+  const leftoverUntil = leftover.getTime() > now.getTime() + 60_000 ? formatPtDate(leftover) : null;
+  const text = leftoverUntil
+    ? `Os dias que ainda restam (até ${leftoverUntil}) entram na vigência. Se pagar agora, o plano vai até ${until}.`
+    : `A vigência de ${paidPeriodDays} dias começa agora e vai até ${until}.`;
+  return { leftoverUntil, until, text };
+}
 
 export function paymentPromptForVenue(
   venue: Pick<Venue, "subscriptionStatus" | "trialEndsAt">,

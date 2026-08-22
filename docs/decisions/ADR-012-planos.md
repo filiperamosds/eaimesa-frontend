@@ -15,6 +15,7 @@ Um único “Plano Bar” misturava cardápio QR com comanda self-service. Há q
 - Checkout Asaas (`hosted`): [ADR-018](ADR-018-payment-gateway-asaas.md).
 - Landing e `/preco` com **dois cards** (nome, valor, features).
 - Upgrade imediato; downgrade só após `current_period_ends_at` (vigência paga). No trial, pode descer.
+- Pagamento antecipado **não** queima o restante: `current_period_ends_at` empilha 30 dias no fim da cobertura ([ADR-019](ADR-019-vigencia-empilhada.md)).
 - Enforcement no servidor (`PLAN_FEATURE`, `BILLING_INACTIVE`). UI esconde o que o plano não tem.
 
 ## Alternativas rejeitadas

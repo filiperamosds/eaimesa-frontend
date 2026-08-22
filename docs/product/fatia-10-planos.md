@@ -12,6 +12,7 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 - Cadastro mostra o **preço** do plano escolhido
 - Painel `/painel/pagamento`: formulário de **cartão ou PIX** no modo stub (só UI; não envia PAN). Item na nav e banner só quando o trial está acabando ou `past_due`
 - `POST /v1/billing/checkout` — stub (`checkoutMode=immediate`): espera **2s** e devolve `status: success`. Gateway Asaas: [fatia 12](fatia-12-pagamento-asaas.md)
+- Pagamento antecipado empilha 30 dias no fim da cobertura atual (`trial_ends_at` / `current_period_ends_at`), não a partir de agora ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md))
 - Upgrade Cardápio → Auto atendimento a qualquer momento (checkout)
 - Downgrade Auto atendimento → Cardápio **só depois do fim da vigência paga**
 - Gates na API e no painel: Cardápio não acessa mesas, equipe, garçom, pedido, Kanban
@@ -38,7 +39,7 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 
 1. Landing → Adquirir Cardápio ou Auto atendimento → `/cadastro?plano=…`
 2. Cria a conta em `trial` (7 dias) naquele plano. O front abre o produto, não o checkout.
-3. Nos últimos 3 dias do trial (ou com status `past_due`): banner no painel + item **Pagamento**. Antes disso, `/painel/pagamento` e o bloco em **Meu bar** ainda funcionam. Cartão ou PIX; no stub (~2s) vira `active` por 30 dias. No Asaas: [fatia 12](fatia-12-pagamento-asaas.md).
+3. Nos últimos 3 dias do trial (ou com status `past_due`): banner no painel + item **Pagamento**. Antes disso, `/painel/pagamento` e o bloco em **Meu bar** ainda funcionam. Cartão ou PIX; no stub (~2s) vira `active`. A vigência de 30 dias **começa no fim do que ainda resta** (trial ou mês pago), não no instante do pagamento. No Asaas: [fatia 12](fatia-12-pagamento-asaas.md).
 4. Sem pagar após o trial: recursos do plano ficam bloqueados (`BILLING_INACTIVE`); o cardápio público continua leitura.
 
 Ver [pricing](pricing.md) e [ADR-012](../decisions/ADR-012-planos.md).

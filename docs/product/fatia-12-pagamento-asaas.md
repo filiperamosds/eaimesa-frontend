@@ -13,6 +13,7 @@ Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Dep
 - `status: pending` + `checkoutUrl` → `window.location.assign(checkoutUrl)`
 - Volta em `?checkout=ok|cancel|expired`: espera / cancelado / expirado. **`ok` não marca pago**
 - Poll `GET /v1/billing/me` a cada ~3s até `venue.subscriptionStatus === 'active'` (para em erro ou ~2 min)
+- Vigência: 30 dias a partir do fim da cobertura atual ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)), não a partir do instante do pagamento
 - `pendingCheckout.url` → botão “continuar pagamento”
 - `gateway.available === false`: aviso e não chama checkout
 - Erros: `PAYER_REQUIRED` 400, `PAYMENT_UNAVAILABLE` 503, `PAYMENT_GATEWAY_ERROR` 502, `PLAN_DOWNGRADE_LOCKED` 409

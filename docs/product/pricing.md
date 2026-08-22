@@ -21,7 +21,7 @@ O catálogo não está mais limitado a dois ids. Os seed:
 
 SKUs extras no `/admin/planos` herdam o que o `kind` libera. Máximo **12** planos. Sem DELETE: unlist esconde da vitrine.
 
-Vigência paga: **30 dias** a partir da confirmação (stub na hora; Asaas no webhook).
+Vigência paga: **30 dias** a partir do **fim da cobertura atual** (trial ou mês já pago), não a partir do instante do pagamento. Pagar 3 dias antes do trial acabar → `trial_ends_at + 30`. Renovar 5 dias antes do vencimento → `current_period_ends_at + 30`. Se já venceu → `agora + 30`. Sem tabela de ciclos. Stub na hora; Asaas no webhook. [ADR-019](../decisions/ADR-019-vigencia-empilhada.md).
 
 ## Em breve (não vender agora)
 
