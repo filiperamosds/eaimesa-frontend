@@ -20,6 +20,7 @@ Login do dono.
 - `accepts_orders`: true só no Auto atendimento com assinatura válida
 - `trial_ends_at`, `current_period_ends_at` (vigência paga)
 - Sem tabela de períodos: um pagamento soma `paid_period_days` (default 30) no **fim da cobertura atual** — `max(agora, trial_ends_at, current_period_ends_at)` — ver [ADR-019](../decisions/ADR-019-vigencia-empilhada.md).
+- Console (`PATCH /v1/platform/venues/{id}`): operador pode adiantar/estender essas datas. Sem `subscriptionStatus` no body, a API recalcula o status (exceto `suspended`). Não sincroniza o gateway.
 - `created_at`, `updated_at`
 
 Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendimento.

@@ -31,6 +31,7 @@
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
 | PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React |
 | Secret na URL | Cookie httpOnly após login |
+| Estender trial/vigência no console | Cookie `eaimesa_platform`; 404 se o id não existe; **não** cobra no Asaas |
 
 ## Headers e cookies
 

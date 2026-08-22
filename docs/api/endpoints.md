@@ -402,6 +402,7 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | GET | `/v1/platform/auth/me` | Platform | Operador atual |
 | GET | `/v1/platform/dashboard` | Platform | KPIs + checkouts recentes |
 | GET | `/v1/platform/venues` | Platform | Lista tenants (`q`, `plan`, `status`) |
+| PATCH | `/v1/platform/venues/{id}` | Platform | Ajuste admin de `trialEndsAt` / `currentPeriodEndsAt` / `subscriptionStatus` |
 | POST | `/v1/platform/venues/{id}/suspend` | Platform | `suspended` |
 | POST | `/v1/platform/venues/{id}/unsuspend` | Platform | Volta a `trial`/`active`/`past_due` |
 | GET | `/v1/platform/plans` | Platform | Catálogo completo (inclui não listados; `kind`, `promoPriceCents`) |
@@ -410,6 +411,46 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | PATCH | `/v1/platform/settings` | Platform | `trialDays`, `paidPeriodDays` |
 | GET | `/v1/platform/logs` | Platform | Lista `*.log` em `storage/logs` (`name`, `sizeBytes`, `modifiedAt`) |
 | GET | `/v1/platform/logs/{name}` | Platform | Tail + entries Monolog; query `lines` (1–2000, default 200), `level`, `q` |
+
+`GET /v1/platform/venues` query `q`, `plan`, `status`. Resposta:
+
+```json
+{
+  "venues": [
+    {
+      "id": "uuid",
+      "name": "Bar do Tião",
+      "slug": "bar-do-tiao",
+      "plan": "auto_atendimento",
+      "planName": "Auto atendimento",
+      "subscriptionStatus": "trial",
+      "acceptsOrders": true,
+      "trialEndsAt": "2026-08-29T23:59:59.000Z",
+      "currentPeriodEndsAt": null,
+      "createdAt": "2026-08-22T12:00:00.000Z",
+      "ownerEmail": "dono@bar.com"
+    }
+  ]
+}
+```
+
+`trialEndsAt` e `currentPeriodEndsAt` são ISO8601 UTC ou `null`. Front: `/admin/bares` mostra a data conforme o status (`trial` → trial; `active`/`past_due` → vigência, com fallback no trial; `suspended` → mesma lógica + badge).
+
+#### PATCH /v1/platform/venues/{id}
+
+Cookie `eaimesa_platform`. Body camelCase; enviar **só** os campos que mudam (ao menos um). Id inválido → 404 `VENUE_NOT_FOUND`.
+
+```json
+{
+  "trialEndsAt": "2026-09-15T23:59:59.000Z",
+  "currentPeriodEndsAt": "2026-10-15T23:59:59.000Z",
+  "subscriptionStatus": "active"
+}
+```
+
+Resposta: o mesmo shape de um item de `venues[]`.
+
+Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futura; senão `trial` se o trial for futuro; senão `past_due`. **Não** recalcula se o bar já está `suspended` ou se o operador envia `subscriptionStatus`. Não sincroniza cobrança no Asaas — ajuste só no cadastro do bar. Front não envia `subscriptionStatus` ao salvar datas (deixa o recálculo com a API).
 
 `GET /v1/platform/logs/{name}`: só basename `*.log` sob `storage/logs` (sem path traversal). Resposta: `content` (texto do tail), `entries[]` (`timestamp`, `env`, `level`, `message`, `raw`), `truncated`. `level`/`q` filtram `entries`. Front: `/admin/logs`. Ver [fatia 13](../product/fatia-13-log-viewer.md).
 

@@ -6,7 +6,7 @@ Login da **plataforma**, não do dono do bar. O operador vê vendas da assinatur
 
 - `/admin/login` — e-mail + senha; cookie `eaimesa_platform` (não é o cookie do dono)
 - `/admin` — dashboard: bares por status/plano, MRR estimado, checkouts stub (30 dias)
-- `/admin/bares` — busca, filtro, suspender / reativar
+- `/admin/bares` — busca, filtro, **expiração** (trial / vigência), suspender / reativar, **ajustar datas** (`PATCH /v1/platform/venues/{id}`)
 - `/admin/planos` — criar SKU, nome, tipo (`kind`), preço, **promo opcional**, blurb, features, listado; trial e vigência globais
 - `GET /v1/billing/plans` lê o **banco** (landing, cadastro e checkout usam isso). Com promo: `promoPriceCents` + `effectivePriceCents`
 - `POST /v1/platform/plans` cria plano (id = slug do nome; `kind` = o que o bar pode fazer)
@@ -43,5 +43,6 @@ Mesmo `eaimesa-frontend`. Rotas `/admin/*` (slug `admin` já é reservado).
 3. Dono paga no painel → evento entra em vendas; MRR sobe se `active`.
 4. Operador cria um plano ou preenche promo → landing/`/preco`/cadastro/checkout mostram **de R$ X por R$ Y** quando a promo está preenchida.
 5. Suspender um bar → `subscription_status=suspended`; cardápio público continua leitura.
+6. Ajustar expiração no modal: `trialEndsAt` e/ou `currentPeriodEndsAt` em ISO8601 UTC. Sem `subscriptionStatus` no body a API recalcula (`active` / `trial` / `past_due`). Bar `suspended` permanece bloqueado. **Não** altera cobrança no Asaas.
 
 Ver [ADR-013](../decisions/ADR-013-console-saas.md) e [ADR-014](../decisions/ADR-014-plan-kind-promo.md).
