@@ -60,7 +60,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Cadastro B2B na fatia 1: só e-mail + senha + nome do bar. CNPJ/CPF de **pagador** só no checkout hosted (trânsito; API não persiste). KYC do responsável entra em fatia posterior.
 - CPF do **consumidor** não coletar no MVP para pedir.
 - **Telefone + nome** na comanda pessoal (fatia 6): PII do estabelecimento (controlador). API staff devolve telefone **mascarado**. Não logar telefone.
-- PAN / CVV / token de cartão: nunca no Next nem na API. Checkout Asaas é página hospedada.
+- PAN / CVV / token de cartão: nunca no Next nem na API. Checkout Asaas é página hospedada (recorrente); o cartão fica no Asaas. Guardamos só `customer_id` / `subscription_id`.
 
 ## Cadastro B2B (KYC — fatia posterior)
 

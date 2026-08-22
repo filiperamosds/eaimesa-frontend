@@ -407,7 +407,7 @@ export function BillingPanel() {
       <p className="text-xs text-ink-soft">
         {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb}{" "}
         {hosted
-          ? "Cartão e PIX são cobrados na página do provedor. O EaiMesa não envia PAN, CVV nem token de cartão."
+          ? "Cartão e PIX são cobrados na página do provedor. O Asaas guarda o cartão na assinatura mensal. O EaiMesa não envia PAN, CVV nem token."
           : "O POST leva plano e meio (cartão ou PIX). Número, validade e CVV não entram na API."}
       </p>
     </section>

@@ -94,7 +94,7 @@ export function PaymentForm({
           )}{" "}
           (mensal).{" "}
           {hosted
-            ? `Você informa cartão ou PIX na página segura do ${providerLabel}. O EaiMesa só envia plano, meio e dados do pagador — nunca número, validade nem CVV.`
+            ? `Você informa cartão ou PIX na página segura do ${providerLabel}. O EaiMesa só envia plano, meio e dados do pagador — nunca número, validade nem CVV. No cartão, o ${providerLabel} guarda o meio e cobra a mensalidade no ciclo seguinte.`
             : "Este ambiente aprova na hora. O POST leva só o plano e o meio (cartão ou PIX). Número, validade e CVV não existem neste fluxo e não vão para a API."}
         </p>
         {coverageNote ? <p className="mt-2 text-sm text-ink-soft">{coverageNote}</p> : null}
@@ -104,7 +104,7 @@ export function PaymentForm({
         <legend className="text-sm font-medium">Meio de pagamento</legend>
         <p className="text-sm text-ink-soft">
           {hosted
-            ? "Cartão ou PIX. Os dados do cartão ficam só na página segura do provedor."
+            ? "Cartão ou PIX. Número e CVV ficam só na página do provedor, que guarda o cartão na assinatura."
             : "Cartão ou PIX. A API não recebe dados do cartão — só esta escolha."}
         </p>
         <div className="grid grid-cols-2 gap-2">
@@ -124,7 +124,7 @@ export function PaymentForm({
                 {hosted
                   ? id === "pix"
                     ? "QR na próxima página"
-                    : "Informe o cartão na próxima página"
+                    : "Digitado e salvo na próxima página"
                   : "Simulado neste ambiente"}
               </span>
             </button>
