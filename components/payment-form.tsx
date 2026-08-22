@@ -138,21 +138,39 @@ export function PaymentForm({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {available.map((id) => (
-          <button
-            key={id}
-            type="button"
-            disabled={pending}
-            onClick={() => setMethod(id)}
-            className={`rounded-2xl border px-3 py-2.5 text-sm ${
-              method === id ? "border-chili bg-chili/5 font-medium" : "border-line"
-            }`}
-          >
-            {id === "pix" ? "PIX" : "Cartão"}
-          </button>
-        ))}
-      </div>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Meio de pagamento</legend>
+        <p className="text-sm text-ink-soft">
+          {hosted
+            ? "Cartão ou PIX. Os dados do cartão ficam só na página segura do provedor."
+            : "Cartão ou PIX."}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {available.map((id) => (
+            <button
+              key={id}
+              type="button"
+              disabled={pending}
+              onClick={() => setMethod(id)}
+              aria-pressed={method === id}
+              className={`rounded-2xl border px-3 py-3 text-left text-sm ${
+                method === id ? "border-chili bg-chili/5 font-medium" : "border-line"
+              }`}
+            >
+              <span className="block">{id === "pix" ? "PIX" : "Cartão"}</span>
+              <span className="mt-0.5 block text-xs font-normal text-ink-soft">
+                {hosted
+                  ? id === "pix"
+                    ? "QR na próxima página"
+                    : "Informe o cartão na próxima página"
+                  : id === "pix"
+                    ? "Confirmação simulada"
+                    : "Só nesta tela de teste"}
+              </span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       {hosted ? (
         requiresPayer ? (

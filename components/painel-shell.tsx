@@ -14,6 +14,7 @@ const ALL_LINKS = [
   { href: "/painel/mesas", label: "Mesas", icon: "⊞", service: true },
   { href: "/painel/equipe", label: "Equipe", icon: "◎", service: true },
   { href: "/painel/bar", label: "Meu bar", icon: "⌂", service: false },
+  { href: "/painel/pagamento", label: "Pagamento", icon: "R$", service: false },
 ] as const;
 
 export function PainelShell({ children }: { children: React.ReactNode }) {
@@ -80,7 +81,11 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
         aria-label="Painel"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur-xl sm:hidden"
       >
-        <ul className={`grid px-2 py-2 ${links.length > 2 ? "grid-cols-5" : "grid-cols-2"}`}>
+        <ul
+          className={`grid px-2 py-2 ${
+            links.length >= 6 ? "grid-cols-3" : links.length > 2 ? "grid-cols-5" : "grid-cols-2"
+          }`}
+        >
           {links.map((l) => {
             const active = path.startsWith(l.href);
             return (
