@@ -2,7 +2,7 @@
 
 O dono paga a mensalidade em `/painel/pagamento`. A API **não** processa cartão: com `checkoutMode=hosted` o Asaas hospeda o checkout. O stub da [fatia 10](fatia-10-planos.md) continua quando `checkoutMode=immediate`.
 
-Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Depois do cadastro o front abre `/painel/pagamento` já no checkout (cartão e PIX).
+Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Depois do cadastro o front abre o produto (cardápio/pedidos). O checkout em `/painel/pagamento` (cartão e PIX) é destacado nos últimos 3 dias do trial ou se a assinatura estiver `past_due`.
 
 ## Inclui
 
@@ -16,6 +16,7 @@ Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Dep
 - `pendingCheckout.url` → botão “continuar pagamento”
 - `gateway.available === false`: aviso e não chama checkout
 - Erros: `PAYER_REQUIRED` 400, `PAYMENT_UNAVAILABLE` 503, `PAYMENT_GATEWAY_ERROR` 502, `PLAN_DOWNGRADE_LOCKED` 409
+- Painel: banner + item **Pagamento** nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) ou `past_due`. Cadastro **não** redireciona ao checkout
 
 ## Não inclui
 
@@ -28,9 +29,9 @@ Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Dep
 
 | Path | Quem | O que muda |
 |------|------|------------|
-| `/painel/pagamento` | Dono | Hosted: pagador + redirect. Immediate: stub |
-| `/painel/bar` | Dono | Mesmo `BillingPanel` |
-| `/`, `/preco`, `/cadastro` | Visitante | Sem pagador; trial inalterado |
+| `/painel/pagamento` | Dono | Hosted: pagador + redirect. Immediate: stub. Nav/banner no fim do trial |
+| `/painel/bar` | Dono | Mesmo `BillingPanel` (pagamento antecipado) |
+| `/`, `/preco`, `/cadastro` | Visitante | Sem pagador; trial inalterado; cadastro vai ao produto |
 
 ## Contrato
 

@@ -39,7 +39,7 @@ Fora desta fatia (o “Plano Bar” único e o desconto de R$ 119 saem).
 
 ## Setup
 
-- **R$ 0** self-serve no trial.
+- **R$ 0** self-serve no trial. O painel destaca o checkout nos últimos 3 dias (`TRIAL_ENDING_SOON_DAYS`) ou se o status for `past_due`.
 - **R$ 150** opcional: cadastro assistido do cardápio (comercial; não está no app).
 
 ## O que não cobrar

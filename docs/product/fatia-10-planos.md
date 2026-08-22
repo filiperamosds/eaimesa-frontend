@@ -7,10 +7,10 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 ## Inclui
 
 - Planos vendáveis: **Cardápio** (R$ 49/mês) e **Auto atendimento** (R$ 149/mês)
-- Cadastro escolhe o plano; **trial de 7 dias**; cobrança depois
+- Cadastro escolhe o plano; **trial de 7 dias**; cobrança no fim do trial (aviso nos últimos 3 dias)
 - Landing e `/preco`: **dois cards** com nome, valor, o que inclui e CTA
 - Cadastro mostra o **preço** do plano escolhido
-- Painel `/painel/pagamento`: formulário de **cartão ou PIX** no modo stub (só UI; não envia PAN)
+- Painel `/painel/pagamento`: formulário de **cartão ou PIX** no modo stub (só UI; não envia PAN). Item na nav e banner só quando o trial está acabando ou `past_due`
 - `POST /v1/billing/checkout` — stub (`checkoutMode=immediate`): espera **2s** e devolve `status: success`. Gateway Asaas: [fatia 12](fatia-12-pagamento-asaas.md)
 - Upgrade Cardápio → Auto atendimento a qualquer momento (checkout)
 - Downgrade Auto atendimento → Cardápio **só depois do fim da vigência paga**
@@ -37,8 +37,8 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 ## Fluxo
 
 1. Landing → Adquirir Cardápio ou Auto atendimento → `/cadastro?plano=…`
-2. Cria a conta em `trial` (7 dias) naquele plano.
-3. Depois do trial (ou antes, se quiser pagar): `/painel/pagamento` — vê o valor, escolhe cartão ou PIX. No stub (~2s) vira `active` por 30 dias. No Asaas: [fatia 12](fatia-12-pagamento-asaas.md).
+2. Cria a conta em `trial` (7 dias) naquele plano. O front abre o produto, não o checkout.
+3. Nos últimos 3 dias do trial (ou com status `past_due`): banner no painel + item **Pagamento**. Antes disso, `/painel/pagamento` e o bloco em **Meu bar** ainda funcionam. Cartão ou PIX; no stub (~2s) vira `active` por 30 dias. No Asaas: [fatia 12](fatia-12-pagamento-asaas.md).
 4. Sem pagar após o trial: recursos do plano ficam bloqueados (`BILLING_INACTIVE`); o cardápio público continua leitura.
 
 Ver [pricing](pricing.md) e [ADR-012](../decisions/ADR-012-planos.md).
