@@ -7,7 +7,7 @@ Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Dep
 ## Inclui
 
 - Ler `GET /v1/billing/plans` e `GET /v1/billing/me` → `gateway` (`provider`, `checkoutMode`, `methods`, `requiresPayer`, `available`)
-- `checkoutMode === 'immediate'`: fluxo da fatia 10 (`{ plan, method }`, `status: success`). Payer opcional. UI de cartão/PIX **não** envia PAN
+- `checkoutMode === 'immediate'`: fluxo da fatia 10 (`{ plan, method }`, `status: success`). Sem PAN. Payer opcional.
 - `checkoutMode === 'hosted'`: nome + CPF/CNPJ obrigatórios; e-mail (default da conta) e telefone opcionais. Sem número de cartão, validade, CVV nem “copia PIX”
 - `POST /v1/billing/checkout` com `{ plan, method: "card"|"pix", payer }`
 - `status: pending` + `checkoutUrl` → `window.location.assign(checkoutUrl)`

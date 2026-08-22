@@ -10,7 +10,7 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 - Cadastro escolhe o plano; **trial de 7 dias**; cobrança no fim do trial (aviso nos últimos 3 dias)
 - Landing e `/preco`: **dois cards** com nome, valor, o que inclui e CTA
 - Cadastro mostra o **preço** do plano escolhido
-- Painel `/painel/pagamento`: formulário de **cartão ou PIX** no modo stub (só UI; não envia PAN). Item na nav e banner só quando o trial está acabando ou `past_due`
+- Painel `/painel/pagamento`: escolhe **cartão ou PIX**. Stub não pede número/CVV e o POST é `{ plan, method }`. Item na nav e banner só quando o trial está acabando ou `past_due`
 - `POST /v1/billing/checkout` — stub (`checkoutMode=immediate`): espera **2s** e devolve `status: success`. Gateway Asaas: [fatia 12](fatia-12-pagamento-asaas.md)
 - Pagamento antecipado empilha 30 dias no fim da cobertura atual (`trial_ends_at` / `current_period_ends_at`), não a partir de agora ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md))
 - Upgrade Cardápio → Auto atendimento a qualquer momento (checkout)
