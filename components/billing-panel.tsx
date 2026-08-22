@@ -335,7 +335,6 @@ export function BillingPanel() {
 
       {selected ? (
         <PaymentForm
-          planId={selected.id}
           planName={selected.name}
           amountCents={selected.effectivePriceCents ?? selected.priceCents}
           listPriceCents={selected.priceCents}
@@ -408,8 +407,8 @@ export function BillingPanel() {
       <p className="text-xs text-ink-soft">
         {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb}{" "}
         {hosted
-          ? "Cartão e PIX são cobrados na página do provedor. O EaiMesa não envia PAN, CVV nem token de cartão."
-          : "Cartão e PIX são só UI; a API espera ~2s e devolve sucesso."}
+          ? "Cartão e PIX são cobrados na página do provedor. O Asaas guarda o cartão na assinatura mensal. O EaiMesa não envia PAN, CVV nem token."
+          : "O POST leva plano e meio (cartão ou PIX). Número, validade e CVV não entram na API."}
       </p>
     </section>
   );

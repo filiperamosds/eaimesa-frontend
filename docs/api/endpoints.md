@@ -62,7 +62,7 @@ Itens inativos e categorias inativas **não** entram na resposta pública. Venue
 
 ### Billing (fatias 10 e 12)
 
-Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas` (Checkout hospedado). Cartão **não** vai para a API. Confirmação Asaas só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
+Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas` (Checkout hospedado **recorrente**). Cartão **não** vai para a API — o dono digita na página do Asaas, que guarda o cartão. Confirmação Asaas só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
 
 `GET /v1/billing/plans` e `GET /v1/billing/me` incluem:
 
@@ -78,7 +78,7 @@ Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas` (Che
 }
 ```
 
-No Asaas: `checkoutMode: hosted`, `requiresPayer: true`. `/me` ainda traz `pendingCheckout` (`url`, `plan`, `method`, `amountCents`) se a sessão hosted estiver aberta.
+No Asaas: `checkoutMode: hosted`, `requiresPayer: true`. Checkout **recorrente** (cartão salvo no Asaas; `subscription_id` no `venue_billing`). `/me` ainda traz `pendingCheckout` (`url`, `plan`, `method`, `amountCents`) se a sessão hosted estiver aberta.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|

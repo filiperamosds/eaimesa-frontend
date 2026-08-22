@@ -149,7 +149,7 @@ Não guardar CPF/CNPJ nem PAN. O front só envia pagador no POST de checkout hos
 
 - `venue_id` UNIQUE
 - `provider`
-- `customer_id`, `subscription_id`, `checkout_id`
+- `customer_id`, `subscription_id`, `checkout_id` — ids do Asaas. `subscription_id` liga a assinatura mensal (cartão fica no cofre do Asaas, não aqui)
 - `pending_plan`, `pending_method`, `pending_amount_cents`, `pending_event_id`, `checkout_url`
 
 Pendente some quando o webhook confirma.
