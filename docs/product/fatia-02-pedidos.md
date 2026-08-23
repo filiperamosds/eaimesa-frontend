@@ -6,7 +6,7 @@ Fila do bar na tela. O dono (depois o garçom) vê os pedidos em colunas de stat
 
 - Board Kanban em `/painel/pedidos` — **entrada padrão do painel** após o login (`/painel` redireciona para cá)
 - Abas visíveis no topo: Pedidos | Cardápio | Mesas | Meu bar
-- Pedido de **balcão** (mesa/rótulo + itens do cardápio; preço snapshot no servidor)
+- Pedido de **balcão** na comanda da mesa (`/garcom`; preço snapshot no servidor)
 - Mudança de status: `pending` → `accepted` → `preparing` → `delivered` (e `cancelled`)
 - API `GET/POST /v1/owner/orders` e `PATCH /v1/owner/orders/{id}`
 - Seed com pedidos demo no Bar do Tião
@@ -49,4 +49,4 @@ Toque no card expande os itens. Botões avançam o status (mais confiável no ce
 
 ## Pedido de balcão
 
-Enquanto o cliente não pede pelo celular, o staff lança o pedido no board: escolhe itens ativos do catálogo e uma **mesa cadastrada** (fatia 3). `source = counter`. Sem mesas, ainda aceita rótulo livre.
+O Kanban **não** lança pedido — só avança status. Staff abre a mesa em `/garcom`, escolhe a comanda e inclui itens no dialog (categorias → itens). `source = counter` com `tab_id` da pessoa. [ADR-022](../decisions/ADR-022-pedido-garcom-na-comanda.md).

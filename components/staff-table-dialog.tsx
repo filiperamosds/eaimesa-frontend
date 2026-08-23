@@ -4,6 +4,7 @@ import { formatBrlFromCents } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { StaffTableTab, StaffTableTabsPayload } from "../lib/types";
+import { StaffAddOrderDialog } from "./staff-add-order-dialog";
 
 type Props = {
   tableId: string;
@@ -20,6 +21,7 @@ export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGen
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [addingTab, setAddingTab] = useState<StaffTableTab | null>(null);
 
   async function load(opts?: { silent?: boolean }) {
     if (!opts?.silent) {
@@ -146,17 +148,27 @@ export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGen
                     ))}
                   </ul>
                 )}
+                {selected.status === "open" ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setAddingTab(selected)}
+                    className="btn-primary mt-4 w-full !py-2 text-sm"
+                  >
+                    Adicionar pedido
+                  </button>
+                ) : null}
                 {selected.status === "open" && canClose ? (
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => void closeTab(selected.id)}
-                    className="btn-secondary mt-4 w-full text-sm"
+                    className="btn-secondary mt-3 w-full text-sm"
                   >
                     Fechar comanda de {selected.guestName}
                   </button>
                 ) : selected.status === "open" ? (
-                  <p className="mt-4 text-sm text-ink-soft">Peça ao caixa para encerrar esta comanda.</p>
+                  <p className="mt-3 text-sm text-ink-soft">Peça ao caixa para encerrar esta comanda.</p>
                 ) : null}
               </div>
             ) : null}
@@ -184,6 +196,20 @@ export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGen
           </button>
         </div>
       </div>
+      {addingTab?.status === "open" ? (
+        <StaffAddOrderDialog
+          tableId={tableId}
+          tableLabel={tableLabel}
+          tabId={addingTab.id}
+          guestName={addingTab.guestName}
+          onClose={() => setAddingTab(null)}
+          onCreated={() => {
+            setAddingTab(null);
+            void load();
+            onChanged();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

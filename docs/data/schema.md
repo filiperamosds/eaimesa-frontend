@@ -42,7 +42,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 - `source`: `counter` | `guest`
 - `table_id` (nullable → VenueTable)
 - `table_label` (snapshot)
-- `tab_id` nullable → Tab (obrigatório quando `source = guest`)
+- `tab_id` nullable → Tab (obrigatório quando `source = guest`; no `counter`, preenchido quando o staff lança na comanda)
 - `idempotency_key` (nullable; único por venue quando preenchido)
 - `note`
 - timestamps
@@ -192,7 +192,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 3. DELETE categoria com itens → `CATEGORY_NOT_EMPTY`.
 4. `OrderItem` sempre grava snapshot de preço/nome; o cliente **não** envia preço.
 5. Pedido público pelo slug **exige** comanda pessoal `open` (fatia 7). Slug sozinho não autoriza.
-6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo.
+6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo. Com `tabId`, a mesa vem da comanda `open` e o pedido grava `tab_id`.
 7. PIN join casa o PIN com uma **TableSession** `open`.
 8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no bar, 409 `TAB_ALREADY_OPEN`.
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.

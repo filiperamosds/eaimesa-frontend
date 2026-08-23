@@ -26,7 +26,7 @@ sequenceDiagram
 1. Dono cria conta + venue (nome + slug único).
 2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor).
 3. Comparte `https://eaimesa.com.br/{slug}` (QR fixo na mesa, Instagram, balcão) — **só cardápio**.
-4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos de balcão: `/painel/pedidos`. Mesas + export do QR fixo: `/painel/bar/mesas`.
+4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: `/painel/bar/mesas`.
 
 ## 0b. Fatia 2 — fila Kanban (balcão)
 
@@ -37,13 +37,13 @@ sequenceDiagram
   participant S as Staff (painel)
   participant API as API
 
-  S->>API: POST /v1/owner/orders (itens + mesa)
+  S->>API: POST /v1/staff/orders (tabId + itens)
   API-->>S: Pedido pending
   S->>API: PATCH status accepted / preparing / delivered
 ```
 
 1. Staff entra (`/login`) e cai em `/painel/pedidos` (ou clica a aba **Pedidos**).
-2. Lança pedido de balcão (escolhe a **mesa** cadastrada) ou vê os do seed.
+2. O Kanban só avança status. Lançar itens: `/garcom` → mesa → comanda.
 3. Avança o card nas colunas até **Entregues**.
 
 ## 0c. Fatia 3 — cadastrar o salão
@@ -57,13 +57,13 @@ sequenceDiagram
 
   D->>API: POST /v1/owner/tables (rótulo)
   API-->>D: Mesa ativa
-  D->>API: POST /v1/owner/orders (tableId + itens)
+  D->>API: POST /v1/staff/orders (tabId + itens)
   API-->>D: Pedido pending com snapshot do rótulo
 ```
 
 1. Dono abre **Mesas** e cadastra até 15 ativas (ex. Balcão, Mesa 1…10).
 2. Exporta o **QR fixo** de cada mesa (destino: cardápio `/{slug}`) e cola no salão.
-3. No Kanban, o pedido de balcão escolhe uma mesa ativa.
+3. Pedido de balcão: mesa ocupada em `/garcom`, na comanda da pessoa.
 4. QR/claim do **garçom** (abre comanda): garçom em `/garcom` ou dono autenticado — fatia 4.
 
 ## 1. Onboarding do bar (B2B)
@@ -154,7 +154,7 @@ Detalhe em [fatia-08-fila-garcom.md](fatia-08-fila-garcom.md).
 
 1. Garçom abre **Pedidos** em `/garcom/pedidos`.
 2. Vê novos, aceita, manda preparar, marca entregue.
-3. Pode lançar pedido de balcão no celular (`POST /v1/staff/orders`).
+3. Lançar itens: **Mesas** → comanda → dialog (`POST /v1/staff/orders` com `tabId`).
 
 ## 5. Fechamento (fatia 6)
 

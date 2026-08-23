@@ -162,13 +162,14 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 | Método | Path | Descrição |
 |--------|------|-----------|
 | GET | `/v1/owner/orders` | Pedidos do venue (sem `cancelled`, 48 h) |
-| POST | `/v1/owner/orders` | Pedido de balcão; snapshot de preço |
+| POST | `/v1/owner/orders` | Pedido de balcão (opcional `tabId`); snapshot de preço |
 | PATCH | `/v1/owner/orders/{id}` | `{ status }` |
 
 #### POST /v1/owner/orders (body)
 
 ```json
 {
+  "tabId": "uuid",
   "tableId": "uuid",
   "tableLabel": "Mesa 4",
   "note": "sem gelo",
@@ -178,7 +179,7 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 }
 ```
 
-`source` gravado como `counter`. Status inicial `pending`. `tableId` (fatia 3) resolve o rótulo da mesa ativa; `tableLabel` continua aceito se o bar ainda não cadastrou mesas. Um dos dois é obrigatório.
+`source` gravado como `counter`. Status inicial `pending`. Com `tabId`, a comanda precisa estar `open` no venue; mesa e rótulo saem da tab (`TAB_NOT_FOUND` / `TAB_CLOSED`). Sem `tabId`: `tableId` (fatia 3) ou `tableLabel`. Um de `tabId` | `tableId` | `tableLabel` é obrigatório. O front do Kanban **não** chama este POST; o lançamento é o dialog da comanda em `/garcom`. Brief Laravel: [backend-staff-order-tab.md](backend-staff-order-tab.md).
 
 ### Owner — mesas (fatia 3)
 
@@ -233,9 +234,11 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono.
 | Método | Path | Descrição |
 |--------|------|-----------|
 | GET | `/v1/staff/orders` | Fila 48h (`pending`…`delivered`) |
-| POST | `/v1/staff/orders` | Pedido de balcão (preço no servidor) |
+| POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor |
 | PATCH | `/v1/staff/orders/{id}` | `{ status }` |
-| GET | `/v1/staff/catalog` | Cardápio (leitura) para o formulário de balcão |
+| GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda |
+
+Mesmo body de `POST /v1/owner/orders` (`tabId` opcional). Front: mesa → comanda → **Adicionar pedido**.
 
 Resposta de `GET /v1/staff/tables` (recorte):
 
