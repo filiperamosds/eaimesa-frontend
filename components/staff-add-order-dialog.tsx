@@ -11,7 +11,7 @@ type Props = {
   tabId: string;
   guestName: string;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (order: StaffOrder) => void;
 };
 
 function activeCatalog(categories: CatalogCategory[]) {
@@ -82,7 +82,7 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
     setPending(true);
     setError(null);
     try {
-      await api<StaffOrder>("/v1/staff/orders", {
+      const order = await api<StaffOrder>("/v1/staff/orders", {
         method: "POST",
         body: JSON.stringify({
           tabId,
@@ -91,7 +91,7 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
           items: lines.map((l) => ({ catalogItemId: l.item.id, qty: l.qty })),
         }),
       });
-      onCreated();
+      onCreated(order);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível lançar o pedido.");
     } finally {

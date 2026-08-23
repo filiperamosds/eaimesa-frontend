@@ -24,9 +24,9 @@
 8. [Modelo de dados](data/schema.md) — entidades fatia 1–12 + planejadas
 9. [API](api/endpoints.md) — REST fatia 1–13 + contrato futuro
 9b. [Backend — caixa / close](api/backend-caixa-close.md) — o que o Laravel precisa alterar (`staffCanCloseTabs`, `cashier`)
-9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId` em `POST /v1/staff/orders`
+9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId`, PIN no staff, `POST .../tabs`
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**, **caixa vs garçom**, **pedido do garçom na comanda**
+11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**, **caixa vs garçom**, **pedido do garçom na comanda**, **garçom abre comanda + PIN**
 
 ## Cursor
 
