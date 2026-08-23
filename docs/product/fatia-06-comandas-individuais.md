@@ -11,8 +11,9 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 - Várias comandas `open` na mesma mesa
 - Guest: após claim ou PIN, formulário nome + telefone (`/{slug}/comanda`) — máscara `(11) 98888-7777`; a API grava só dígitos
 - Telefone único enquanto a comanda está `open`: mesmo número não abre outra (nesta mesa ou em outra do bar) → 409 `TAB_ALREADY_OPEN`
-- Garçom `/garcom`: o salão mostra os **nomes** nas mesas ocupadas e atualiza sozinho; toque abre **dialog** com as contas e a parcial
+- Garçom `/garcom`: o salão mostra os **nomes** nas mesas ocupadas e atualiza sozinho; toque abre **dialog** com as contas, a parcial e **Adicionar pedido**
 - Guest `/{slug}/comanda` e a cesta: a **própria** parcial ([fatia 9](fatia-09-parcial-guest.md))
+- `POST /v1/staff/orders` com `tabId` — garçom lança itens na comanda (dialog)
 - `POST /v1/staff/tabs/{id}/close` — fecha uma comanda
 - `POST /v1/staff/tables/{id}/close` — encerra a mesa; **409** se ainda houver comanda aberta
 - Telefone mascarado no painel do garçom (últimos 4 dígitos)
@@ -34,7 +35,7 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 1. Mesa livre: toque gera QR. Cartão fica “QR ativo” até o primeiro redeem.
 2. Quando há comandas, o cartão lista os **nomes** (Maria · João). O quadro recarrega a cada poucos segundos.
 3. Toque numa mesa ocupada consulta o estado atual (não reusa o snapshot antigo) e abre as contas.
-4. Seleciona uma → itens/pedidos daquela conta.
+4. Seleciona uma → itens/pedidos daquela conta. Comanda `open`: **Adicionar pedido** abre um dialog (categorias, depois itens com qty).
 5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`). **Encerrar mesa** só com zero comandas abertas.
 
 ## Por que não uma comanda só

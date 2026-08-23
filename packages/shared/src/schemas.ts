@@ -174,6 +174,7 @@ export const patchItemSchema = z.object({
 
 export const createOrderSchema = z
   .object({
+    tabId: z.string().uuid().optional(),
     tableId: z.string().uuid().optional(),
     tableLabel: z.string().trim().min(1, "Informe a mesa ou o balcão.").max(40).optional(),
     note: z.string().trim().max(280).optional().nullable(),
@@ -187,8 +188,8 @@ export const createOrderSchema = z
       )
       .min(1, "Inclua pelo menos um item."),
   })
-  .refine((b) => Boolean(b.tableId || b.tableLabel), {
-    message: "Escolha a mesa.",
+  .refine((b) => Boolean(b.tabId || b.tableId || b.tableLabel), {
+    message: "Escolha a mesa ou a comanda.",
   });
 
 export const patchOrderSchema = z.object({
