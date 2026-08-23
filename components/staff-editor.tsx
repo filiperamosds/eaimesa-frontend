@@ -1,6 +1,6 @@
 "use client";
 
-import { PLAN_BAR_MAX_STAFF } from "@eaimesa/shared";
+import { memberRoleLabel, PLAN_BAR_MAX_STAFF } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { StaffMember } from "../lib/types";
@@ -11,6 +11,8 @@ type StaffPayload = {
   activeCount: number;
 };
 
+type MemberRole = "staff" | "cashier";
+
 export function StaffEditor() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [maxActive, setMaxActive] = useState(PLAN_BAR_MAX_STAFF);
@@ -20,6 +22,7 @@ export function StaffEditor() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<MemberRole>("staff");
 
   async function load() {
     const data = await api<StaffPayload>("/v1/owner/staff");
@@ -40,11 +43,12 @@ export function StaffEditor() {
     try {
       await api("/v1/owner/staff", {
         method: "POST",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
       setName("");
       setEmail("");
       setPassword("");
+      setRole("staff");
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível criar.");
@@ -64,8 +68,22 @@ export function StaffEditor() {
     }
   }
 
+  async function changeRole(row: StaffMember, next: MemberRole) {
+    if ((row.role ?? "staff") === next) return;
+    setError(null);
+    try {
+      await api(`/v1/owner/staff/${row.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role: next }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível atualizar o perfil.");
+    }
+  }
+
   async function remove(id: string) {
-    if (!confirm("Remover este garçom? Ele não poderá mais entrar.")) return;
+    if (!confirm("Remover esta pessoa? Ela não poderá mais entrar.")) return;
     setError(null);
     try {
       await api(`/v1/owner/staff/${id}`, { method: "DELETE" });
@@ -80,18 +98,18 @@ export function StaffEditor() {
   return (
     <div>
       <div className="surface mb-6 border-sage/20 bg-sage-soft/40 p-4 text-sm text-ink-soft">
-        <p className="font-medium text-ink">Garçons entram em /login (mesmo acesso do painel).</p>
+        <p className="font-medium text-ink">Equipe entra em /login (mesmo acesso do painel) e cai em /garcom.</p>
         <p className="mt-1">
-          Cada garçom escolhe a mesa e gera o QR de comanda para o cliente. Máximo {maxActive} ativos no
-          plano Auto atendimento.
+          Garçom gera o QR da comanda. Caixa vê a mesma tela e sempre pode encerrar contas. Máximo {maxActive}{" "}
+          ativos no plano Auto atendimento.
         </p>
       </div>
       <p className="mb-6 text-sm text-ink-soft">
-        {activeCount}/{maxActive} garçons ativos
+        {activeCount}/{maxActive} pessoas ativas
       </p>
       <form onSubmit={add} className="surface mb-8 space-y-3 p-4">
-        <p className="font-medium">Novo garçom</p>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <p className="font-medium">Nova pessoa</p>
+        <div className="grid gap-3 sm:grid-cols-2">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -100,6 +118,14 @@ export function StaffEditor() {
             required
             minLength={2}
           />
+          <select
+            className="field"
+            value={role}
+            onChange={(e) => setRole(e.target.value as MemberRole)}
+          >
+            <option value="staff">Garçom</option>
+            <option value="cashier">Caixa</option>
+          </select>
           <input
             type="email"
             value={email}
@@ -119,13 +145,13 @@ export function StaffEditor() {
           />
         </div>
         <button type="submit" className="btn-primary !py-2 text-sm">
-          Cadastrar garçom
+          Cadastrar
         </button>
       </form>
       {error ? <p className="mb-4 text-sm text-chili">{error}</p> : null}
       <ul className="space-y-2">
         {staff.length === 0 ? (
-          <li className="text-sm text-ink-soft">Nenhum garçom cadastrado.</li>
+          <li className="text-sm text-ink-soft">Ninguém cadastrado ainda.</li>
         ) : (
           staff.map((row) => (
             <li
@@ -137,12 +163,20 @@ export function StaffEditor() {
                 <p className="text-sm text-ink-soft">{row.email}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className="field !w-auto !py-1.5 text-sm"
+                  value={row.role === "cashier" ? "cashier" : "staff"}
+                  onChange={(e) => void changeRole(row, e.target.value as MemberRole)}
+                >
+                  <option value="staff">Garçom</option>
+                  <option value="cashier">Caixa</option>
+                </select>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     row.active ? "bg-sage-soft text-sage" : "bg-paper-2 text-ink-soft"
                   }`}
                 >
-                  {row.active ? "Ativo" : "Inativo"}
+                  {row.active ? "Ativo" : "Inativo"} · {memberRoleLabel(row.role)}
                 </span>
                 <button type="button" onClick={() => void toggleActive(row)} className="btn-ghost text-sm">
                   {row.active ? "Desativar" : "Ativar"}

@@ -1,10 +1,12 @@
 "use client";
 
+import { memberRoleLabel } from "@eaimesa/shared";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import type { Session } from "../lib/types";
+import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
 
 const LINKS = [
@@ -51,6 +53,7 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
 
   const displayName =
     me.role === "staff" ? (me.member?.name ?? me.account.email) : me.account.email;
+  const floorLabel = me.role === "owner" ? "Dono" : memberRoleLabel(me.member?.role);
 
   return (
     <div className="min-h-screen pb-20">
@@ -64,9 +67,11 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
                 Painel
               </Link>
             ) : null}
-            <button type="button" onClick={() => void logout()} className="btn-ghost">
-              Sair
-            </button>
+            <AccountMenu
+              initials={initialsFrom(displayName)}
+              label={displayName}
+              items={[{ type: "button", label: "Sair", onClick: () => void logout(), danger: true }]}
+            />
           </div>
         </div>
         <div className="mx-auto hidden max-w-[88rem] px-5 pb-3 sm:block">
@@ -93,7 +98,7 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
       <div className={`mx-auto px-5 py-6 ${onPedidos ? "max-w-[88rem]" : "max-w-lg"}`}>
         {onPedidos ? null : (
           <>
-            <p className="eyebrow">Garçom</p>
+            <p className="eyebrow">{floorLabel}</p>
             <h1 className="mt-1 font-serif text-2xl">Mesas</h1>
           </>
         )}

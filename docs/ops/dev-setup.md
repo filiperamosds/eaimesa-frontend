@@ -37,8 +37,9 @@ Site: http://localhost:3000
 | Web | http://localhost:3000 |
 | Cardápio seed | http://localhost:3000/bar-do-tiao |
 | Pedidos (Kanban) | http://localhost:3000/painel/pedidos |
-| Mesas | http://localhost:3000/painel/mesas |
-| Equipe | http://localhost:3000/painel/equipe |
+| Meu bar | http://localhost:3000/painel/bar |
+| Mesas | http://localhost:3000/painel/bar/mesas |
+| Equipe | http://localhost:3000/painel/bar/equipe |
 | Garçom | http://localhost:3000/garcom |
 | PIN join | http://localhost:3000/bar-do-tiao/entrar |
 | Console | http://localhost:3000/admin |

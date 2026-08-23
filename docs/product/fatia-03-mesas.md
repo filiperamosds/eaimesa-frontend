@@ -4,7 +4,7 @@ O salão vira entidade. O dono cadastra as mesas do bar (até 15 no plano Bar). 
 
 ## Inclui
 
-- CRUD de mesas em `/painel/mesas` — aba no painel: Pedidos | Cardápio | **Mesas** | Meu bar
+- CRUD de mesas em `/painel/bar/mesas` — hub **Meu bar** (nav: Pedidos | Cardápio; avatar → Meu bar)
 - API `GET/POST /v1/owner/tables` e `PATCH/DELETE /v1/owner/tables/{id}`
 - Limite de **15 mesas ativas** por venue (plano Bar)
 - Pedido de balcão: grade de mesas ativas; `table_label` continua snapshot no pedido
@@ -48,7 +48,7 @@ Ver [ADR-006](../decisions/ADR-006-mesas.md).
 
 Staff toca a mesa e os itens. A API grava `table_id` (quando informado) e **sempre** `table_label` no momento do pedido. Renomear a mesa não reescreve o histórico.
 
-Se o bar ainda não cadastrou mesas, o lançamento aceita rótulo livre (mesmo contrato da fatia 2) e o painel aponta para `/painel/mesas`.
+Se o bar ainda não cadastrou mesas, o lançamento aceita rótulo livre (mesmo contrato da fatia 2) e o painel aponta para `/painel/bar/mesas`.
 
 ## QR do claim (próxima fatia)
 

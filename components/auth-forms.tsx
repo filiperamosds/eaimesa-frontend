@@ -58,7 +58,7 @@ export function LoginForm() {
         {pending ? "Entrando…" : "Entrar"}
       </button>
       <p className="text-center text-sm text-ink-soft">
-        Garçom? Use o mesmo login — você vai para{" "}
+        Garçom ou caixa? Use o mesmo login — você vai para{" "}
         <Link href="/login?next=/garcom" className="font-medium text-ink underline">
           /garcom
         </Link>

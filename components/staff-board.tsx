@@ -1,12 +1,13 @@
 "use client";
 
+import { sessionCanCloseTabs } from "@eaimesa/shared";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { ClaimResponse, Session, StaffTable } from "../lib/types";
 import { ClaimQrModal } from "./claim-qr-modal";
 import { StaffTableDialog } from "./staff-table-dialog";
 
-type TablesPayload = { tables: StaffTable[] };
+type TablesPayload = { tables: StaffTable[]; canCloseTabs?: boolean };
 
 function isOccupied(table: StaffTable) {
   return table.sessionOpen || table.openTabCount > 0;
@@ -15,6 +16,7 @@ function isOccupied(table: StaffTable) {
 export function StaffBoard() {
   const [me, setMe] = useState<Session | null>(null);
   const [tables, setTables] = useState<StaffTable[]>([]);
+  const [canClose, setCanClose] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
@@ -24,6 +26,7 @@ export function StaffBoard() {
   const refreshTables = useCallback(async () => {
     const data = await api<TablesPayload>("/v1/staff/tables");
     setTables(data.tables);
+    if (typeof data.canCloseTabs === "boolean") setCanClose(data.canCloseTabs);
     return data.tables;
   }, []);
 
@@ -32,6 +35,9 @@ export function StaffBoard() {
       .then(([session, data]) => {
         setMe(session);
         setTables(data.tables);
+        setCanClose(
+          typeof data.canCloseTabs === "boolean" ? data.canCloseTabs : sessionCanCloseTabs(session),
+        );
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Erro ao carregar."))
       .finally(() => setLoading(false));
@@ -141,6 +147,7 @@ export function StaffBoard() {
         <StaffTableDialog
           tableId={openTable.id}
           tableLabel={openTable.label}
+          canClose={canClose}
           onClose={() => {
             setOpenTable(null);
             void refreshTables();

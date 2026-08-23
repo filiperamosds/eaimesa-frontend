@@ -18,6 +18,7 @@ Login do dono.
 - `planKind` na API: `cardapio` | `auto_atendimento` (o que o bar pode fazer)
 - `subscription_status`: `trial` | `active` | `past_due` | `suspended`
 - `accepts_orders`: true só no Auto atendimento com assinatura válida
+- `staff_can_close_tabs` (default true): se false, garçom não fecha comanda/mesa (caixa e dono sim)
 - `trial_ends_at`, `current_period_ends_at` (vigência paga)
 - Sem tabela de períodos: um pagamento soma `paid_period_days` (default 30) no **fim da cobertura atual** — `max(agora, trial_ends_at, current_period_ends_at)` — ver [ADR-019](../decisions/ADR-019-vigencia-empilhada.md).
 - Console (`PATCH /v1/platform/venues/{id}`): operador pode adiantar/estender essas datas. Sem `subscriptionStatus` no body, a API recalcula o status (exceto `suspended`). Não sincroniza o gateway.
@@ -69,10 +70,10 @@ No máximo **15 mesas ativas** por venue no plano Auto atendimento.
 Garçom vinculado ao venue (mesmo login do painel).
 
 - `id`, `venue_id` → Venue, `account_id` → Account
-- `role`: `staff` (owner continua via `venues.owner_account_id`)
+- `role`: `staff` (garçom) | `cashier` (caixa). Owner continua via `venues.owner_account_id`. JWT do cookie é `staff` para os dois.
 - `name`, `active`, timestamps
 
-Máximo **5 membros staff ativos** por venue no plano Auto atendimento.
+Máximo **5 membros ativos** (garçom + caixa) por venue no plano Auto atendimento. Caixa usa `/garcom` e sempre encerra comanda/mesa. Garçom só encerra se `venues.staff_can_close_tabs` for true ([ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md)).
 
 ## Entidades — fatia 6 (comandas individuais)
 

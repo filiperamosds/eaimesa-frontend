@@ -185,7 +185,7 @@ export function isTrialEndingSoon(
 }
 
 /**
- * Quando o painel deve destacar `/painel/pagamento`.
+ * Quando o painel deve destacar `/painel/bar/plano`.
  * `trial` só no fim da janela; `past_due` sempre. Pagamento antecipado continua em `/painel/bar`.
  */
 export function shouldPromptSubscriptionPayment(

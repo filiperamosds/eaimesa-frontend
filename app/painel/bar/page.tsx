@@ -1,19 +1,16 @@
-import { BillingPanel } from "../../../components/billing-panel";
 import { VenueSettings } from "../../../components/venue-settings";
 
-export default function BarPage() {
+export const metadata = { title: "Meu bar" };
+
+export default function BarDadosPage() {
   return (
     <div>
-      <p className="eyebrow">Estabelecimento</p>
-      <h1 className="mt-2 font-serif text-3xl">Meu bar</h1>
+      <h2 className="font-serif text-2xl">Dados do bar</h2>
       <p className="mt-2 mb-8 text-ink-soft">
-        O slug vira a rota pública. Exemplo: /bar-do-tiao. Palavras do produto (login, painel) não podem ser usadas.
-        Plano e pagamento ficam abaixo.
+        O slug vira a rota pública. Exemplo: /bar-do-tiao. Palavras do produto (login, painel) não podem
+        ser usadas.
       </p>
       <VenueSettings />
-      <div className="mt-10">
-        <BillingPanel />
-      </div>
     </div>
   );
 }
