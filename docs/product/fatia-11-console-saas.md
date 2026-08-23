@@ -4,7 +4,7 @@ Login da **plataforma**, não do dono do bar. O operador vê vendas da assinatur
 
 ## Inclui
 
-- `/admin/login` — e-mail + senha; cookie `eaimesa_platform` (não é o cookie do dono)
+- `/admin/login` — e-mail + senha; cookie `eaimesa_platform` (não é o cookie do dono). Sessão válida (`GET /v1/platform/auth/me`) vai direto a `/admin`.
 - `/admin` — dashboard: bares por status/plano, MRR estimado, checkouts stub (30 dias)
 - `/admin/bares` — busca, filtro, **expiração** (trial / vigência), suspender / reativar, **ajustar datas** (`PATCH /v1/platform/venues/{id}`)
 - `/admin/planos` — criar SKU, nome, tipo (`kind`), preço, **promo opcional**, blurb, features, listado; trial e vigência globais
@@ -38,7 +38,7 @@ Mesmo `eaimesa-frontend`. Rotas `/admin/*` (slug `admin` já é reservado).
 
 ## Fluxo
 
-1. Operador entra em `/admin/login`.
+1. Operador entra em `/admin/login`. Se `GET /v1/platform/auth/me` já estiver ok, vai direto a `/admin`. Cookie `eaimesa_platform` é independente de `eaimesa_owner` — dá para operar o console e o painel do bar no mesmo browser.
 2. Dashboard mostra os bares do seed (trial → MRR 0) e os checkouts stub. Status e plano aparecem em português (Em trial, Ativo, Cardápio…).
 3. Dono paga no painel → evento entra em vendas; MRR sobe se `active`.
 4. Operador cria um plano ou preenche promo → landing/`/preco`/cadastro/checkout mostram **de R$ X por R$ Y** quando a promo está preenchida.
