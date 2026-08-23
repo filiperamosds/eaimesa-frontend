@@ -216,7 +216,7 @@ Removido login separado. Garçom usa `/v1/auth/login` e `/v1/auth/me` (ver acima
 
 ### Staff — mesas e claim (fatia 4)
 
-Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.role=cashier`).
+Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.role=cashier`). Brief para o Laravel: [backend-caixa-close.md](backend-caixa-close.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
