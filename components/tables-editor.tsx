@@ -13,7 +13,7 @@ type TablesPayload = {
   activeCount: number;
 };
 
-export function TablesEditor() {
+export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean }) {
   const [tables, setTables] = useState<VenueTable[]>([]);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [maxActive, setMaxActive] = useState(PLAN_BAR_MAX_TABLES);
@@ -22,6 +22,7 @@ export function TablesEditor() {
   const [error, setError] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [qrTable, setQrTable] = useState<VenueTable | null>(null);
+  const [venueQr, setVenueQr] = useState(false);
 
   async function load() {
     const [tablesData, venueData] = await Promise.all([
@@ -60,9 +61,22 @@ export function TablesEditor() {
         <p className="font-medium text-ink">QR fixo = cardápio. QR do garçom = comanda.</p>
         <p className="mt-1">
           Exporte o QR de cada mesa e cole no salão. Para abrir comanda, o garçom gera o QR em{" "}
-          <strong className="font-medium text-ink">/garcom</strong> (cadastre a equipe em Equipe).
+          <strong className="font-medium text-ink">/garcom</strong> (cadastre a equipe em Meu bar).
         </p>
       </div>
+      {showVenueQr && venue ? (
+        <section className="surface mb-6 p-5">
+          <p className="eyebrow">QR do cardápio</p>
+          <h2 className="mt-2 font-serif text-xl">Geral — porta, Instagram ou mesa</h2>
+          <p className="mt-2 text-sm text-ink-soft">
+            Aponta para <span className="font-medium text-ink">/{venue.slug}</span>. Só leitura — comanda
+            abre com o QR do garçom.
+          </p>
+          <button type="button" onClick={() => setVenueQr(true)} className="btn-secondary mt-4 !py-2 text-sm">
+            Ver e exportar QR geral
+          </button>
+        </section>
+      ) : null}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <p className="text-sm text-ink-soft">
           {activeCount}/{maxActive} mesas ativas no plano Auto atendimento. Pedido de balcão escolhe daqui.
@@ -107,6 +121,9 @@ export function TablesEditor() {
           tableLabel={qrTable.label}
           onClose={() => setQrTable(null)}
         />
+      ) : null}
+      {venueQr && venue ? (
+        <MenuQrModal slug={venue.slug} venueName={venue.name} onClose={() => setVenueQr(false)} />
       ) : null}
     </div>
   );

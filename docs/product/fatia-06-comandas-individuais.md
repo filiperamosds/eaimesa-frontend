@@ -35,7 +35,7 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 2. Quando há comandas, o cartão lista os **nomes** (Maria · João). O quadro recarrega a cada poucos segundos.
 3. Toque numa mesa ocupada consulta o estado atual (não reusa o snapshot antigo) e abre as contas.
 4. Seleciona uma → itens/pedidos daquela conta.
-5. Fecha comanda por pessoa. **Encerrar mesa** só com zero comandas abertas.
+5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`). **Encerrar mesa** só com zero comandas abertas.
 
 ## Por que não uma comanda só
 

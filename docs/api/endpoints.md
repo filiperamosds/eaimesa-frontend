@@ -25,14 +25,14 @@ CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
 ### Auth estabelecimento (dono e garçom)
 
-Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`.
+Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`. Caixa e garçom compartilham JWT `staff`; o perfil está em `member.role` (`staff` | `cashier`).
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/auth/register` | — | Cria account + venue (role owner); Set-Cookie |
 | POST | `/v1/auth/login` | — | E-mail/senha; owner ou staff; Set-Cookie + `redirectPath` |
 | POST | `/v1/auth/logout` | Cookie | Clear-Cookie |
-| GET | `/v1/auth/me` | Cookie | `role`, account, venue; `member` se staff |
+| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier`) |
 
 #### POST /v1/auth/register (body)
 
@@ -115,7 +115,7 @@ No Asaas: `checkoutMode: hosted` (PIX), `requiresPayer: true`. Cartão: captura 
 
 PIX: body sem `creditCard`; resposta `status: pending`, `checkoutUrl`. Cartão Asaas: `status: success` se a cobrança autorizar. Stub: `status: success`, ignora o cartão, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
 
-Callbacks de navegação do PIX (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
+Callbacks de navegação do PIX (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired` (redirect para `/painel/bar/plano`).
 
 Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`. Sem cartão no Asaas → 400 `CARD_REQUIRED`.
 
@@ -125,8 +125,8 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Nome, slug, public_id, status |
-| PATCH | `/v1/owner/venue` | `{ name?, slug? }` |
+| GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs` |
+| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs? }` |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |
@@ -199,16 +199,16 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão. Limite: 15 mesas **ativas**
 
 Rótulo único por venue. `TABLE_LIMIT` se já houver 15 ativas. `TABLE_LABEL_TAKEN` se o nome já existir.
 
-### Owner — equipe / garçons (fatia 4)
+### Owner — equipe (fatia 4)
 
-Auth: cookie `eaimesa_owner`. Limite: **5 garçons ativos**.
+Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa). `role`: `staff` (garçom, default) | `cashier` (caixa). Caixa vê o mesmo `/garcom` e sempre pode encerrar comanda/mesa. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/staff` | Lista garçons + contagem ativa |
-| POST | `/v1/owner/staff` | `{ name, email, password }` |
-| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password? }` |
-| DELETE | `/v1/owner/staff/{id}` | Remove garçom |
+| GET | `/v1/owner/staff` | Lista equipe + `role` + contagem ativa |
+| POST | `/v1/owner/staff` | `{ name, email, password, role? }` |
+| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role? }` |
+| DELETE | `/v1/owner/staff/{id}` | Remove o membro |
 
 ### Auth garçom
 
@@ -216,15 +216,15 @@ Removido login separado. Garçom usa `/v1/auth/login` e `/v1/auth/me` (ver acima
 
 ### Staff — mesas e claim (fatia 4)
 
-Auth: cookie com `role: owner | staff`.
+Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.role=cashier`).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/tables` | Mesas ativas + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs` (nome + telefone mascarado) |
+| GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs` |
 | POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Permitido com mesa ocupada |
 | GET | `/v1/staff/tables/{tableId}/tabs` | Comandas da mesa + parcial de pedidos |
-| POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda |
-| POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta) |
+| POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
+| POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta). Mesma regra de close |
 
 ### Staff — fila (fatia 8)
 
@@ -241,6 +241,7 @@ Resposta de `GET /v1/staff/tables` (recorte):
 
 ```json
 {
+  "canCloseTabs": true,
   "tables": [
     {
       "id": "uuid",
@@ -492,6 +493,7 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `STAFF_NOT_FOUND` | 404 |
 | `STAFF_LIMIT` | 409 |
 | `STAFF_INACTIVE` | 403 |
+| `CASHIER_REQUIRED` | 403 |
 | `CLAIM_INVALID` | 404 |
 | `TAB_CLOSED` | 409 |
 | `TABS_STILL_OPEN` | 409 |

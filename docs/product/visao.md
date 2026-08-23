@@ -26,16 +26,17 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 |------------|------|---------|----------|--------------|
 | **Landing** | `/` | Visitante B2B | Cards do catálogo (de/por se houver promo) | Sim |
 | **Auth estabelecimento** | `/cadastro`, `/login` | Dono / garçom | Trial 7 dias no plano escolhido | Sim |
-| **Painel** | `/painel/*` | Dono | Cardápio; resto só no Auto atendimento | — |
-| **Pagamento** | `/painel/pagamento` | Dono | Destaque no fim do trial; checkout stub ou Asaas | Conta da mesa |
-| **Garçom** | `/garcom` | Staff | Só Auto atendimento | — |
+| **Painel** | `/painel/*` | Dono | Nav: Pedidos, Cardápio; Meu bar no avatar | — |
+| **Pagamento** | `/painel/bar/plano` | Dono | Destaque no fim do trial; checkout stub ou Asaas | Conta da mesa |
+| **Garçom / caixa** | `/garcom` | Staff (`member.role` staff ou cashier) | Só Auto atendimento | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
 | **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos, logs | SSO/2FA |
 
 ## Personas
 
 - **Dono** — 1 bar, ~10 mesas, quer menos hardware e pedido confiável. Publica o cardápio, vê a fila, cadastra o salão e a equipe.
-- **Garçom** — gera QR na mesa; vê parciais; avança a fila; encerra a mesa quando todas as comandas fecham.
+- **Garçom** — gera QR na mesa; vê parciais; avança a fila. Encerra comanda/mesa só se o dono permitir.
+- **Caixa** — mesma tela `/garcom`; sempre pode fechar comanda e mesa.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
 - **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, vendas da assinatura, catálogo e logs da API. Não atende o salão nem edita o cardápio de um bar.
 

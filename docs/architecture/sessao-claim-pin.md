@@ -28,7 +28,7 @@ Gerado pelo staff autenticado para uma mesa. **Este** é o QR que abre a comanda
 
 | Tipo | Onde | Export |
 |------|------|--------|
-| **Cardápio (fixo)** | `/painel/mesas` e `/painel/bar` | PNG para adesivo / Instagram / porta |
+| **Cardápio (fixo)** | `/painel/bar/mesas` (QR geral também no plano Cardápio em `/painel/bar`) | PNG para adesivo / Instagram / porta |
 | **Claim (comanda)** | `/painel/*` ao abrir mesa | PNG pontual; TTL + uso único |
 
 O cardápio público e a landing **não** geram claim. Modo comanda **só** após escanear o QR do garçom.

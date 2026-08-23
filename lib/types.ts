@@ -10,13 +10,14 @@ export type Venue = {
   acceptsOrders: boolean;
   trialEndsAt?: string | null;
   currentPeriodEndsAt?: string | null;
+  staffCanCloseTabs?: boolean;
 };
 
 export type Session = {
   role: "owner" | "staff";
   account: { id: string; email: string };
   venue: Venue;
-  member?: { id: string; name: string };
+  member?: { id: string; name: string; role?: "staff" | "cashier" };
 };
 
 export type LoginResponse = Session & {
@@ -78,6 +79,7 @@ export type StaffMember = {
   id: string;
   name: string;
   email: string;
+  role?: "staff" | "cashier";
   active: boolean;
   createdAt: string;
   updatedAt: string;

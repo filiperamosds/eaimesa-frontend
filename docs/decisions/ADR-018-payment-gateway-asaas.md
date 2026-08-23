@@ -29,4 +29,4 @@ A fatia 10 vendeu planos com checkout **stub**. O backend expõe `gateway.checko
 ## Consequências
 
 - `packages/shared`: `payerSchema`, códigos `PAYER_REQUIRED` / `PAYMENT_UNAVAILABLE` / `PAYMENT_GATEWAY_ERROR`
-- `/painel/pagamento` e `/painel/bar` compartilham o mesmo painel
+- `/painel/bar/plano` (antes `/painel/pagamento`) e `/painel/bar` compartilham o mesmo hub

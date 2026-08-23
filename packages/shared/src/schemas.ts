@@ -123,9 +123,10 @@ export const patchVenueSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
     slug: slugSchema.optional(),
+    staffCanCloseTabs: z.boolean().optional(),
   })
-  .refine((b) => b.name !== undefined || b.slug !== undefined, {
-    message: "Envie name e/ou slug.",
+  .refine((b) => b.name !== undefined || b.slug !== undefined || b.staffCanCloseTabs !== undefined, {
+    message: "Envie name, slug e/ou staffCanCloseTabs.",
   });
 
 export const createCategorySchema = z.object({
@@ -209,10 +210,13 @@ export const patchTableSchema = z
     message: "Envie label, sortOrder e/ou active.",
   });
 
+export const memberRoleSchema = z.enum(["staff", "cashier"]);
+
 export const createStaffSchema = z.object({
   name: z.string().trim().min(2, "Nome: mínimo 2 caracteres.").max(80),
   email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
   password: z.string().min(8, "Senha: mínimo 8 caracteres."),
+  role: memberRoleSchema.optional(),
 });
 
 export const patchStaffSchema = z
@@ -220,10 +224,15 @@ export const patchStaffSchema = z
     name: z.string().trim().min(2).max(80).optional(),
     active: z.boolean().optional(),
     password: z.string().min(8).optional(),
+    role: memberRoleSchema.optional(),
   })
-  .refine((b) => b.name !== undefined || b.active !== undefined || b.password !== undefined, {
-    message: "Envie name, active e/ou password.",
-  });
+  .refine(
+    (b) =>
+      b.name !== undefined || b.active !== undefined || b.password !== undefined || b.role !== undefined,
+    {
+      message: "Envie name, active, password e/ou role.",
+    },
+  );
 
 export const joinTabSchema = z.object({
   slug: slugSchema,

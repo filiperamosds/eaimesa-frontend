@@ -40,7 +40,7 @@ Não existem `apps/guest` nem `apps/staff`.
 - URL pública do cardápio: `venue.slug` (`bar-do-tiao`).
 - `venue.public_id` é opaco e estável (uso interno / claims futuros).
 - Sessão do dono carrega `account_id` + `venue_id` + `role=owner` — nunca confiar no body para tenancy.
-- Staff JWT carrega `venue_id` + `role` (`owner` | `staff`).
+- Staff JWT carrega `venue_id` + `role` (`owner` | `staff`). Perfil caixa/garçom: `member.role`.
 
 ## Rotas do front
 
@@ -50,8 +50,10 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/cadastro`, `/login` | Auth estabelecimento |
 | `/painel` | Redirect pedidos ou cardápio conforme o plano |
 | `/painel/pedidos` | Kanban do dono (Auto atendimento) |
-| `/painel/cardapio`, `/painel/mesas`, `/painel/bar` | Cardápio, salão e dados do bar |
-| `/painel/pagamento` | Checkout (cartão ou PIX; destaque no fim do trial) |
+| `/painel/cardapio` | Cardápio |
+| `/painel/bar` | Hub do estabelecimento (avatar): dados, plano, mesas, equipe, configurações |
+| `/painel/bar/plano` | Checkout (cartão ou PIX). `/painel/pagamento` redireciona para cá |
+| `/painel/mesas`, `/painel/equipe` | Redirect para `/painel/bar/mesas` e `/painel/bar/equipe` |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |
 | `/{slug}/c/{token}` | Redeem do claim (redirect se plano Cardápio) |
 | `/{slug}/bem-vindo` | PIN no primeiro aparelho |

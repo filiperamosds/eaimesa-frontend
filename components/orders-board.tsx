@@ -8,6 +8,7 @@ import {
   ORDER_STATUS_LABEL,
   type OrderStatus,
 } from "@eaimesa/shared";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { CatalogCategory, StaffOrder, VenueTable } from "../lib/types";
@@ -336,9 +337,9 @@ function NewOrderModal({
             />
             <p className="mt-1 text-xs text-ink-soft">
               Cadastre o salão em{" "}
-              <a href="/painel/mesas" className="font-medium text-chili">
+              <Link href="/painel/bar/mesas" className="font-medium text-chili">
                 Mesas
-              </a>{" "}
+              </Link>{" "}
               para escolher na grade.
             </p>
           </label>

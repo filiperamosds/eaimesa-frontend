@@ -6,7 +6,7 @@
 
 ## Contexto
 
-O dono informa o cartão em `/painel/pagamento`. O checkout hosted do Asaas pedia o cartão na página do provedor. O produto passou a capturar o cartão **no próprio painel** e encaminhar à API Asaas.
+O dono informa o cartão em `/painel/bar/plano`. O checkout hosted do Asaas pedia o cartão na página do provedor. O produto passou a capturar o cartão **no próprio painel** e encaminhar à API Asaas.
 
 O Asaas **não** oferece tokenização no browser. Se o PAN transita pelo Laravel, o escopo PCI é SAQ-D.
 

@@ -8,12 +8,13 @@ import type { StaffTableTab, StaffTableTabsPayload } from "../lib/types";
 type Props = {
   tableId: string;
   tableLabel: string;
+  canClose: boolean;
   onClose: () => void;
   onGenerateQr: () => void;
   onChanged: () => void;
 };
 
-export function StaffTableDialog({ tableId, tableLabel, onClose, onGenerateQr, onChanged }: Props) {
+export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGenerateQr, onChanged }: Props) {
   const [data, setData] = useState<StaffTableTabsPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -145,7 +146,7 @@ export function StaffTableDialog({ tableId, tableLabel, onClose, onGenerateQr, o
                     ))}
                   </ul>
                 )}
-                {selected.status === "open" ? (
+                {selected.status === "open" && canClose ? (
                   <button
                     type="button"
                     disabled={busy}
@@ -154,6 +155,8 @@ export function StaffTableDialog({ tableId, tableLabel, onClose, onGenerateQr, o
                   >
                     Fechar comanda de {selected.guestName}
                   </button>
+                ) : selected.status === "open" ? (
+                  <p className="mt-4 text-sm text-ink-soft">Peça ao caixa para encerrar esta comanda.</p>
                 ) : null}
               </div>
             ) : null}
@@ -163,15 +166,19 @@ export function StaffTableDialog({ tableId, tableLabel, onClose, onGenerateQr, o
           <button type="button" onClick={onGenerateQr} className="btn-secondary text-sm">
             Novo QR
           </button>
-          <button
-            type="button"
-            disabled={busy || openCount > 0}
-            onClick={() => void closeTable()}
-            className="btn-secondary text-sm disabled:opacity-50"
-            title={openCount > 0 ? "Feche todas as comandas primeiro" : undefined}
-          >
-            Encerrar mesa
-          </button>
+          {canClose ? (
+            <button
+              type="button"
+              disabled={busy || openCount > 0}
+              onClick={() => void closeTable()}
+              className="btn-secondary text-sm disabled:opacity-50"
+              title={openCount > 0 ? "Feche todas as comandas primeiro" : undefined}
+            >
+              Encerrar mesa
+            </button>
+          ) : (
+            <p className="self-center text-sm text-ink-soft">Só o caixa encerra a mesa.</p>
+          )}
           <button type="button" onClick={onClose} className="btn-primary !py-2 text-sm">
             Fechar
           </button>

@@ -15,7 +15,7 @@
 | Público | — | Ler cardápio por slug | Sim |
 | Owner | Cookie `eaimesa_owner` | Cardápio; resto conforme o plano | Sim |
 | Guest | Cookie `eaimesa_guest` | Mesa + comanda + pedidos (Auto atendimento) | Sim |
-| Staff | Cookie `eaimesa_owner` (`role: staff`) | Mesas, claims, fila (Auto atendimento) | Sim |
+| Staff | Cookie `eaimesa_owner` (`role: staff`; `member.role` `staff` ou `cashier`) | Mesas, claims, fila; close só se caixa, dono, ou `staffCanCloseTabs` | Sim |
 | Platform | Cookie `eaimesa_platform` | Tenants, catálogo, dashboard, logs | Sim (senha; 2FA depois) |
 
 ## Ameaças SaaS
@@ -28,6 +28,7 @@
 | Preço adulterado no pedido | Recalcular no servidor |
 | XSS no cardápio | Texto; escape no React; CSP depois |
 | Guest → admin | Cookies distintos; RBAC server-side |
+| Garçom encerra conta | 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false`; só caixa/dono |
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
 | PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React |
 | Secret na URL | Cookie httpOnly após login |
