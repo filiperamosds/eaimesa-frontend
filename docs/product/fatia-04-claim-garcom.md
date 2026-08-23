@@ -33,8 +33,8 @@ Ver [ADR-002](../decisions/ADR-002-claim-garcom.md), [ADR-007](../decisions/ADR-
 
 1. Dono cadastra garçom ou caixa (nome, e-mail, senha, perfil) em **Meu bar → Equipe**.
 2. A pessoa entra em **`/login`** (mesmo do painel) → redireciona para `/garcom`.
-3. Toca a mesa → QR grande + countdown (ex. 3 min).
-4. Cliente escaneia → vê PIN → cardápio com sessão (pedir na fatia 6).
+3. Toca a mesa → dialog. **Novo QR** mostra o código + **PIN** para passar ao cliente. O claim já abre a sessão da mesa.
+4. Cliente escaneia → PIN (o mesmo) → cardápio (pedir na fatia 6). Outro aparelho: PIN em `/{slug}/entrar`.
 
 ## Fluxo dono
 

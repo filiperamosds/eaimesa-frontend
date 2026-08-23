@@ -40,6 +40,7 @@ POST /v1/public/venues/{slug}/c/{token}/redeem
 → 200 Set-Cookie: eaimesa_guest=...; HttpOnly; Secure; SameSite=Lax
 → 302 Location: /{slug}
 → Body inclui pin_display (4 dígitos) para compartilhar na mesa
+Staff já vê o mesmo PIN em GET /v1/staff/tables e no dialog da mesa (sessão abre no claim ou ao abrir comanda).
 ```
 
 Após redirect, **token não permanece** na barra de endereço.

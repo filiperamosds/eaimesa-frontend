@@ -9,7 +9,7 @@ O grupo entra na **mesma mesa** sem o garçom voltar. O PIN é da ocupação da 
 - Página `/{slug}/entrar` — PIN de 4 dígitos
 - Cardápio `/{slug}`: atalho “Já tenho o PIN” e faixa “Você está na Mesa X” se houver sessão
 - Rate limit: **5 falhas / 15 min / IP + venue** (o body não traz `tabId`; o PIN resolve a mesa)
-- Seed inalterado (PIN nasce no redeem, não no seed)
+- Seed inalterado. PIN nasce no **claim** ou quando o garçom abre comanda ([ADR-023](../decisions/ADR-023-garcom-abre-comanda-pin.md)); o redeem reusa se a sessão já existir.
 
 O QR fixo da mesa continua **só cardápio**. Quem chega por `/{slug}` sem PIN continua em leitura.
 

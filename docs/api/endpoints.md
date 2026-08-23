@@ -221,9 +221,10 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs` |
-| POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Permitido com mesa ocupada |
-| GET | `/v1/staff/tables/{tableId}/tabs` | Comandas da mesa + parcial de pedidos |
+| GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs`, `pinDisplay` |
+| POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Abre sessão + PIN se a mesa ainda não tiver. Body de resposta inclui `pinDisplay` |
+| GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
+| POST | `/v1/staff/tables/{tableId}/tabs` | Garçom abre comanda `{ name, phone }` (mesmo contrato do guest). Cria sessão/PIN se faltar |
 | POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
 | POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta). Mesma regra de close |
 
@@ -253,6 +254,7 @@ Resposta de `GET /v1/staff/tables` (recorte):
       "sessionOpen": true,
       "claimPending": false,
       "openTabCount": 2,
+      "pinDisplay": "4821",
       "openTabs": [
         { "id": "uuid", "guestName": "Maria", "guestPhoneMasked": "•••• 7777" },
         { "id": "uuid", "guestName": "João", "guestPhoneMasked": "•••• 6666" }
@@ -271,7 +273,8 @@ Resposta do claim:
   "tableLabel": "Mesa 4",
   "claimUrl": "http://mac-filipe.local:3000/bar-do-tiao/c/{token}",
   "expiresAt": "2026-…",
-  "expiresInSeconds": 180
+  "expiresInSeconds": 180,
+  "pinDisplay": "4821"
 }
 ```
 
@@ -321,7 +324,7 @@ PIN casa com **TableSession** `open`. Resposta: `tableLabel`, `slug`, `needsProf
 { "name": "Maria", "phone": "11988887777" }
 ```
 
-Telefone: 10–11 dígitos (DDD + número). O front mascara `(11) 98888-7777`; a API normaliza para só dígitos. Se o número já tem comanda `open` no bar, 409 `TAB_ALREADY_OPEN` — não abre outra nem retoma. Resposta inclui `guestName`, `tableLabel`, `redirectPath`.
+Telefone: 10–11 dígitos (DDD + número). O front mascara `(11) 98888-7777`; a API normaliza para só dígitos. Se o número já tem comanda `open` **em outra mesa**, 409 `TAB_ALREADY_OPEN`. Se a comanda `open` for **desta** sessão (ex.: o garçom já abriu), devolve ela e o guest entra nessa conta. Resposta inclui `guestName`, `tableLabel`, `redirectPath`.
 
 ### Guest — pedidos (fatia 7)
 
