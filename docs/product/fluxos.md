@@ -203,7 +203,7 @@ sequenceDiagram
 
 Detalhe em [fatia-11-console-saas.md](fatia-11-console-saas.md).
 
-1. Operador entra em `/admin/login` (cookie `eaimesa_platform`).
+1. Operador entra em `/admin/login` (cookie `eaimesa_platform`). Sessão válida pula o form. Independente do cookie do bar (`eaimesa_owner`).
 2. Dashboard: bares, MRR estimado, checkouts (stub e Asaas). Status/plano em português (Em trial, Ativo, Cardápio…).
 3. `/admin/bares`: lista com data de expiração; suspender / reativar; ajustar trial/vigência (`PATCH /v1/platform/venues/{id}` — admin; não mexe no Asaas).
 4. `/admin/planos`: criar SKU, preço, promo; `GET /v1/billing/plans` alimenta landing, cadastro e checkout (de/por se houver promo).

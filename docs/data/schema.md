@@ -197,7 +197,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no bar, 409 `TAB_ALREADY_OPEN`.
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
-11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`.
+11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`. Os dois (e o guest) podem existir juntos no browser.
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
 13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado).
 

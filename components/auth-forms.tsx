@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { resolveOwnerLoginTarget } from "../lib/auth-redirect";
 import type { BillingPlan, BillingPlansPayload } from "../lib/load-billing-plans";
-import type { LoginResponse } from "../lib/types";
+import type { LoginResponse, Session } from "../lib/types";
 import { PlanPrice } from "./plan-price";
 
 export function LoginForm() {
@@ -16,14 +17,22 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [checking, setChecking] = useState(true);
 
-  function resolveRedirect(result: LoginResponse) {
-    const target = next?.startsWith("/") ? next : result.redirectPath;
-    if (result.role === "staff" && target.startsWith("/painel")) {
-      return "/garcom";
-    }
-    return target;
-  }
+  useEffect(() => {
+    let cancelled = false;
+    api<Session>("/v1/auth/me")
+      .then((session) => {
+        if (cancelled) return;
+        router.replace(resolveOwnerLoginTarget(session, next));
+      })
+      .catch(() => {
+        if (!cancelled) setChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router, next]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,13 +43,17 @@ export function LoginForm() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      router.push(resolveRedirect(result));
+      router.push(resolveOwnerLoginTarget(result, next));
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Falha no login.");
     } finally {
       setPending(false);
     }
+  }
+
+  if (checking) {
+    return <p className="text-ink-soft">Verificando sessão…</p>;
   }
 
   return (
