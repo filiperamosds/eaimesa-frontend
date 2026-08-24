@@ -101,6 +101,7 @@ export type StaffTable = {
   claimPending: boolean;
   openTabCount: number;
   openTabs: StaffTableOpenTab[];
+  pinDisplay?: string | null;
 };
 
 export type ClaimResponse = {
@@ -110,6 +111,7 @@ export type ClaimResponse = {
   claimUrl: string;
   expiresAt: string;
   expiresInSeconds: number;
+  pinDisplay?: string | null;
 };
 
 export type JoinTabResponse = {
@@ -153,8 +155,15 @@ export type StaffTableTab = {
 };
 
 export type StaffTableTabsPayload = {
-  table: { id: string; label: string; sessionOpen: boolean; openTabCount: number };
+  table: {
+    id: string;
+    label: string;
+    sessionOpen: boolean;
+    openTabCount: number;
+    pinDisplay?: string | null;
+  };
   tabs: StaffTableTab[];
+  unassignedOrders?: StaffOrder[];
 };
 
 export type StaffOrder = {

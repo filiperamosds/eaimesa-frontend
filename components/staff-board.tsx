@@ -72,11 +72,7 @@ export function StaffBoard() {
     try {
       const freshList = await refreshTables();
       const fresh = freshList.find((t) => t.id === table.id) ?? table;
-      if (isOccupied(fresh)) {
-        setOpenTable(fresh);
-        return;
-      }
-      await openClaim(fresh);
+      setOpenTable(fresh);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível abrir a mesa.");
     }
@@ -95,7 +91,7 @@ export function StaffBoard() {
   return (
     <div>
       <p className="text-sm text-ink-soft">
-        {me.venue.name} · toque numa mesa ocupada para ver as comandas; mesa livre gera QR
+        {me.venue.name} · toque na mesa para ver PIN, comandas e lançar pedido
       </p>
       {error ? <p className="mt-4 text-sm text-chili">{error}</p> : null}
       {tables.length === 0 ? (
@@ -131,7 +127,9 @@ export function StaffBoard() {
                       </span>
                     </>
                   ) : table.sessionOpen ? (
-                    <span className="mt-1 text-xs text-ink-soft">Mesa aberta · sem comanda ainda</span>
+                    <span className="mt-1 text-xs text-ink-soft">
+                      {table.pinDisplay ? `PIN ${table.pinDisplay}` : "Mesa aberta · sem comanda ainda"}
+                    </span>
                   ) : table.claimPending ? (
                     <span className="mt-1 text-xs text-ink-soft">QR ativo</span>
                   ) : (
@@ -166,6 +164,7 @@ export function StaffBoard() {
           tableLabel={activeClaim.tableLabel}
           claimUrl={activeClaim.claimUrl}
           expiresAt={activeClaim.expiresAt}
+          pinDisplay={activeClaim.pinDisplay}
           onClose={() => {
             setActiveClaim(null);
             void refreshTables();

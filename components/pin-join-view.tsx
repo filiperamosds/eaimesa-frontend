@@ -24,11 +24,10 @@ export function PinJoinView() {
         method: "POST",
         body: JSON.stringify({ slug, pin }),
       });
-      router.replace(result.redirectPath);
-      router.refresh();
+      const href = result.redirectPath;
+      router.replace(href.endsWith("/") ? href : `${href}/`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível entrar na comanda.");
-    } finally {
       setPending(false);
     }
   }
