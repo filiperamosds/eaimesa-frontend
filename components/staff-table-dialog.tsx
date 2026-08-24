@@ -1,6 +1,11 @@
 "use client";
 
-import { ERROR_CODES, formatBrlFromCents, openComandaSchema } from "@eaimesa/shared";
+import {
+  ERROR_CODES,
+  formatBrlFromCents,
+  GUEST_ORDER_STATUS_LABEL,
+  openComandaSchema,
+} from "@eaimesa/shared";
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { StaffOrder, StaffTableTab, StaffTableTabsPayload } from "../lib/types";
@@ -202,7 +207,9 @@ export function StaffTableDialog({
                 <ul className="mt-2 space-y-2 text-sm">
                   {unassigned.map((order) => (
                     <li key={order.id}>
-                      <p className="text-xs uppercase tracking-wide text-ink-soft">{order.status}</p>
+                      <p className="text-xs uppercase tracking-wide text-ink-soft">
+                        {GUEST_ORDER_STATUS_LABEL[order.status]}
+                      </p>
                       {order.items.map((item) => (
                         <p key={item.id}>
                           {item.qty}× {item.name}
@@ -276,7 +283,9 @@ export function StaffTableDialog({
                   <ul className="mt-4 space-y-3">
                     {selected.orders.map((order) => (
                       <li key={order.id} className="text-sm">
-                        <p className="text-xs uppercase tracking-wide text-ink-soft">{order.status}</p>
+                        <p className="text-xs uppercase tracking-wide text-ink-soft">
+                          {GUEST_ORDER_STATUS_LABEL[order.status]}
+                        </p>
                         {order.items.map((item) => (
                           <p key={item.id} className="flex justify-between gap-2">
                             <span>
