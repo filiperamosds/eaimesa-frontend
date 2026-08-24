@@ -10,11 +10,14 @@ export function GuestTabBar({
   tab,
   partialCents = 0,
   showJoin = true,
+  onOpenPartial,
 }: {
   slug: string;
   tab: GuestTab | null | undefined;
   partialCents?: number;
   showJoin?: boolean;
+  /** Quando informado, "Parcial" abre dialog no cardápio em vez de navegar. */
+  onOpenPartial?: () => void;
 }) {
   if (!showJoin) {
     return null;
@@ -51,9 +54,19 @@ export function GuestTabBar({
           {partialCents > 0 ? (
             <span className="text-white/90"> · {formatBrlFromCents(partialCents)}</span>
           ) : null}
-          <Link href={`/${slug}/comanda`} className="ml-2 font-medium underline decoration-white/40">
-            Parcial
-          </Link>
+          {onOpenPartial ? (
+            <button
+              type="button"
+              onClick={onOpenPartial}
+              className="ml-2 font-medium underline decoration-white/40"
+            >
+              Parcial
+            </button>
+          ) : (
+            <Link href={`/${slug}/comanda`} className="ml-2 font-medium underline decoration-white/40">
+              Parcial
+            </Link>
+          )}
         </p>
         <TablePinReveal pin={tab.pinDisplay} tableLabel={tab.tableLabel} />
       </div>

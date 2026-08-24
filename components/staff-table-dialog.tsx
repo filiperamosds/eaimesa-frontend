@@ -6,10 +6,12 @@ import { api, ApiError } from "../lib/api";
 import type { StaffOrder, StaffTableTab, StaffTableTabsPayload } from "../lib/types";
 import { PhoneField } from "./masked-fields";
 import { StaffAddOrderDialog } from "./staff-add-order-dialog";
+import { StaffTabReceipt } from "./staff-tab-receipt";
 
 type Props = {
   tableId: string;
   tableLabel: string;
+  venueName: string;
   canClose: boolean;
   onClose: () => void;
   onGenerateQr: () => void;
@@ -43,7 +45,15 @@ function mergeOrders(
   return { ...payload, tabs, unassignedOrders: unassigned };
 }
 
-export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGenerateQr, onChanged }: Props) {
+export function StaffTableDialog({
+  tableId,
+  tableLabel,
+  venueName,
+  canClose,
+  onClose,
+  onGenerateQr,
+  onChanged,
+}: Props) {
   const [raw, setRaw] = useState<StaffTableTabsPayload | null>(null);
   const [boardOrders, setBoardOrders] = useState<StaffOrder[]>([]);
   const [overlay, setOverlay] = useState<Record<string, StaffOrder[]>>({});
@@ -53,6 +63,7 @@ export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGen
   const [busy, setBusy] = useState(false);
   const [addingTab, setAddingTab] = useState<StaffTableTab | null>(null);
   const [openingTab, setOpeningTab] = useState(false);
+  const [receiptTab, setReceiptTab] = useState<StaffTableTab | null>(null);
 
   async function load(opts?: { silent?: boolean }) {
     if (!opts?.silent) {
@@ -229,20 +240,56 @@ export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGen
             )}
             {selected ? (
               <div className="mt-5 border-t border-line pt-4">
-                <p className="text-sm font-medium">{selected.guestName} — parcial</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{selected.guestName}</p>
+                    <p className="text-xs text-ink-soft">{selected.guestPhoneMasked}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary shrink-0 !px-3 !py-1.5 text-sm"
+                    onClick={() => setReceiptTab(selected)}
+                  >
+                    Imprimir
+                  </button>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-chili/25 bg-chili/5 px-4 py-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink-soft">
+                    {selected.status === "open" ? "A receber" : "Total da comanda"}
+                  </p>
+                  <p className="mt-1 font-serif text-4xl tabular-nums tracking-tight text-chili">
+                    {formatBrlFromCents(selected.totalCents)}
+                  </p>
+                  <p className="mt-1 text-xs text-ink-soft">
+                    {selected.orders.filter((o) => o.status !== "cancelled").length}{" "}
+                    {selected.orders.filter((o) => o.status !== "cancelled").length === 1
+                      ? "pedido"
+                      : "pedidos"}
+                    {selected.status === "closed" ? " · fechada" : ""}
+                  </p>
+                </div>
+
                 {selected.orders.length === 0 ? (
-                  <p className="mt-2 text-sm text-ink-soft">Nenhum pedido nesta comanda ainda.</p>
+                  <p className="mt-3 text-sm text-ink-soft">Nenhum pedido nesta comanda ainda.</p>
                 ) : (
-                  <ul className="mt-3 space-y-3">
+                  <ul className="mt-4 space-y-3">
                     {selected.orders.map((order) => (
                       <li key={order.id} className="text-sm">
                         <p className="text-xs uppercase tracking-wide text-ink-soft">{order.status}</p>
                         {order.items.map((item) => (
-                          <p key={item.id}>
-                            {item.qty}× {item.name}
+                          <p key={item.id} className="flex justify-between gap-2">
+                            <span>
+                              {item.qty}× {item.name}
+                            </span>
+                            <span className="shrink-0 tabular-nums text-ink-soft">
+                              {formatBrlFromCents(item.unitPriceCents * item.qty)}
+                            </span>
                           </p>
                         ))}
-                        <p className="tabular-nums text-chili">{formatBrlFromCents(order.totalCents)}</p>
+                        <p className="mt-0.5 text-right tabular-nums text-chili">
+                          {formatBrlFromCents(order.totalCents)}
+                        </p>
                       </li>
                     ))}
                   </ul>
@@ -264,7 +311,7 @@ export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGen
                     onClick={() => void closeTab(selected.id)}
                     className="btn-secondary mt-3 w-full text-sm"
                   >
-                    Fechar comanda de {selected.guestName}
+                    Receber {formatBrlFromCents(selected.totalCents)} e fechar comanda
                   </button>
                 ) : selected.status === "open" ? (
                   <p className="mt-3 text-sm text-ink-soft">Peça ao caixa para encerrar esta comanda.</p>
@@ -312,6 +359,14 @@ export function StaffTableDialog({ tableId, tableLabel, canClose, onClose, onGen
             void load();
             onChanged();
           }}
+        />
+      ) : null}
+      {receiptTab ? (
+        <StaffTabReceipt
+          venueName={venueName}
+          tableLabel={tableLabel}
+          tab={receiptTab}
+          onClose={() => setReceiptTab(null)}
         />
       ) : null}
     </div>
