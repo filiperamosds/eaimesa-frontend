@@ -120,27 +120,59 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
         ) : !selected ? (
           <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
             <p className="text-sm text-ink-soft">Escolha a categoria</p>
+            {count > 0 ? (
+              <p className="mt-2 text-sm">
+                <span className="font-medium">
+                  {count} {count === 1 ? "item" : "itens"}
+                </span>
+                <span className="ml-2 tabular-nums text-chili">{formatBrlFromCents(totalCents)}</span>
+                <span className="text-ink-soft"> na cesta — abra outra categoria ou lance o pedido.</span>
+              </p>
+            ) : null}
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              {groups.map((cat) => (
-                <li key={cat.id}>
-                  <button
-                    type="button"
-                    onClick={() => setCategoryId(cat.id)}
-                    className="flex w-full flex-col rounded-2xl border border-line bg-card px-4 py-4 text-left hover:border-chili/40"
-                  >
-                    <span className="font-serif text-lg">{cat.name}</span>
-                    <span className="mt-1 text-xs text-ink-soft">
-                      {cat.items.length} {cat.items.length === 1 ? "item" : "itens"}
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {groups.map((cat) => {
+                const inCat = cat.items.reduce((s, i) => s + (qty[i.id] ?? 0), 0);
+                return (
+                  <li key={cat.id}>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryId(cat.id)}
+                      className="flex w-full flex-col rounded-2xl border border-line bg-card px-4 py-4 text-left hover:border-chili/40"
+                    >
+                      <span className="font-serif text-lg">{cat.name}</span>
+                      <span className="mt-1 text-xs text-ink-soft">
+                        {cat.items.length} {cat.items.length === 1 ? "item" : "itens"}
+                        {inCat > 0 ? (
+                          <span className="ml-1.5 font-medium tabular-nums text-chili">· {inCat} na cesta</span>
+                        ) : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ) : (
           <>
+            <div className="mt-4 flex shrink-0 items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setCategoryId(null)}
+                className="btn-ghost !px-2 !py-1 text-sm"
+              >
+                ← Categorias
+              </button>
+              {count > 0 ? (
+                <p className="text-sm">
+                  <span className="font-medium tabular-nums">
+                    {count} {count === 1 ? "item" : "itens"}
+                  </span>
+                  <span className="ml-2 tabular-nums text-chili">{formatBrlFromCents(totalCents)}</span>
+                </p>
+              ) : null}
+            </div>
             <nav
-              className="-mx-1 mt-4 shrink-0 overflow-x-auto border-b border-line pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="-mx-1 mt-3 shrink-0 overflow-x-auto border-b border-line pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               aria-label="Categorias"
             >
               <ul className="flex gap-2 px-1">
@@ -202,40 +234,27 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
                 );
               })}
             </ul>
+            <label className="mt-3 block shrink-0 text-sm">
+              <span className="mb-1 block font-medium">Nota (opcional)</span>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                maxLength={280}
+                className="field"
+                placeholder="Ex.: sem gelo"
+              />
+            </label>
           </>
         )}
 
-        {selected ? (
-          <label className="mt-3 block shrink-0 text-sm">
-            <span className="mb-1 block font-medium">Nota (opcional)</span>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={2}
-              maxLength={280}
-              className="field"
-              placeholder="Ex.: sem gelo"
-            />
-          </label>
-        ) : null}
-
-        <div className="mt-4 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm">
-            {count > 0 ? (
-              <>
-                <span className="font-medium">
-                  {count} {count === 1 ? "item" : "itens"}
-                </span>
-                <span className="ml-2 tabular-nums text-chili">{formatBrlFromCents(totalCents)}</span>
-              </>
-            ) : (
-              <span className="text-ink-soft">Nenhum item ainda</span>
-            )}
-          </p>
-          <div className="flex justify-end gap-2">
+        <div className="mt-4 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+          {!selected ? (
             <button type="button" onClick={onClose} className="btn-ghost">
               Cancelar
             </button>
+          ) : null}
+          {selected || count > 0 ? (
             <button
               type="button"
               disabled={pending || lines.length === 0}
@@ -244,7 +263,7 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
             >
               {pending ? "Lançando…" : "Lançar pedido"}
             </button>
-          </div>
+          ) : null}
         </div>
       </div>
     </div>
