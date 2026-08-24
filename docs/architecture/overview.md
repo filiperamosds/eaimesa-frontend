@@ -40,7 +40,7 @@ Não existem `apps/guest` nem `apps/staff`.
 - URL pública do cardápio: `venue.slug` (`bar-do-tiao`).
 - `venue.public_id` é opaco e estável (uso interno / claims futuros).
 - Sessão do dono carrega `account_id` + `venue_id` + `role=owner` — nunca confiar no body para tenancy.
-- Staff JWT carrega `venue_id` + `role` (`owner` | `staff`). Perfil caixa/garçom: `member.role`.
+- Staff JWT carrega `venue_id` + `role` (`owner` | `staff`). Perfil caixa/garçom/painel: `member.role`. Painel ainda leva `categoryIds`.
 
 ## Rotas do front
 
@@ -49,7 +49,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/` | Landing SaaS |
 | `/cadastro`, `/login` | Auth estabelecimento |
 | `/painel` | Redirect pedidos ou cardápio conforme o plano |
-| `/painel/pedidos` | Kanban do dono (Auto atendimento) |
+| `/painel/pedidos` | Kanban do dono (tudo) ou do perfil Painel (filtrado por categoria) |
 | `/painel/cardapio` | Cardápio |
 | `/painel/bar` | Hub do estabelecimento (avatar): dados, plano, mesas, equipe, configurações |
 | `/painel/bar/plano` | Checkout (cartão ou PIX). `/painel/pagamento` redireciona para cá |

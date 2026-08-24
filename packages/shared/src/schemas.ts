@@ -211,14 +211,33 @@ export const patchTableSchema = z
     message: "Envie label, sortOrder e/ou active.",
   });
 
-export const memberRoleSchema = z.enum(["staff", "cashier"]);
+export const memberRoleSchema = z.enum(["staff", "cashier", "panel"]);
 
-export const createStaffSchema = z.object({
-  name: z.string().trim().min(2, "Nome: mínimo 2 caracteres.").max(80),
-  email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
-  password: z.string().min(8, "Senha: mínimo 8 caracteres."),
-  role: memberRoleSchema.optional(),
-});
+export const categoryIdsSchema = z.array(z.string().uuid()).max(40);
+
+function assertPanelCategories(
+  role: "staff" | "cashier" | "panel" | undefined,
+  categoryIds: string[] | undefined,
+  ctx: z.RefinementCtx,
+) {
+  if (role === "panel" && (!categoryIds || categoryIds.length < 1)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["categoryIds"],
+      message: "Selecione ao menos uma categoria do cardápio.",
+    });
+  }
+}
+
+export const createStaffSchema = z
+  .object({
+    name: z.string().trim().min(2, "Nome: mínimo 2 caracteres.").max(80),
+    email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
+    password: z.string().min(8, "Senha: mínimo 8 caracteres."),
+    role: memberRoleSchema.optional(),
+    categoryIds: categoryIdsSchema.optional(),
+  })
+  .superRefine((b, ctx) => assertPanelCategories(b.role, b.categoryIds, ctx));
 
 export const patchStaffSchema = z
   .object({
@@ -226,14 +245,23 @@ export const patchStaffSchema = z
     active: z.boolean().optional(),
     password: z.string().min(8).optional(),
     role: memberRoleSchema.optional(),
+    categoryIds: categoryIdsSchema.optional(),
   })
-  .refine(
-    (b) =>
-      b.name !== undefined || b.active !== undefined || b.password !== undefined || b.role !== undefined,
-    {
-      message: "Envie name, active, password e/ou role.",
-    },
-  );
+  .superRefine((b, ctx) => {
+    if (
+      b.name === undefined &&
+      b.active === undefined &&
+      b.password === undefined &&
+      b.role === undefined &&
+      b.categoryIds === undefined
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Envie name, active, password, role e/ou categoryIds.",
+      });
+    }
+    assertPanelCategories(b.role, b.categoryIds, ctx);
+  });
 
 export const joinTabSchema = z.object({
   slug: slugSchema,

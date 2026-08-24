@@ -17,7 +17,12 @@ export type Session = {
   role: "owner" | "staff";
   account: { id: string; email: string };
   venue: Venue;
-  member?: { id: string; name: string; role?: "staff" | "cashier" };
+  member?: {
+    id: string;
+    name: string;
+    role?: "staff" | "cashier" | "panel";
+    categoryIds?: string[];
+  };
 };
 
 export type LoginResponse = Session & {
@@ -79,7 +84,8 @@ export type StaffMember = {
   id: string;
   name: string;
   email: string;
-  role?: "staff" | "cashier";
+  role?: "staff" | "cashier" | "panel";
+  categoryIds?: string[];
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -181,6 +187,7 @@ export type StaffOrder = {
   items: {
     id: string;
     catalogItemId: string | null;
+    categoryId?: string | null;
     name: string;
     unitPriceCents: number;
     qty: number;

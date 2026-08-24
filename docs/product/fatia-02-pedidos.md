@@ -4,7 +4,7 @@ Fila do bar na tela. O dono (depois o garçom) vê os pedidos em colunas de stat
 
 ## Inclui
 
-- Board Kanban em `/painel/pedidos` — **entrada padrão do painel** após o login (`/painel` redireciona para cá)
+- Board Kanban em `/painel/pedidos` — **entrada padrão do painel** após o login (`/painel` redireciona para cá). Perfil **Painel** (cozinha/bar) usa a mesma rota, só com as categorias do cadastro ([fatia 14](fatia-14-kanban-painel.md)).
 - Abas visíveis no topo: Pedidos | Cardápio | Mesas | Meu bar
 - Pedido de **balcão** na comanda da mesa (`/garcom`; preço snapshot no servidor)
 - Mudança de status: `pending` → `accepted` → `preparing` → `delivered` (e `cancelled`)

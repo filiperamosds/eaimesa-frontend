@@ -1,6 +1,6 @@
 # Documentação EaiMesa
 
-Índice. Fatia atual: **log viewer no console**; fatias 1–12 já estão no repo.
+Índice. Fatia atual: **Painel Kanban (cozinha/bar)**; fatias 1–14 no repo.
 
 1. [Fatia 1 — Cardápio](product/fatia-01-cardapio.md)
 1b. [Fatia 2 — Pedidos](product/fatia-02-pedidos.md) — Kanban / KDS no painel
@@ -15,18 +15,20 @@
 1k. [Fatia 11 — Console SaaS](product/fatia-11-console-saas.md) — login da plataforma, dashboard, bares (expiração + suspender), catálogo (criar plano + promo)
 1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — cartão no painel + token; PIX hosted; stub local
 1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, tail Laravel
+1n. [Fatia 14 — Painel Kanban](product/fatia-14-kanban-painel.md) — perfil Painel, categorias por monitor
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
 4. [Pricing](product/pricing.md) — Cardápio e Auto atendimento
 5. [Arquitetura](architecture/overview.md) — dois repos (Laravel + Next), um front
 6. [Sessão claim + PIN](architecture/sessao-claim-pin.md) — claim, PIN join, cookie guest
 7. [Segurança](security/modelo.md) — tenancy, cookies, ameaças
-8. [Modelo de dados](data/schema.md) — entidades fatia 1–12 + planejadas
-9. [API](api/endpoints.md) — REST fatia 1–13 + contrato futuro
+8. [Modelo de dados](data/schema.md) — entidades fatia 1–14 + planejadas
+9. [API](api/endpoints.md) — REST fatia 1–14 + contrato futuro
 9b. [Backend — caixa / close](api/backend-caixa-close.md) — o que o Laravel precisa alterar (`staffCanCloseTabs`, `cashier`)
 9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId`, PIN no staff, `POST .../tabs`
+9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**, **caixa vs garçom**, **pedido do garçom na comanda**, **garçom abre comanda + PIN**
+11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**, **caixa vs garçom**, **pedido do garçom na comanda**, **garçom abre comanda + PIN**, **Painel Kanban por categoria**
 
 ## Cursor
 

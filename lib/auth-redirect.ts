@@ -1,4 +1,4 @@
-import { planAllowsService } from "@eaimesa/shared";
+import { isPanelMember, planAllowsService } from "@eaimesa/shared";
 import type { Session } from "./types";
 
 /** Query `next` só se for path interno (evita open redirect). */
@@ -10,7 +10,8 @@ export function safeNextPath(next: string | null | undefined): string | null {
   return next;
 }
 
-export function homeForSession(session: Pick<Session, "role" | "venue">): string {
+export function homeForSession(session: Pick<Session, "role" | "venue" | "member">): string {
+  if (isPanelMember(session)) return "/painel/pedidos";
   if (session.role === "staff") return "/garcom";
   return planAllowsService(session.venue.planKind ?? session.venue.plan)
     ? "/painel/pedidos"
@@ -18,11 +19,15 @@ export function homeForSession(session: Pick<Session, "role" | "venue">): string
 }
 
 export function resolveOwnerLoginTarget(
-  session: Pick<Session, "role" | "venue"> & { redirectPath?: string },
+  session: Pick<Session, "role" | "venue" | "member"> & { redirectPath?: string },
   next?: string | null,
 ): string {
   const fallback = session.redirectPath || homeForSession(session);
   const target = safeNextPath(next) ?? fallback;
+  if (isPanelMember(session)) {
+    if (target.startsWith("/painel/pedidos")) return target;
+    return "/painel/pedidos";
+  }
   if (session.role === "staff" && (target.startsWith("/painel") || target.startsWith("/admin"))) {
     return "/garcom";
   }

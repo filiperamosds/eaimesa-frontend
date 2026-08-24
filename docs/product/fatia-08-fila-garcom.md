@@ -9,7 +9,7 @@ O dono já tem o Kanban em `/painel/pedidos`. O **garçom** precisa da mesma fil
 - `PATCH /v1/staff/orders/{id}` — `{ status }`
 - Poll curto (já existe no board). Sem SSE.
 
-Lançar itens **não** é nesta tela. O garçom abre a mesa em `/garcom`, entra na comanda e usa **Adicionar pedido** (`POST /v1/staff/orders` com `tabId`, cardápio em `GET /v1/staff/catalog`). [ADR-022](../decisions/ADR-022-pedido-garcom-na-comanda.md).
+Lançar itens **não** é nesta tela. O garçom abre a mesa em `/garcom`, entra na comanda e usa **Adicionar pedido** (`POST /v1/staff/orders` com `tabId`, cardápio em `GET /v1/staff/catalog`). [ADR-022](../decisions/ADR-022-pedido-garcom-na-comanda.md). Perfil **Painel** não usa `/garcom/pedidos`: cai em `/painel/pedidos` com a fila filtrada por categoria ([fatia 14](fatia-14-kanban-painel.md)).
 
 ## Não inclui
 

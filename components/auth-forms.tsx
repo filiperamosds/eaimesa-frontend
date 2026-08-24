@@ -71,11 +71,11 @@ export function LoginForm() {
         {pending ? "Entrando…" : "Entrar"}
       </button>
       <p className="text-center text-sm text-ink-soft">
-        Garçom ou caixa? Use o mesmo login — você vai para{" "}
+        Garçom ou caixa? Mesmo login — vocês vão para{" "}
         <Link href="/login?next=/garcom" className="font-medium text-ink underline">
           /garcom
         </Link>
-        .
+        . Monitor da cozinha ou do bar (perfil Painel) abre o Kanban.
       </p>
       <p className="text-center text-sm text-ink-soft">
         Novo bar?{" "}
