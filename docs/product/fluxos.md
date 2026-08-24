@@ -94,8 +94,8 @@ sequenceDiagram
   API-->>C: pinDisplay → /{slug}/bem-vindo (PIN + nome/telefone)
 ```
 
-1. Dono cadastra garçons e caixas em **Meu bar → Equipe** (`/painel/bar/equipe`).
-2. Garçom entra em `/login` → `/garcom`, escolhe mesa, mostra QR (countdown ~3 min).
+1. Dono cadastra garçons, caixas e (se quiser) painéis da cozinha/bar em **Meu bar → Equipe** (`/painel/bar/equipe`).
+2. Garçom entra em `/login` → `/garcom`, escolhe mesa, mostra QR (countdown ~3 min). Painel entra no mesmo `/login` → `/painel/pedidos` (só o Kanban das categorias marcadas).
 3. Cliente escaneia → redeem → PIN da mesa + **nome e telefone** (comanda pessoal).
 4. O quadro do garçom lista os nomes na mesa e, ao toque, abre a parcial. Não gera outro QR se a mesa já está ocupada.
 5. Pedido pelo cardápio grava `tab_id` da comanda pessoal (fatia 7).

@@ -25,14 +25,14 @@ CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
 ### Auth estabelecimento (dono e garçom)
 
-Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`. Caixa e garçom compartilham JWT `staff`; o perfil está em `member.role` (`staff` | `cashier`).
+Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`. Garçom, caixa e painel compartilham JWT `staff`; o perfil está em `member.role` (`staff` | `cashier` | `panel`). Painel: `redirectPath` `/painel/pedidos` e `member.categoryIds`.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/auth/register` | — | Cria account + venue (role owner); Set-Cookie |
 | POST | `/v1/auth/login` | — | E-mail/senha; owner ou staff; Set-Cookie + `redirectPath` |
 | POST | `/v1/auth/logout` | Cookie | Clear-Cookie |
-| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier`) |
+| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier` \| `panel`, `categoryIds` se painel) |
 
 #### POST /v1/auth/register (body)
 
@@ -202,13 +202,13 @@ Rótulo único por venue. `TABLE_LIMIT` se já houver 15 ativas. `TABLE_LABEL_TA
 
 ### Owner — equipe (fatia 4)
 
-Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa). `role`: `staff` (garçom, default) | `cashier` (caixa). Caixa vê o mesmo `/garcom` e sempre pode encerrar comanda/mesa. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md).
+Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/staff` | Lista equipe + `role` + contagem ativa |
-| POST | `/v1/owner/staff` | `{ name, email, password, role? }` |
-| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role? }` |
+| GET | `/v1/owner/staff` | Lista equipe + `role` + `categoryIds` + contagem ativa |
+| POST | `/v1/owner/staff` | `{ name, email, password, role?, categoryIds? }` |
+| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role?, categoryIds? }` |
 | DELETE | `/v1/owner/staff/{id}` | Remove o membro |
 
 ### Auth garçom
@@ -230,14 +230,14 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 
 ### Staff — fila (fatia 8)
 
-Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono.
+Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `member.role=panel`: `GET` devolve só pedidos/itens das `categoryIds` do membro; `POST` e catalog → 403 `PANEL_FORBIDDEN`. Itens incluem `categoryId`.
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/orders` | Fila 48h (`pending`…`delivered`) |
-| POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor |
-| PATCH | `/v1/staff/orders/{id}` | `{ status }` |
-| GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda |
+| GET | `/v1/staff/orders` | Fila 48h (`pending`…`delivered`); painel filtra por categoria |
+| POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor. Painel: 403 |
+| PATCH | `/v1/staff/orders/{id}` | `{ status }` (pedido inteiro; painel só se o pedido tiver item da estação) |
+| GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda. Painel: 403 |
 
 Mesmo body de `POST /v1/owner/orders` (`tabId` opcional). Front: mesa → comanda → **Adicionar pedido**.
 

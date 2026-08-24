@@ -29,6 +29,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Painel** | `/painel/*` | Dono | Nav: Pedidos, Cardápio; Meu bar no avatar | — |
 | **Pagamento** | `/painel/bar/plano` | Dono | Destaque no fim do trial; checkout stub ou Asaas | Conta da mesa |
 | **Garçom / caixa** | `/garcom` | Staff (`member.role` staff ou cashier) | Só Auto atendimento | — |
+| **Painel (KDS)** | `/painel/pedidos` | Staff (`member.role` panel) | Só Auto atendimento; categorias no cadastro | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
 | **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos, logs | SSO/2FA |
 
@@ -37,6 +38,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 - **Dono** — 1 bar, ~10 mesas, quer menos hardware e pedido confiável. Publica o cardápio, vê a fila, cadastra o salão e a equipe.
 - **Garçom** — gera QR na mesa; vê parciais; avança a fila. Encerra comanda/mesa só se o dono permitir.
 - **Caixa** — mesma tela `/garcom`; sempre pode fechar comanda e mesa.
+- **Painel** — login no monitor da cozinha ou do bar; só o Kanban das categorias que o dono marcou.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
 - **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, vendas da assinatura, catálogo e logs da API. Não atende o salão nem edita o cardápio de um bar.
 

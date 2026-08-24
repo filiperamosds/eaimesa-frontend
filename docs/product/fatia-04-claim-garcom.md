@@ -4,13 +4,13 @@ O garçom abre a comanda na mesa. O dono cadastra usuários de **garçom** no pa
 
 ## Inclui
 
-- CRUD de equipe em `/painel/bar/equipe` (dono) — cria `account` + `venue_member` com `role` `staff` (garçom) ou `cashier` (caixa)
-- **Login único** em `/login` — cookie `eaimesa_owner` com JWT `role: owner | staff` (`member.role` distingue caixa)
-- App `/garcom` — grade de mesas, gera QR; caixa e dono sempre encerram contas; garçom conforme `staffCanCloseTabs`
+- CRUD de equipe em `/painel/bar/equipe` (dono) — cria `account` + `venue_member` com `role` `staff` (garçom), `cashier` (caixa) ou `panel` (Kanban; exige `categoryIds`)
+- **Login único** em `/login` — cookie `eaimesa_owner` com JWT `role: owner | staff` (`member.role` distingue caixa e painel)
+- App `/garcom` — grade de mesas, gera QR; caixa e dono sempre encerram contas; garçom conforme `staffCanCloseTabs`. Painel **não** entra aqui.
 - API `POST /v1/staff/tables/{id}/claims` (staff ou dono)
 - Redeem `POST /v1/public/venues/{slug}/c/{token}/redeem` → tab + PIN + cookie `eaimesa_guest`
 - Página `/{slug}/c/{token}` no front (redeem) e `/{slug}/bem-vindo` (PIN grande)
-- Limite: **5 garçons ativos** por venue (plano Bar)
+- Limite: **5 membros ativos** por venue (garçom + caixa + painel)
 - Seed: `garcom@bardotiao.local` / senha demo
 
 ## Dois QRs (recapitulando)

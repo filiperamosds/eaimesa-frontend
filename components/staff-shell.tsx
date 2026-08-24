@@ -1,6 +1,6 @@
 "use client";
 
-import { memberRoleLabel } from "@eaimesa/shared";
+import { isPanelMember, memberRoleLabel } from "@eaimesa/shared";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -24,6 +24,10 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     api<Session>("/v1/auth/me")
       .then((session) => {
+        if (isPanelMember(session)) {
+          router.replace("/painel/pedidos");
+          return;
+        }
         if (session.role === "staff" || session.role === "owner") {
           setMe(session);
           return;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { planAllowsService, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
+import { isPanelMember, planAllowsService, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
 import { api } from "../lib/api";
 import { paymentPromptForVenue } from "../lib/billing-prompt";
 import type { Session } from "../lib/types";
@@ -34,7 +34,15 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
     api<Session>("/v1/auth/me")
       .then((session) => {
         if (session.role === "staff") {
-          router.replace("/garcom");
+          if (!isPanelMember(session)) {
+            router.replace("/garcom");
+            return;
+          }
+          if (!path.startsWith("/painel/pedidos")) {
+            router.replace("/painel/pedidos");
+            return;
+          }
+          setMe(session);
           return;
         }
         setMe(session);
@@ -63,36 +71,55 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const promptPayment = shouldPromptSubscriptionPayment(me.venue);
+  const panel = isPanelMember(me);
+  const promptPayment = !panel && shouldPromptSubscriptionPayment(me.venue);
   const onPagamento = path.startsWith("/painel/bar/plano") || path.startsWith("/painel/pagamento");
   const prompt = promptPayment ? paymentPromptForVenue(me.venue) : null;
-  const links = ALL_LINKS.filter((l) => {
-    if (l.service && !planAllowsService(me.venue.planKind ?? me.venue.plan)) return false;
-    return true;
-  });
+  const links = panel
+    ? []
+    : ALL_LINKS.filter((l) => {
+        if (l.service && !planAllowsService(me.venue.planKind ?? me.venue.plan)) return false;
+        return true;
+      });
 
   return (
-    <div className="min-h-screen pb-24 sm:pb-0">
+    <div className={`min-h-screen ${panel || links.length === 0 ? "pb-0" : "pb-24 sm:pb-0"}`}>
       <header className="sticky top-0 z-30 border-b border-line/80 bg-card/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[88rem] items-center justify-between px-5 py-3">
           <Logo />
           <div className="flex items-center gap-2 text-sm">
-            <Link href={`/${me.venue.slug}`} className="btn-ghost hidden sm:inline-flex">
-              Ver cardápio
-            </Link>
+            {panel ? (
+              <span className="hidden text-ink-soft sm:inline">
+                {me.member?.name ?? me.account.email} · Painel
+              </span>
+            ) : (
+              <Link href={`/${me.venue.slug}`} className="btn-ghost hidden sm:inline-flex">
+                Ver cardápio
+              </Link>
+            )}
             <AccountMenu
-              initials={initialsFrom(me.venue.name || me.account.email)}
-              label={me.account.email}
-              items={[
-                { type: "link", href: "/painel/bar", label: "Meu bar" },
-                { type: "button", label: "Sair", onClick: () => void logout(), danger: true },
-              ]}
+              initials={initialsFrom(
+                panel
+                  ? me.member?.name || me.account.email
+                  : me.venue.name || me.account.email,
+              )}
+              label={panel ? (me.member?.name ?? me.account.email) : me.account.email}
+              items={
+                panel
+                  ? [{ type: "button", label: "Sair", onClick: () => void logout(), danger: true }]
+                  : [
+                      { type: "link", href: "/painel/bar", label: "Meu bar" },
+                      { type: "button", label: "Sair", onClick: () => void logout(), danger: true },
+                    ]
+              }
             />
           </div>
         </div>
-        <div className="mx-auto hidden max-w-[88rem] px-5 pb-3 sm:block">
-          <PainelNav path={path} links={links} />
-        </div>
+        {links.length > 0 ? (
+          <div className="mx-auto hidden max-w-[88rem] px-5 pb-3 sm:block">
+            <PainelNav path={path} links={links} />
+          </div>
+        ) : null}
       </header>
       {prompt && !onPagamento ? (
         <div className="border-b border-chili/25 bg-chili/5">
@@ -108,6 +135,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
         </div>
       ) : null}
       <div className="mx-auto max-w-[88rem] px-5 py-6">{children}</div>
+      {links.length === 0 ? null : (
       <nav
         aria-label="Painel"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur-xl sm:hidden"
@@ -133,6 +161,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
           })}
         </ul>
       </nav>
+      )}
     </div>
   );
 }

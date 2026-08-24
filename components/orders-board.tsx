@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  filterOrdersByCategories,
   formatBrlFromCents,
   KANBAN_COLUMNS,
   ORDER_NEXT,
@@ -46,9 +47,14 @@ export const STAFF_BOARD_ENDPOINTS: BoardEndpoints = {
 export function OrdersBoard({
   endpoints = OWNER_ENDPOINTS,
   compact = false,
+  station = false,
+  categoryIds,
 }: {
   endpoints?: BoardEndpoints;
   compact?: boolean;
+  /** Monitor de cozinha/bar: só Kanban, sem atalho para mesas. */
+  station?: boolean;
+  categoryIds?: string[];
 }) {
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -67,14 +73,19 @@ export function OrdersBoard({
     return () => clearInterval(t);
   }, [load]);
 
+  const visible = useMemo(
+    () => (station ? filterOrdersByCategories(orders, categoryIds) : orders),
+    [orders, station, categoryIds],
+  );
+
   const byStatus = useMemo(() => {
     const map: Record<string, StaffOrder[]> = {};
     for (const col of KANBAN_COLUMNS) map[col] = [];
-    for (const o of orders) {
+    for (const o of visible) {
       map[o.status]?.push(o);
     }
     return map;
-  }, [orders]);
+  }, [visible]);
 
   async function setStatus(id: string, status: OrderStatus) {
     setError(null);
@@ -99,14 +110,18 @@ export function OrdersBoard({
           <p className="eyebrow">Turno</p>
           <h1 className={`mt-2 font-serif ${compact ? "text-2xl" : "text-3xl"}`}>Pedidos</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            {compact
-              ? "Aceite e avance os pedidos. Para lançar itens, abra a mesa em Mesas."
-              : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
+            {station
+              ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
+              : compact
+                ? "Aceite e avance os pedidos. Para lançar itens, abra a mesa em Mesas."
+                : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
           </p>
         </div>
-        <Link href="/garcom" className="btn-secondary !py-2 text-sm">
-          Mesas e comandas
-        </Link>
+        {station ? null : (
+          <Link href="/garcom" className="btn-secondary !py-2 text-sm">
+            Mesas e comandas
+          </Link>
+        )}
       </div>
       {error ? <p className="mb-3 text-sm text-chili">{error}</p> : null}
       <div className="flex gap-3 overflow-x-auto pb-4">
@@ -126,6 +141,7 @@ export function OrdersBoard({
                 <OrderCard
                   key={order.id}
                   order={order}
+                  station={station}
                   open={openId === order.id}
                   onToggle={() => setOpenId((cur) => (cur === order.id ? null : order.id))}
                   onAdvance={() => {
@@ -145,12 +161,14 @@ export function OrdersBoard({
 
 function OrderCard({
   order,
+  station,
   open,
   onToggle,
   onAdvance,
   onCancel,
 }: {
   order: StaffOrder;
+  station: boolean;
   open: boolean;
   onToggle: () => void;
   onAdvance: () => void;
@@ -203,7 +221,7 @@ function OrderCard({
             {nextLabel}
           </button>
         ) : null}
-        {order.status !== "delivered" ? (
+        {order.status !== "delivered" && !station ? (
           <button type="button" onClick={onCancel} className="rounded-full px-3 py-1 text-xs text-chili">
             Cancelar
           </button>

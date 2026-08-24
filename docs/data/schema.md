@@ -51,6 +51,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 
 - `id`, `order_id`, `venue_id`
 - `catalog_item_id` (nullable se o item do cardápio for apagado)
+- `category_id` (snapshot da categoria no momento do pedido; Kanban Painel filtra por isto)
 - `name_snapshot`, `unit_price_cents_snapshot`, `qty`, `note`
 
 ## Entidades — fatia 3 (mesas)
@@ -70,10 +71,14 @@ No máximo **15 mesas ativas** por venue no plano Auto atendimento.
 Garçom vinculado ao venue (mesmo login do painel).
 
 - `id`, `venue_id` → Venue, `account_id` → Account
-- `role`: `staff` (garçom) | `cashier` (caixa). Owner continua via `venues.owner_account_id`. JWT do cookie é `staff` para os dois.
+- `role`: `staff` (garçom) | `cashier` (caixa) | `panel` (Kanban da estação). Owner continua via `venues.owner_account_id`. JWT do cookie é `staff` para os três.
 - `name`, `active`, timestamps
 
-Máximo **5 membros ativos** (garçom + caixa) por venue no plano Auto atendimento. Caixa usa `/garcom` e sempre encerra comanda/mesa. Garçom só encerra se `venues.staff_can_close_tabs` for true ([ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md)).
+### VenueMemberCategory (fatia 14)
+
+Pivot `venue_member_id` + `catalog_category_id`. Só faz sentido quando `role = panel`. O Kanban daquele login mostra itens dessas categorias.
+
+Máximo **5 membros ativos** (garçom + caixa + painel) por venue no plano Auto atendimento. Caixa usa `/garcom` e sempre encerra comanda/mesa. Garçom só encerra se `venues.staff_can_close_tabs` for true ([ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md)). Painel nunca encerra; só o Kanban filtrado ([ADR-024](../decisions/ADR-024-kanban-painel-categorias.md)).
 
 ## Entidades — fatia 6 (comandas individuais)
 
