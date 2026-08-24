@@ -11,17 +11,18 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 - Várias comandas `open` na mesma mesa
 - Guest: após claim ou PIN, formulário nome + telefone (`/{slug}/comanda`) — máscara `(11) 98888-7777`; a API grava só dígitos
 - Telefone único enquanto a comanda está `open`: mesmo número em **outra** mesa → 409 `TAB_ALREADY_OPEN`. Se o garçom já abriu a comanda **nesta** mesa com esse telefone, o guest retoma essa conta.
-- Garçom `/garcom`: toque na mesa (livre ou ocupada) abre o **dialog**. Vê o **PIN**, abre comanda (nome + telefone), lança pedido, fecha conta.
-- Guest `/{slug}/comanda` e a cesta: a **própria** parcial ([fatia 9](fatia-09-parcial-guest.md))
+- Garçom `/garcom`: toque na mesa (livre ou ocupada) abre o **dialog**. Vê o **PIN**, abre comanda (nome + telefone), parcial com **A receber**, **Imprimir** (cupom de conferência), lança pedido, fecha conta.
+- Guest `/{slug}`: **Parcial** em dialog; `/{slug}/comanda` para abrir perfil ([fatia 9](fatia-09-parcial-guest.md))
 - `POST /v1/staff/tables/{id}/tabs` — garçom abre comanda `{ name, phone }`
 - `POST /v1/staff/orders` com `tabId` — garçom lança itens na comanda (dialog)
-- `POST /v1/staff/tabs/{id}/close` — fecha uma comanda
+- `POST /v1/staff/tabs/{id}/close` — fecha uma comanda (UI destaca o valor a receber)
 - `POST /v1/staff/tables/{id}/close` — encerra a mesa; **409** se ainda houver comanda aberta
 - Telefone mascarado no painel do garçom (últimos 4 dígitos)
 
 ## Não inclui
 
-- Pagamento / split
+- Pagamento / split (só conferência + close; sem gateway na conta da mesa)
+- Cupom fiscal oficial (SAT/NFC-e) — o cupom na tela é **conferência**
 - Travamento (`locked`) além do close
 
 ## Fluxo cliente
@@ -36,8 +37,8 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 1. Toque na mesa abre o dialog (livre ou ocupada). PIN grande se a sessão existir.
 2. **Abrir comanda**: nome + telefone. **Novo QR** para o cliente escanear. Os dois geram/mostram o PIN.
 3. Cartão da mesa lista os **nomes**. O quadro recarrega sozinho.
-4. Seleciona uma conta → parcial. **Adicionar pedido** (categorias, depois itens).
-5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`). **Encerrar mesa** só com zero comandas abertas.
+4. Seleciona uma conta → **A receber** em destaque, itens e **Imprimir** (cupom de conferência na tela / impressora do aparelho). **Adicionar pedido** (categorias, depois itens).
+5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`) — botão mostra o valor. **Encerrar mesa** só com zero comandas abertas.
 
 ## Por que não uma comanda só
 

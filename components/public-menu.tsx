@@ -4,6 +4,7 @@ import { formatBrlFromCents, planAllowsService } from "@eaimesa/shared";
 import Link from "next/link";
 import { useState } from "react";
 import { GuestCart, type CartLine } from "./guest-cart";
+import { GuestPartialDialog } from "./guest-partial-dialog";
 import { GuestTabBar } from "./guest-tab-bar";
 import { mediaSrc } from "../lib/media";
 import { useGuestOrders } from "../lib/use-guest-orders";
@@ -14,13 +15,14 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const groups = menu.categories.filter((c) => c.items.length > 0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [partialOpen, setPartialOpen] = useState(false);
   const ordering =
     planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "") && Boolean(menu.venue.acceptsOrders);
   const tab = useGuestTab(menu.venue.slug, ordering);
   const suspended = menu.venue.subscriptionStatus === "suspended";
   const canOrder = Boolean(ordering && tab && !tab.needsProfile && !suspended);
   const hasTab = Boolean(ordering && tab && !tab.needsProfile);
-  const { orders, totalCents, reload } = useGuestOrders(hasTab);
+  const { orders, totalCents, error: ordersError, reload } = useGuestOrders(hasTab);
 
   function addItem(item: PublicMenu["categories"][number]["items"][number]) {
     setCart((cur) => {
@@ -65,7 +67,13 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
         </div>
       </header>
       {ordering ? (
-        <GuestTabBar slug={menu.venue.slug} tab={tab} partialCents={totalCents} showJoin />
+        <GuestTabBar
+          slug={menu.venue.slug}
+          tab={tab}
+          partialCents={totalCents}
+          showJoin
+          onOpenPartial={hasTab ? () => setPartialOpen(true) : undefined}
+        />
       ) : null}
 
       {groups.length > 0 ? (
@@ -194,6 +202,17 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
           orders={orders}
           partialCents={totalCents}
           onOrdered={() => void reload()}
+        />
+      ) : null}
+
+      {partialOpen && tab && !tab.needsProfile ? (
+        <GuestPartialDialog
+          guestName={tab.guestName ?? "Sua comanda"}
+          tableLabel={tab.tableLabel}
+          orders={orders}
+          totalCents={totalCents}
+          error={ordersError}
+          onClose={() => setPartialOpen(false)}
         />
       ) : null}
 

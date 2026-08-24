@@ -145,7 +145,7 @@ sequenceDiagram
 1. Comanda pessoal aberta no `/{slug}`.
 2. Carrinho: itens + qty + nota opcional. Preço **não** vai no body.
 3. Envia → `pending` no Kanban do **garçom** (`/garcom/pedidos`) e do dono.
-4. Cliente vê a **parcial** da própria comanda (`GET /v1/guest/orders`, `/{slug}/comanda`).
+4. Cliente vê a **parcial** da própria comanda (dialog **Parcial** no `/{slug}`, ou `/{slug}/comanda`).
 5. Sem comanda: slug continua só leitura (401/403).
 
 ## 4b. Fila do garçom (fatia 8)
@@ -160,7 +160,7 @@ Detalhe em [fatia-08-fila-garcom.md](fatia-08-fila-garcom.md).
 
 Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 
-1. Caixa, dono ou garçom (se `staffCanCloseTabs`): `POST /v1/staff/tabs/{id}/close` — fecha **uma** comanda (revoga sessões daquela conta). Garçom sem permissão → 403 `CASHIER_REQUIRED`.
+1. Caixa, dono ou garçom (se `staffCanCloseTabs`): confere o total (**A receber** / cupom) e `POST /v1/staff/tabs/{id}/close` — fecha **uma** comanda (revoga sessões daquela conta). Garçom sem permissão → 403 `CASHIER_REQUIRED`.
 2. Mesma regra: `POST /v1/staff/tables/{id}/close` — encerra a **mesa** só se todas as comandas estão `closed`.
 3. Próxima rodada na mesa = novo claim (novo PIN).
 

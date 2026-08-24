@@ -145,6 +145,7 @@ export function StaffBoard() {
         <StaffTableDialog
           tableId={openTable.id}
           tableLabel={openTable.label}
+          venueName={me.venue.name}
           canClose={canClose}
           onClose={() => {
             setOpenTable(null);
