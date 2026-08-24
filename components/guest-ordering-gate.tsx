@@ -14,11 +14,13 @@ export function GuestOrderingGate({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState<PublicMenu | null | undefined>(undefined);
 
   useEffect(() => {
+    if (slug === undefined) return;
     if (!slug || isReservedSlug(slug)) {
       setMenu(null);
       return;
     }
     let cancelled = false;
+    setMenu(undefined);
     loadPublicMenu(slug)
       .then((m) => {
         if (!cancelled) setMenu(m);
@@ -35,6 +37,12 @@ export function GuestOrderingGate({ children }: { children: ReactNode }) {
     if (!slug || !menu) return;
     if (!venueAllowsGuestOrdering(menu)) router.replace(`/${slug}`);
   }, [slug, menu, router]);
+
+  if (slug === undefined) {
+    return (
+      <div className="mx-auto max-w-lg px-5 py-24 text-center text-ink-soft">Carregando…</div>
+    );
+  }
 
   if (!slug) {
     return (
