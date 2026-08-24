@@ -1,8 +1,8 @@
 # Fatia 12 — Pagamento dos planos (checkout Asaas)
 
-O dono paga a mensalidade em `/painel/bar/plano`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas. **PIX** usa checkout hospedado. O stub da [fatia 10](fatia-10-planos.md) continua quando `checkoutMode=immediate`.
+O dono paga a mensalidade em `/painel/pagamento`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas. **PIX** usa checkout hospedado. O stub da [fatia 10](fatia-10-planos.md) continua quando `checkoutMode=immediate`.
 
-Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Depois do cadastro o front abre o produto (cardápio/pedidos). O checkout em `/painel/bar/plano` (cartão e PIX) é destacado nos últimos 3 dias do trial ou se a assinatura estiver `past_due`. `/painel/pagamento` redireciona para o hub (callbacks PIX).
+Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Depois do cadastro o front abre o produto (cardápio/pedidos). O checkout em `/painel/pagamento` (cartão e PIX) é destacado nos últimos 3 dias do trial ou se a assinatura estiver `past_due`. Callbacks PIX usam `?checkout=` na mesma rota. Pagador vem do **responsável** (`venue.representative`) — [ADR-025](../decisions/ADR-025-responsavel-configuracoes.md).
 
 ## Inclui
 
@@ -31,8 +31,8 @@ Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Dep
 
 | Path | Quem | O que muda |
 |------|------|------------|
-| `/painel/bar/plano` | Dono | Cartão no form. PIX: pagador + redirect. Banner no fim do trial |
-| `/painel/bar` | Dono | Mesmo `BillingPanel` (pagamento antecipado) |
+| `/painel/pagamento` | Dono | Cartão no form. PIX + redirect. Banner no fim do trial. Pré-fill do responsável |
+| `/painel/configuracoes/responsavel` | Dono | Cadastro do pagador Asaas |
 | `/`, `/preco`, `/cadastro` | Visitante | Sem pagador; trial inalterado; cadastro vai ao produto |
 
 ## Contrato
@@ -46,7 +46,7 @@ sequenceDiagram
   participant API as API Laravel
   participant A as Asaas
 
-  D->>W: /painel/bar/plano (cartão + CPF + CEP)
+  D->>W: /painel/pagamento (cartão + responsável/CEP)
   W->>API: POST /v1/billing/checkout {plan, method, payer, creditCard}
   API->>A: POST /v3/payments (PAN em trânsito)
   A-->>API: creditCardToken + last4

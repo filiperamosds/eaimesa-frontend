@@ -115,7 +115,7 @@ No Asaas: `checkoutMode: hosted` (PIX), `requiresPayer: true`. Cartão: captura 
 
 PIX: body sem `creditCard`; resposta `status: pending`, `checkoutUrl`. Cartão Asaas: `status: success` se a cobrança autorizar. Stub: `status: success`, ignora o cartão, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
 
-Callbacks de navegação do PIX (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired` (redirect para `/painel/bar/plano`).
+Callbacks de navegação do PIX (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
 
 Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`. Sem cartão no Asaas → 400 `CARD_REQUIRED`.
 
@@ -126,7 +126,7 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 | Método | Path | Descrição |
 |--------|------|-----------|
 | GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs` |
-| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs? }` |
+| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, representative? }` |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |

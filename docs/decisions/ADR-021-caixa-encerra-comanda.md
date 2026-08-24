@@ -13,8 +13,8 @@ No salão, fechar comanda e mesa é operação de **caixa**, não de quem só ge
 - Caixa usa o mesmo `/garcom` (mesas + fila). Sempre pode `POST /v1/staff/tabs/{id}/close` e `POST /v1/staff/tables/{id}/close`.
 - Dono no `/garcom` também sempre pode encerrar.
 - Flag do bar `staffCanCloseTabs` (default **true**, para não quebrar o salão atual). Desligada: garçom toma 403 `CASHIER_REQUIRED`; a UI esconde os botões.
-- Dono ajusta a flag em **Meu bar → Configurações** (`PATCH /v1/owner/venue`). Cadastra caixa em **Meu bar → Equipe** (`role` no POST/PATCH `/v1/owner/staff`).
-- Nav do painel: Pedidos + Cardápio; avatar com **Meu bar** e **Sair**. Mesas, equipe, plano e configs ficam no hub `/painel/bar/*`.
+- Dono ajusta a flag em **Configurações → Meu bar** (`PATCH /v1/owner/venue`). Cadastra caixa em **Configurações → Equipe** (`role` no POST/PATCH `/v1/owner/staff`).
+- Nav do painel: Pedidos | Mesas | Configurações ([ADR-025](ADR-025-responsavel-configuracoes.md)).
 
 ## Alternativas rejeitadas
 
@@ -27,4 +27,4 @@ No salão, fechar comanda e mesa é operação de **caixa**, não de quem só ge
 ## Consequências
 
 - Endpoints de close **não mudam de path**.
-- Callback PIX `/painel/pagamento?checkout=` redireciona para `/painel/bar/plano`.
+- Callback PIX `/painel/pagamento?checkout=` permanece nessa rota.

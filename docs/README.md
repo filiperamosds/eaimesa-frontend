@@ -28,7 +28,7 @@
 9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId`, PIN no staff, `POST .../tabs`
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**, **caixa vs garçom**, **pedido do garçom na comanda**, **garçom abre comanda + PIN**, **Painel Kanban por categoria**
+11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**, **caixa vs garçom**, **pedido do garçom na comanda**, **garçom abre comanda + PIN**, **Painel Kanban por categoria**, **responsável + Configurações (ADR-025)**
 
 ## Cursor
 

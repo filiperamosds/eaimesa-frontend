@@ -11,6 +11,14 @@ export type Venue = {
   trialEndsAt?: string | null;
   currentPeriodEndsAt?: string | null;
   staffCanCloseTabs?: boolean;
+  representative?: {
+    name: string;
+    cpfCnpj: string;
+    email: string;
+    phone: string;
+    postalCode: string;
+    addressNumber: string;
+  } | null;
 };
 
 export type Session = {

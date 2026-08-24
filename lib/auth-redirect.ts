@@ -15,7 +15,7 @@ export function homeForSession(session: Pick<Session, "role" | "venue" | "member
   if (session.role === "staff") return "/garcom";
   return planAllowsService(session.venue.planKind ?? session.venue.plan)
     ? "/painel/pedidos"
-    : "/painel/cardapio";
+    : "/painel/configuracoes/cardapio";
 }
 
 export function resolveOwnerLoginTarget(

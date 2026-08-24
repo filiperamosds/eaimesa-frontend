@@ -3,7 +3,9 @@
 import {
   CHECKOUT_POLL_INTERVAL_MS,
   CHECKOUT_POLL_TIMEOUT_MS,
+  ERROR_CODES,
   formatBrlFromCents,
+  isRepresentativeComplete,
   PAID_PERIOD_DAYS,
   PLAN_FUTURE,
   planRank,
@@ -12,6 +14,7 @@ import {
   type CheckoutPayer,
   type PaymentMethod,
 } from "@eaimesa/shared";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
@@ -83,7 +86,12 @@ function resolveGateway(data: BillingMe | null): BillingGateway {
 }
 
 function checkoutErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) return err.message;
+  if (err instanceof ApiError) {
+    if (err.code === ERROR_CODES.PAYER_REQUIRED) {
+      return "Cadastre o responsável em Configurações ou informe o pagador no checkout.";
+    }
+    return err.message;
+  }
   return "Não foi possível concluir o pagamento.";
 }
 
@@ -341,23 +349,47 @@ export function BillingPanel() {
       {error ? <p className="text-sm text-chili">{error}</p> : null}
 
       {selected ? (
-        <PaymentForm
-          planName={selected.name}
-          amountCents={selected.effectivePriceCents ?? selected.priceCents}
-          listPriceCents={selected.priceCents}
-          promoPriceCents={selected.promoPriceCents}
-          pending={pending}
-          checkoutMode={checkoutMode}
-          requiresPayer={gateway.requiresPayer}
-          methods={gateway.methods}
-          defaultEmail={accountEmail}
-          provider={gateway.provider}
-          coverageNote={stacked.text}
-          onCancel={() => {
-            if (!pending) setCheckoutPlan(null);
-          }}
-          onPay={(method, payer, creditCard) => void pay(selected.id, method, payer, creditCard)}
-        />
+        gateway.provider === "asaas" && !isRepresentativeComplete(data.venue.representative) ? (
+          <div className="rounded-2xl border border-chili/30 bg-chili/5 p-5">
+            <p className="text-sm font-medium text-chili">Cadastre o responsável</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              Para cartão/PIX no Asaas é preciso nome, CPF/CNPJ, e-mail, telefone, CEP e número.
+              Sem isso o checkout falha com PAYER_REQUIRED.
+            </p>
+            <Link
+              href="/painel/configuracoes/responsavel"
+              className="btn-primary mt-4 inline-flex !py-2 text-sm"
+            >
+              Cadastre o responsável
+            </Link>
+            <button
+              type="button"
+              className="btn-ghost mt-2 block text-sm"
+              onClick={() => setCheckoutPlan(null)}
+            >
+              Voltar aos planos
+            </button>
+          </div>
+        ) : (
+          <PaymentForm
+            planName={selected.name}
+            amountCents={selected.effectivePriceCents ?? selected.priceCents}
+            listPriceCents={selected.priceCents}
+            promoPriceCents={selected.promoPriceCents}
+            pending={pending}
+            checkoutMode={checkoutMode}
+            requiresPayer={gateway.requiresPayer}
+            methods={gateway.methods}
+            defaultEmail={accountEmail}
+            initialPayer={data.venue.representative ?? null}
+            provider={gateway.provider}
+            coverageNote={stacked.text}
+            onCancel={() => {
+              if (!pending) setCheckoutPlan(null);
+            }}
+            onPay={(method, payer, creditCard) => void pay(selected.id, method, payer, creditCard)}
+          />
+        )
       ) : (
         <div className={`grid gap-3 ${cols}`}>
           {data.plans.map((p) => {

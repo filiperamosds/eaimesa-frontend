@@ -75,6 +75,37 @@ export const payerSchema = z.object({
 
 export type CheckoutPayer = z.infer<typeof payerSchema>;
 
+/** Responsável do bar (ADR-025) — mesmo shape camelCase do pagador, campos obrigatórios no form. */
+export const representativeSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome do responsável (3 a 80 caracteres).")
+    .max(80),
+  cpfCnpj: z
+    .string()
+    .transform(normalizeCpfCnpj)
+    .refine(isCpfOrCnpj, { message: "Informe um CPF ou CNPJ válido." }),
+  email: z
+    .string()
+    .trim()
+    .email("Informe um e-mail válido.")
+    .transform((e) => e.toLowerCase()),
+  phone: z
+    .string()
+    .transform((v) => normalizePhone(v))
+    .refine((d) => d.length >= 10 && d.length <= 11, {
+      message: "Telefone: DDD + número (10 ou 11 dígitos).",
+    }),
+  postalCode: z
+    .string()
+    .transform(normalizeCep)
+    .refine(isCep, { message: "Informe um CEP válido." }),
+  addressNumber: z.string().trim().min(1, "Informe o número do endereço.").max(20),
+});
+
+export type RepresentativeInput = z.infer<typeof representativeSchema>;
+
 export const creditCardSchema = z.object({
   holderName: z
     .string()
@@ -124,10 +155,18 @@ export const patchVenueSchema = z
     name: z.string().trim().min(2).max(80).optional(),
     slug: slugSchema.optional(),
     staffCanCloseTabs: z.boolean().optional(),
+    representative: representativeSchema.optional(),
   })
-  .refine((b) => b.name !== undefined || b.slug !== undefined || b.staffCanCloseTabs !== undefined, {
-    message: "Envie name, slug e/ou staffCanCloseTabs.",
-  });
+  .refine(
+    (b) =>
+      b.name !== undefined ||
+      b.slug !== undefined ||
+      b.staffCanCloseTabs !== undefined ||
+      b.representative !== undefined,
+    {
+      message: "Envie name, slug, staffCanCloseTabs e/ou representative.",
+    },
+  );
 
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1, "Nome da categoria.").max(60),

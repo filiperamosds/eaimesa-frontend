@@ -1,16 +1,12 @@
-import { VenueSettings } from "../../../components/venue-settings";
+"use client";
 
-export const metadata = { title: "Meu bar" };
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function BarDadosPage() {
-  return (
-    <div>
-      <h2 className="font-serif text-2xl">Dados do bar</h2>
-      <p className="mt-2 mb-8 text-ink-soft">
-        O slug vira a rota pública. Exemplo: /bar-do-tiao. Palavras do produto (login, painel) não podem
-        ser usadas.
-      </p>
-      <VenueSettings />
-    </div>
-  );
+export default function BarDadosRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/painel/configuracoes/bar");
+  }, [router]);
+  return <p className="text-ink-soft">Redirecionando…</p>;
 }

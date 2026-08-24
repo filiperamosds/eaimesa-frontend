@@ -1,15 +1,12 @@
-import { VenueCloseSettings } from "../../../../components/venue-close-settings";
+"use client";
 
-export const metadata = { title: "Configurações" };
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function BarConfigPage() {
-  return (
-    <div>
-      <h2 className="font-serif text-2xl">Configurações</h2>
-      <p className="mt-2 mb-8 max-w-2xl text-ink-soft">
-        Regras do salão. O caixa não é afetado por este check — ele sempre pode fechar comanda e mesa.
-      </p>
-      <VenueCloseSettings />
-    </div>
-  );
+export default function BarConfigRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/painel/configuracoes/bar");
+  }, [router]);
+  return <p className="text-ink-soft">Redirecionando…</p>;
 }

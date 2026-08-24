@@ -14,9 +14,9 @@ sequenceDiagram
   D->>W: /cadastro (e-mail, senha, nome, slug)
   W->>API: POST /v1/auth/register
   API-->>W: Set-Cookie eaimesa_owner
-  D->>W: /painel — Kanban de pedidos (abas: Pedidos, Cardápio, Mesas, Meu bar)
+  D->>W: /painel — Kanban de pedidos (abas: Pedidos, Mesas, Configurações)
   W->>API: GET /v1/owner/orders
-  D->>W: /painel/cardapio — categorias e itens
+  D->>W: /painel/configuracoes/cardapio — categorias e itens
   W->>API: CRUD /v1/owner/catalog/**
   C->>W: GET /bar-do-tiao
   W->>API: GET /v1/public/venues/bar-do-tiao
@@ -24,9 +24,9 @@ sequenceDiagram
 ```
 
 1. Dono cria conta + venue (nome + slug único).
-2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor).
+2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor) em **Configurações → Cardápio**.
 3. Comparte `https://eaimesa.com.br/{slug}` (QR fixo na mesa, Instagram, balcão) — **só cardápio**.
-4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: `/painel/bar/mesas`.
+4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: `/painel/mesas`.
 
 ## 0b. Fatia 2 — fila Kanban (balcão)
 
@@ -70,7 +70,7 @@ sequenceDiagram
 
 1. Dono cria conta (e-mail + senha).
 2. Cadastra venue: nome e **slug** (`bar-do-tiao`). CNPJ, CPF responsável e OTP entram em fatia posterior.
-3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem pagador. O painel destaca `/painel/bar/plano` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
+3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem pagador. O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
 6. Divulga `/{slug}` — **não** o claim.
@@ -94,7 +94,7 @@ sequenceDiagram
   API-->>C: pinDisplay → /{slug}/bem-vindo (PIN + nome/telefone)
 ```
 
-1. Dono cadastra garçons, caixas e (se quiser) painéis da cozinha/bar em **Meu bar → Equipe** (`/painel/bar/equipe`).
+1. Dono cadastra garçons, caixas e (se quiser) painéis da cozinha/bar em **Configurações → Equipe** (`/painel/configuracoes/equipe`).
 2. Garçom entra em `/login` → `/garcom`, escolhe mesa, mostra QR (countdown ~3 min). Painel entra no mesmo `/login` → `/painel/pedidos` (só o Kanban das categorias marcadas).
 3. Cliente escaneia → redeem → PIN da mesa + **nome e telefone** (comanda pessoal).
 4. O quadro do garçom lista os nomes na mesa e, ao toque, abre a parcial. Não gera outro QR se a mesa já está ocupada.
@@ -177,9 +177,9 @@ sequenceDiagram
   D->>W: /cadastro?plano={id do catálogo}
   W->>API: POST /v1/auth/register (plan)
   API-->>W: trial 7 dias
-  D->>W: /painel/cardapio ou /painel/pedidos
+  D->>W: /painel/configuracoes/cardapio ou /painel/pedidos
   Note over D,W: nos últimos 3 dias do trial (ou past_due): banner no painel
-  D->>W: /painel/bar/plano (cartão ou PIX + valor)
+  D->>W: /painel/pagamento (cartão ou PIX + valor)
   W->>API: POST /v1/billing/checkout {plan, method, payer?, creditCard?}
   alt stub
     Note over API: espera 2s (ignora cartão)
@@ -193,7 +193,7 @@ sequenceDiagram
   end
 ```
 
-1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias) e vai para o produto. Pagamento **não** abre no cadastro. Nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) — ou com status `past_due` — o painel mostra banner para `/painel/bar/plano`. Quem quiser pagar antes usa **Meu bar**. Pagador (CPF) só se `requiresPayer`.
+1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias) e vai para o produto. Pagamento **não** abre no cadastro. Nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) — ou com status `past_due` — o painel mostra banner para `/painel/pagamento`. Quem quiser pagar antes usa **Configurações → Pagamento**. Responsável em `/painel/configuracoes/responsavel`; no checkout Asaas o front omite `payer` se inalterado.
 2. Stub (`immediate`): (~2s) aprova e grava `active`. `currentPeriodEndsAt` = `max(agora, trial_ends_at, current_period_ends_at) + paidPeriodDays`. Front envia o cartão no POST; o stub ignora.
 3. Asaas cartão: form no painel envia `creditCard`; Laravel cobra e guarda token. PIX: redirect hosted. `?checkout=ok` não confirma.
 4. Subir `kind` Cardápio → Auto atendimento: sempre. Troca lateral (mesmo kind): sempre. Descer: só depois do fim da vigência **paga**.

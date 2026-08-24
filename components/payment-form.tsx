@@ -7,7 +7,9 @@ import {
   formatCpfCnpjInput,
   formatPhoneInput,
   hasPromoPrice,
+  isRepresentativeComplete,
   payerSchema,
+  representativeFingerprint,
   type CheckoutCreditCard,
   type CheckoutMode,
   type CheckoutPayer,
@@ -26,6 +28,8 @@ type Props = {
   requiresPayer: boolean;
   methods: PaymentMethod[];
   defaultEmail?: string;
+  /** Pré-fill do responsável (ADR-025). Se inalterado no submit, omite `payer`. */
+  initialPayer?: CheckoutPayer | null;
   provider?: string;
   coverageNote?: string;
   onCancel: () => void;
@@ -65,6 +69,7 @@ export function PaymentForm({
   requiresPayer,
   methods,
   defaultEmail = "",
+  initialPayer = null,
   provider,
   coverageNote,
   onCancel,
@@ -76,12 +81,18 @@ export function PaymentForm({
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
-  const [payerName, setPayerName] = useState("");
-  const [cpfCnpj, setCpfCnpj] = useState("");
-  const [email, setEmail] = useState(defaultEmail);
-  const [phone, setPhone] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [addressNumber, setAddressNumber] = useState("");
+  const [payerName, setPayerName] = useState(initialPayer?.name ?? "");
+  const [cpfCnpj, setCpfCnpj] = useState(
+    initialPayer?.cpfCnpj ? formatCpfCnpjInput(initialPayer.cpfCnpj) : "",
+  );
+  const [email, setEmail] = useState(initialPayer?.email || defaultEmail);
+  const [phone, setPhone] = useState(
+    initialPayer?.phone ? formatPhoneInput(initialPayer.phone) : "",
+  );
+  const [postalCode, setPostalCode] = useState(
+    initialPayer?.postalCode ? formatCepInput(initialPayer.postalCode) : "",
+  );
+  const [addressNumber, setAddressNumber] = useState(initialPayer?.addressNumber ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
   const amount = formatBrlFromCents(amountCents);
   const hosted = checkoutMode === "hosted";
@@ -89,6 +100,7 @@ export function PaymentForm({
   const captureCard = method === "card";
   const needPayer = asaas && (requiresPayer || captureCard);
   const providerLabel = provider === "asaas" ? "Asaas" : provider || "provedor";
+  const baselineFp = representativeFingerprint(initialPayer);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,31 +108,54 @@ export function PaymentForm({
 
     let payer: CheckoutPayer | undefined;
     if (needPayer) {
-      const parsed = payerSchema.safeParse({
+      const current = {
         name: payerName,
         cpfCnpj,
         email,
         phone,
-        postalCode: captureCard ? postalCode : undefined,
-        addressNumber: captureCard ? addressNumber : undefined,
-      });
-      if (!parsed.success) {
-        setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do pagador.");
-        return;
+        postalCode: captureCard ? postalCode : initialPayer?.postalCode,
+        addressNumber: captureCard ? addressNumber : initialPayer?.addressNumber,
+      };
+      const unchanged =
+        isRepresentativeComplete(initialPayer) &&
+        representativeFingerprint({
+          name: payerName,
+          cpfCnpj,
+          email,
+          phone,
+          postalCode,
+          addressNumber,
+        }) === baselineFp;
+
+      if (unchanged) {
+        payer = undefined;
+      } else {
+        const parsed = payerSchema.safeParse({
+          name: current.name,
+          cpfCnpj: current.cpfCnpj,
+          email: current.email,
+          phone: current.phone,
+          postalCode: captureCard ? current.postalCode : undefined,
+          addressNumber: captureCard ? current.addressNumber : undefined,
+        });
+        if (!parsed.success) {
+          setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do pagador.");
+          return;
+        }
+        if (captureCard && !parsed.data.phone) {
+          setLocalError("Informe o telefone do titular.");
+          return;
+        }
+        if (captureCard && !parsed.data.postalCode) {
+          setLocalError("Informe o CEP do titular.");
+          return;
+        }
+        if (captureCard && !parsed.data.addressNumber) {
+          setLocalError("Informe o número do endereço.");
+          return;
+        }
+        payer = parsed.data;
       }
-      if (captureCard && !parsed.data.phone) {
-        setLocalError("Informe o telefone do titular.");
-        return;
-      }
-      if (captureCard && !parsed.data.postalCode) {
-        setLocalError("Informe o CEP do titular.");
-        return;
-      }
-      if (captureCard && !parsed.data.addressNumber) {
-        setLocalError("Informe o número do endereço.");
-        return;
-      }
-      payer = parsed.data;
     }
 
     let card: CheckoutCreditCard | undefined;
@@ -207,6 +242,12 @@ export function PaymentForm({
 
       {needPayer ? (
         <div className="space-y-3">
+          {isRepresentativeComplete(initialPayer) ? (
+            <p className="rounded-2xl border border-line bg-paper-2/60 px-3 py-2 text-xs text-ink-soft">
+              Pagador pré-preenchido com o responsável. Sem alterar os campos, o checkout usa o
+              cadastro salvo (sem reenviar `payer`).
+            </p>
+          ) : null}
           <label className="block text-sm">
             <span className="mb-1 block font-medium">Nome do pagador</span>
             <input

@@ -43,3 +43,49 @@ export function formatCpfCnpjInput(raw: string): string {
   if (d.length <= 12) return `${a}.${b}.${c}/${e}`;
   return `${a}.${b}.${c}/${e}-${f}`;
 }
+
+/** Responsável do estabelecimento (pagador Asaas / ADR-025). */
+export type VenueRepresentative = {
+  name: string;
+  cpfCnpj: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  addressNumber: string;
+};
+
+/** Pronto para checkout Asaas (cartão exige tel, CEP e número). */
+export function isRepresentativeComplete(
+  rep: Partial<VenueRepresentative> | null | undefined,
+): rep is VenueRepresentative {
+  if (!rep) return false;
+  const name = (rep.name ?? "").trim();
+  const cpf = normalizeCpfCnpj(rep.cpfCnpj ?? "");
+  const email = (rep.email ?? "").trim();
+  const phone = (rep.phone ?? "").replace(/\D/g, "");
+  const cep = normalizeCep(rep.postalCode ?? "");
+  const number = (rep.addressNumber ?? "").trim();
+  return (
+    name.length >= 3 &&
+    isCpfOrCnpj(cpf) &&
+    email.includes("@") &&
+    phone.length >= 10 &&
+    phone.length <= 11 &&
+    isCep(cep) &&
+    number.length >= 1 &&
+    number.length <= 20
+  );
+}
+
+export function representativeFingerprint(rep: Partial<VenueRepresentative> | null | undefined): string {
+  if (!rep) return "";
+  return [
+    (rep.name ?? "").trim().toLowerCase(),
+    normalizeCpfCnpj(rep.cpfCnpj ?? ""),
+    (rep.email ?? "").trim().toLowerCase(),
+    (rep.phone ?? "").replace(/\D/g, ""),
+    normalizeCep(rep.postalCode ?? ""),
+    (rep.addressNumber ?? "").trim(),
+  ].join("|");
+}
+

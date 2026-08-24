@@ -48,12 +48,16 @@ Não existem `apps/guest` nem `apps/staff`.
 |------|-----|
 | `/` | Landing SaaS |
 | `/cadastro`, `/login` | Auth estabelecimento |
-| `/painel` | Redirect pedidos ou cardápio conforme o plano |
+| `/painel` | Redirect pedidos ou configurações/cardápio conforme o plano |
 | `/painel/pedidos` | Kanban do dono (tudo) ou do perfil Painel (filtrado por categoria) |
-| `/painel/cardapio` | Cardápio |
-| `/painel/bar` | Hub do estabelecimento (avatar): dados, plano, mesas, equipe, configurações |
-| `/painel/bar/plano` | Checkout (cartão ou PIX). `/painel/pagamento` redireciona para cá |
-| `/painel/mesas`, `/painel/equipe` | Redirect para `/painel/bar/mesas` e `/painel/bar/equipe` |
+| `/painel/mesas` | Mesas (CRUD + QR fixo) — operacional Auto atendimento |
+| `/painel/configuracoes` | Hub: cardápio, bar, equipe, responsável |
+| `/painel/configuracoes/cardapio` | CRUD do cardápio |
+| `/painel/configuracoes/bar` | Nome, slug, encerramento no salão |
+| `/painel/configuracoes/equipe` | Staff / caixa / painel |
+| `/painel/configuracoes/responsavel` | Responsável / pagador Asaas ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)) |
+| `/painel/pagamento` | Checkout (cartão ou PIX). `/painel/bar/plano` redireciona para cá |
+| `/painel/cardapio`, `/painel/bar/*`, `/painel/equipe` | Redirects legados |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |
 | `/{slug}/c/{token}` | Redeem do claim (redirect se plano Cardápio) |
 | `/{slug}/bem-vindo` | PIN no primeiro aparelho |

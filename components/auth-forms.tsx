@@ -122,7 +122,7 @@ export function RegisterForm() {
         method: "POST",
         body: JSON.stringify({ email, password, venueName, slug, plan }),
       });
-      router.push(result.redirectPath || "/painel/cardapio");
+      router.push(result.redirectPath || "/painel/configuracoes/cardapio");
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível cadastrar.");

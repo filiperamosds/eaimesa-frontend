@@ -1,16 +1,12 @@
-import { TablesEditor } from "../../../../components/tables-editor";
+"use client";
 
-export const metadata = { title: "Mesas" };
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function BarMesasPage() {
-  return (
-    <div>
-      <h2 className="font-serif text-2xl">Configuração de mesas</h2>
-      <p className="mt-2 mb-8 max-w-2xl text-ink-soft">
-        Cadastre o salão e exporte o QR do cardápio (geral ou por mesa). O QR do garçom — que abre a
-        comanda — é gerado em /garcom.
-      </p>
-      <TablesEditor showVenueQr />
-    </div>
-  );
+export default function BarMesasRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/painel/mesas");
+  }, [router]);
+  return <p className="text-ink-soft">Redirecionando…</p>;
 }
