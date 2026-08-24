@@ -16,6 +16,7 @@
 1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — cartão no painel + token; PIX hosted; stub local
 1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, tail Laravel
 1n. [Fatia 14 — Painel Kanban](product/fatia-14-kanban-painel.md) — perfil Painel, categorias por monitor
+1o. [Fatia 15 — Chamar garçom](product/fatia-15-chamar-garcom-cardapio.md) — QR `?mesa=` + presença + fila (plano Cardápio)
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
 4. [Pricing](product/pricing.md) — Cardápio e Auto atendimento
@@ -27,8 +28,9 @@
 9b. [Backend — caixa / close](api/backend-caixa-close.md) — o que o Laravel precisa alterar (`staffCanCloseTabs`, `cashier`)
 9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId`, PIN no staff, `POST .../tabs`
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
+9e. [Backend — chamar garçom](api/backend-waiter-call.md) — presença `?mesa=`, cookie, fila (ADR-026)
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — stack, claim, front único, slug, Kanban, mesas, comandas, pedido guest, fila garçom, planos, console SaaS, SKU + promo, dois repositórios, Laravel + MySQL, **GitHub Actions Hostinger**, **checkout Asaas**, **vigência empilhada**, **cartão no painel**, **caixa vs garçom**, **pedido do garçom na comanda**, **garçom abre comanda + PIN**, **Painel Kanban por categoria**, **responsável + Configurações (ADR-025)**
+11. [ADRs](decisions/ADR-001-stack.md) — … **responsável + Configurações (ADR-025)**, **chamar garçom QR mesa (ADR-026)**
 
 ## Cursor
 
