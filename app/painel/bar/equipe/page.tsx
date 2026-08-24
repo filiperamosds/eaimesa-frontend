@@ -1,16 +1,12 @@
-import { StaffEditor } from "../../../../components/staff-editor";
+"use client";
 
-export const metadata = { title: "Equipe" };
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function BarEquipePage() {
-  return (
-    <div>
-      <h2 className="font-serif text-2xl">Equipe</h2>
-      <p className="mt-2 mb-8 max-w-2xl text-ink-soft">
-        Garçom gera o QR da comanda. Caixa vê a mesma tela em /garcom. Painel é o monitor da
-        cozinha ou do bar: só o Kanban, com as categorias que o dono marcar.
-      </p>
-      <StaffEditor />
-    </div>
-  );
+export default function BarEquipeRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/painel/configuracoes/equipe");
+  }, [router]);
+  return <p className="text-ink-soft">Redirecionando…</p>;
 }

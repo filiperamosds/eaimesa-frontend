@@ -8,14 +8,14 @@ import { api } from "../lib/api";
 import type { Session } from "../lib/types";
 
 const LINKS = [
-  { href: "/painel/bar", label: "Dados do bar", exact: true, service: false },
-  { href: "/painel/bar/plano", label: "Plano e pagamentos", exact: false, service: false },
-  { href: "/painel/bar/mesas", label: "Configuração de mesas", exact: false, service: true },
-  { href: "/painel/bar/equipe", label: "Equipe", exact: false, service: true },
-  { href: "/painel/bar/configuracoes", label: "Configurações", exact: false, service: true },
+  { href: "/painel/configuracoes/cardapio", label: "Cardápio", service: false },
+  { href: "/painel/configuracoes/bar", label: "Meu bar", service: false },
+  { href: "/painel/configuracoes/equipe", label: "Equipe", service: true },
+  { href: "/painel/configuracoes/responsavel", label: "Responsável", service: false },
+  { href: "/painel/pagamento", label: "Pagamento", service: false },
 ] as const;
 
-export function BarHubNav() {
+export function ConfiguracoesNav() {
   const path = usePathname();
   const [service, setService] = useState(true);
 
@@ -29,13 +29,14 @@ export function BarHubNav() {
 
   return (
     <nav
-      aria-label="Meu bar"
+      aria-label="Configurações"
       className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
     >
       {links.map((l) => {
-        const active = l.exact
-          ? path === l.href || path === `${l.href}/`
-          : path.startsWith(l.href);
+        const active =
+          l.href === "/painel/pagamento"
+            ? path.startsWith("/painel/pagamento") || path.startsWith("/painel/bar/plano")
+            : path.startsWith(l.href);
         return (
           <Link
             key={l.href}

@@ -12,13 +12,15 @@ import { Logo } from "./site-chrome";
 
 const ALL_LINKS = [
   { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true },
-  { href: "/painel/cardapio", label: "Cardápio", icon: "☰", service: false },
+  { href: "/painel/mesas", label: "Mesas", icon: "▦", service: true },
+  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false },
 ] as const;
 
 const SERVICE_PREFIXES = [
   "/painel/pedidos",
   "/painel/mesas",
   "/painel/equipe",
+  "/painel/configuracoes/equipe",
   "/painel/bar/mesas",
   "/painel/bar/equipe",
   "/painel/bar/configuracoes",
@@ -48,7 +50,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
         setMe(session);
         const service = planAllowsService(session.venue.planKind ?? session.venue.plan);
         if (!service && SERVICE_PREFIXES.some((p) => path.startsWith(p))) {
-          router.replace("/painel/cardapio");
+          router.replace("/painel/configuracoes/cardapio");
         }
       })
       .catch(() => {
@@ -73,7 +75,10 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
 
   const panel = isPanelMember(me);
   const promptPayment = !panel && shouldPromptSubscriptionPayment(me.venue);
-  const onPagamento = path.startsWith("/painel/bar/plano") || path.startsWith("/painel/pagamento");
+  const onPagamento =
+    path.startsWith("/painel/pagamento") ||
+    path.startsWith("/painel/bar/plano") ||
+    path.startsWith("/painel/configuracoes/responsavel");
   const prompt = promptPayment ? paymentPromptForVenue(me.venue) : null;
   const links = panel
     ? []
@@ -108,7 +113,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
                 panel
                   ? [{ type: "button", label: "Sair", onClick: () => void logout(), danger: true }]
                   : [
-                      { type: "link", href: "/painel/bar", label: "Meu bar" },
+                      { type: "link", href: "/painel/configuracoes", label: "Configurações" },
                       { type: "button", label: "Sair", onClick: () => void logout(), danger: true },
                     ]
               }
@@ -128,7 +133,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
               <p className="text-sm font-medium text-chili">{prompt.title}</p>
               <p className="mt-0.5 text-sm text-ink-soft">{prompt.body}</p>
             </div>
-            <Link href="/painel/bar/plano" className="btn-primary !py-2 text-sm">
+            <Link href="/painel/pagamento" className="btn-primary !py-2 text-sm">
               {prompt.cta}
             </Link>
           </div>
@@ -136,31 +141,36 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
       ) : null}
       <div className="mx-auto max-w-[88rem] px-5 py-6">{children}</div>
       {links.length === 0 ? null : (
-      <nav
-        aria-label="Painel"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur-xl sm:hidden"
-      >
-        <ul className={`grid px-2 py-2 ${links.length > 2 ? "grid-cols-5" : "grid-cols-2"}`}>
-          {links.map((l) => {
-            const active = path.startsWith(l.href);
-            return (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[11px] ${
-                    active ? "text-chili" : "text-ink-soft"
-                  }`}
-                >
-                  <span className="text-base leading-none" aria-hidden>
-                    {l.icon}
-                  </span>
-                  {l.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+        <nav
+          aria-label="Painel"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur-xl sm:hidden"
+        >
+          <ul className={`grid px-2 py-2 ${links.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+            {links.map((l) => {
+              const active =
+                l.href === "/painel/configuracoes"
+                  ? path.startsWith("/painel/configuracoes") ||
+                    path.startsWith("/painel/pagamento") ||
+                    path.startsWith("/painel/bar")
+                  : path.startsWith(l.href);
+              return (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[11px] ${
+                      active ? "text-chili" : "text-ink-soft"
+                    }`}
+                  >
+                    <span className="text-base leading-none" aria-hidden>
+                      {l.icon}
+                    </span>
+                    {l.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       )}
     </div>
   );
@@ -176,7 +186,12 @@ function PainelNav({
   return (
     <nav aria-label="Painel" className="flex rounded-2xl bg-paper-2/80 p-1">
       {links.map((l) => {
-        const active = path.startsWith(l.href);
+        const active =
+          l.href === "/painel/configuracoes"
+            ? path.startsWith("/painel/configuracoes") ||
+              path.startsWith("/painel/pagamento") ||
+              path.startsWith("/painel/bar")
+            : path.startsWith(l.href);
         return (
           <Link
             key={l.href}
