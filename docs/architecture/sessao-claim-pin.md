@@ -9,6 +9,7 @@ Núcleo de confiança do produto. Três peças **separadas**.
 - `GET /v1/public/venues/{slug}` → cardápio (somente leitura se sem sessão).
 - **Nunca** autoriza `POST /guest/orders`.
 - QR fixo da mesa = URL `/{slug}` (mesmo cardápio em todas as mesas). Gerado e exportado no painel; adesivo pode mostrar o rótulo da mesa ao lado do código.
+- Export estático: bares novos usam o HTML de `__venue`. Enquanto o cliente lê o path real, as telas públicas mostram **Carregando…** — não 404. “Cardápio não encontrado” só com slug inválido de verdade.
 
 ## 2. Claim (TableClaim)
 

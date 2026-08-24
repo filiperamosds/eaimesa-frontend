@@ -14,11 +14,14 @@ export function PublicMenuPageClient() {
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
+    if (slug === undefined) return;
     if (!slug || isReservedSlug(slug)) {
       setMenu(null);
       return;
     }
     let cancelled = false;
+    setUnavailable(false);
+    setMenu(undefined);
     loadPublicMenu(slug)
       .then((m) => {
         if (cancelled) return;
@@ -44,7 +47,7 @@ export function PublicMenuPageClient() {
     );
   }
 
-  if (menu === undefined) {
+  if (slug === undefined || menu === undefined) {
     return (
       <div className="mx-auto max-w-lg px-5 py-24 text-center text-ink-soft">Carregando cardápio…</div>
     );
