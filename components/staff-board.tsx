@@ -1,12 +1,13 @@
 "use client";
 
+import { sessionCanCloseTabs } from "@eaimesa/shared";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { ClaimResponse, Session, StaffTable } from "../lib/types";
 import { ClaimQrModal } from "./claim-qr-modal";
 import { StaffTableDialog } from "./staff-table-dialog";
 
-type TablesPayload = { tables: StaffTable[] };
+type TablesPayload = { tables: StaffTable[]; canCloseTabs?: boolean };
 
 function isOccupied(table: StaffTable) {
   return table.sessionOpen || table.openTabCount > 0;
@@ -15,6 +16,7 @@ function isOccupied(table: StaffTable) {
 export function StaffBoard() {
   const [me, setMe] = useState<Session | null>(null);
   const [tables, setTables] = useState<StaffTable[]>([]);
+  const [canClose, setCanClose] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
@@ -24,6 +26,7 @@ export function StaffBoard() {
   const refreshTables = useCallback(async () => {
     const data = await api<TablesPayload>("/v1/staff/tables");
     setTables(data.tables);
+    if (typeof data.canCloseTabs === "boolean") setCanClose(data.canCloseTabs);
     return data.tables;
   }, []);
 
@@ -32,6 +35,9 @@ export function StaffBoard() {
       .then(([session, data]) => {
         setMe(session);
         setTables(data.tables);
+        setCanClose(
+          typeof data.canCloseTabs === "boolean" ? data.canCloseTabs : sessionCanCloseTabs(session),
+        );
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Erro ao carregar."))
       .finally(() => setLoading(false));
@@ -66,11 +72,7 @@ export function StaffBoard() {
     try {
       const freshList = await refreshTables();
       const fresh = freshList.find((t) => t.id === table.id) ?? table;
-      if (isOccupied(fresh)) {
-        setOpenTable(fresh);
-        return;
-      }
-      await openClaim(fresh);
+      setOpenTable(fresh);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível abrir a mesa.");
     }
@@ -89,7 +91,7 @@ export function StaffBoard() {
   return (
     <div>
       <p className="text-sm text-ink-soft">
-        {me.venue.name} · toque numa mesa ocupada para ver as comandas; mesa livre gera QR
+        {me.venue.name} · toque na mesa para ver PIN, comandas e lançar pedido
       </p>
       {error ? <p className="mt-4 text-sm text-chili">{error}</p> : null}
       {tables.length === 0 ? (
@@ -125,7 +127,9 @@ export function StaffBoard() {
                       </span>
                     </>
                   ) : table.sessionOpen ? (
-                    <span className="mt-1 text-xs text-ink-soft">Mesa aberta · sem comanda ainda</span>
+                    <span className="mt-1 text-xs text-ink-soft">
+                      {table.pinDisplay ? `PIN ${table.pinDisplay}` : "Mesa aberta · sem comanda ainda"}
+                    </span>
                   ) : table.claimPending ? (
                     <span className="mt-1 text-xs text-ink-soft">QR ativo</span>
                   ) : (
@@ -141,6 +145,8 @@ export function StaffBoard() {
         <StaffTableDialog
           tableId={openTable.id}
           tableLabel={openTable.label}
+          venueName={me.venue.name}
+          canClose={canClose}
           onClose={() => {
             setOpenTable(null);
             void refreshTables();
@@ -159,6 +165,7 @@ export function StaffBoard() {
           tableLabel={activeClaim.tableLabel}
           claimUrl={activeClaim.claimUrl}
           expiresAt={activeClaim.expiresAt}
+          pinDisplay={activeClaim.pinDisplay}
           onClose={() => {
             setActiveClaim(null);
             void refreshTables();

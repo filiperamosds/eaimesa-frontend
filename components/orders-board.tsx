@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  filterOrdersByCategories,
   formatBrlFromCents,
   KANBAN_COLUMNS,
   ORDER_NEXT,
@@ -8,9 +9,10 @@ import {
   ORDER_STATUS_LABEL,
   type OrderStatus,
 } from "@eaimesa/shared";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
-import type { CatalogCategory, StaffOrder, VenueTable } from "../lib/types";
+import type { StaffOrder } from "../lib/types";
 
 function timeAgo(iso: string) {
   const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -30,38 +32,33 @@ const COLUMN_DOT: Record<(typeof KANBAN_COLUMNS)[number], string> = {
 type BoardEndpoints = {
   list: string;
   patch: (id: string) => string;
-  create: string;
-  catalog: string;
-  tables: string;
 };
 
 const OWNER_ENDPOINTS: BoardEndpoints = {
   list: "/v1/owner/orders",
   patch: (id) => `/v1/owner/orders/${id}`,
-  create: "/v1/owner/orders",
-  catalog: "/v1/owner/catalog",
-  tables: "/v1/owner/tables",
 };
 
 export const STAFF_BOARD_ENDPOINTS: BoardEndpoints = {
   list: "/v1/staff/orders",
   patch: (id) => `/v1/staff/orders/${id}`,
-  create: "/v1/staff/orders",
-  catalog: "/v1/staff/catalog",
-  tables: "/v1/staff/tables",
 };
 
 export function OrdersBoard({
   endpoints = OWNER_ENDPOINTS,
   compact = false,
+  station = false,
+  categoryIds,
 }: {
   endpoints?: BoardEndpoints;
   compact?: boolean;
+  /** Monitor de cozinha/bar: só Kanban, sem atalho para mesas. */
+  station?: boolean;
+  categoryIds?: string[];
 }) {
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     const data = await api<{ orders: StaffOrder[] }>(endpoints.list);
@@ -76,14 +73,19 @@ export function OrdersBoard({
     return () => clearInterval(t);
   }, [load]);
 
+  const visible = useMemo(
+    () => (station ? filterOrdersByCategories(orders, categoryIds) : orders),
+    [orders, station, categoryIds],
+  );
+
   const byStatus = useMemo(() => {
     const map: Record<string, StaffOrder[]> = {};
     for (const col of KANBAN_COLUMNS) map[col] = [];
-    for (const o of orders) {
+    for (const o of visible) {
       map[o.status]?.push(o);
     }
     return map;
-  }, [orders]);
+  }, [visible]);
 
   async function setStatus(id: string, status: OrderStatus) {
     setError(null);
@@ -108,12 +110,18 @@ export function OrdersBoard({
           <p className="eyebrow">Turno</p>
           <h1 className={`mt-2 font-serif ${compact ? "text-2xl" : "text-3xl"}`}>Pedidos</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            {compact ? "Aceite e avance os pedidos da mesa e do cardápio." : "Kanban do turno. Pedidos do cardápio e de balcão."}
+            {station
+              ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
+              : compact
+                ? "Aceite e avance os pedidos. Para lançar itens, abra a mesa em Mesas."
+                : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
           </p>
         </div>
-        <button type="button" onClick={() => setCreating(true)} className="btn-primary !py-2 text-sm">
-          Novo pedido
-        </button>
+        {station ? null : (
+          <Link href="/garcom" className="btn-secondary !py-2 text-sm">
+            Mesas e comandas
+          </Link>
+        )}
       </div>
       {error ? <p className="mb-3 text-sm text-chili">{error}</p> : null}
       <div className="flex gap-3 overflow-x-auto pb-4">
@@ -133,6 +141,7 @@ export function OrdersBoard({
                 <OrderCard
                   key={order.id}
                   order={order}
+                  station={station}
                   open={openId === order.id}
                   onToggle={() => setOpenId((cur) => (cur === order.id ? null : order.id))}
                   onAdvance={() => {
@@ -146,29 +155,20 @@ export function OrdersBoard({
           </section>
         ))}
       </div>
-      {creating ? (
-        <NewOrderModal
-          endpoints={endpoints}
-          onClose={() => setCreating(false)}
-          onCreated={(order) => {
-            setOrders((cur) => [order, ...cur]);
-            setCreating(false);
-          }}
-          onError={setError}
-        />
-      ) : null}
     </div>
   );
 }
 
 function OrderCard({
   order,
+  station,
   open,
   onToggle,
   onAdvance,
   onCancel,
 }: {
   order: StaffOrder;
+  station: boolean;
   open: boolean;
   onToggle: () => void;
   onAdvance: () => void;
@@ -221,176 +221,12 @@ function OrderCard({
             {nextLabel}
           </button>
         ) : null}
-        {order.status !== "delivered" ? (
+        {order.status !== "delivered" && !station ? (
           <button type="button" onClick={onCancel} className="rounded-full px-3 py-1 text-xs text-chili">
             Cancelar
           </button>
         ) : null}
       </div>
     </li>
-  );
-}
-
-function NewOrderModal({
-  endpoints,
-  onClose,
-  onCreated,
-  onError,
-}: {
-  endpoints: BoardEndpoints;
-  onClose: () => void;
-  onCreated: (order: StaffOrder) => void;
-  onError: (m: string | null) => void;
-}) {
-  const [catalog, setCatalog] = useState<CatalogCategory[]>([]);
-  const [tables, setTables] = useState<VenueTable[]>([]);
-  const [tableId, setTableId] = useState<string>("");
-  const [tableLabel, setTableLabel] = useState("");
-  const [note, setNote] = useState("");
-  const [qty, setQty] = useState<Record<string, number>>({});
-  const [pending, setPending] = useState(false);
-
-  useEffect(() => {
-    api<{ categories: CatalogCategory[] }>(endpoints.catalog)
-      .then((d) => setCatalog(d.categories.filter((c) => c.active)))
-      .catch(() => onError("Não foi possível carregar o cardápio."));
-    api<{ tables: { id: string; label: string; active?: boolean }[] }>(endpoints.tables)
-      .then((d) => {
-        const active = d.tables.filter((t) => t.active !== false);
-        setTables(active.map((t) => ({ id: t.id, label: t.label, sortOrder: 0, active: true })));
-        if (active[0]) setTableId(active[0].id);
-      })
-      .catch(() => undefined);
-  }, [onError, endpoints.catalog, endpoints.tables]);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const items = Object.entries(qty)
-      .filter(([, n]) => n > 0)
-      .map(([catalogItemId, n]) => ({ catalogItemId, qty: n }));
-    if (items.length === 0) {
-      onError("Escolha pelo menos um item.");
-      return;
-    }
-    if (tables.length > 0 && !tableId) {
-      onError("Escolha a mesa.");
-      return;
-    }
-    if (tables.length === 0 && !tableLabel.trim()) {
-      onError("Informe a mesa ou cadastre o salão.");
-      return;
-    }
-    setPending(true);
-    onError(null);
-    try {
-      const order = await api<StaffOrder>(endpoints.create, {
-        method: "POST",
-        body: JSON.stringify({
-          tableId: tables.length > 0 ? tableId : undefined,
-          tableLabel: tables.length > 0 ? undefined : tableLabel,
-          note: note || null,
-          items,
-        }),
-      });
-      onCreated(order);
-    } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao criar pedido.");
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/50 p-4 backdrop-blur-sm sm:items-center">
-      <form onSubmit={submit} className="surface max-h-[90vh] w-full max-w-lg overflow-y-auto p-5">
-        <h2 className="font-serif text-2xl">Pedido de balcão</h2>
-        {tables.length > 0 ? (
-          <fieldset className="mt-4">
-            <legend className="mb-2 block text-sm font-medium">Mesa</legend>
-            <div className="flex flex-wrap gap-2">
-              {tables.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTableId(t.id)}
-                  className={
-                    tableId === t.id
-                      ? "rounded-full bg-chili px-3 py-1.5 text-sm font-medium text-white"
-                      : "rounded-full border border-line bg-card px-3 py-1.5 text-sm hover:border-ink/30"
-                  }
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        ) : (
-          <label className="mt-4 block text-sm">
-            <span className="mb-1 block font-medium">Mesa / origem</span>
-            <input
-              value={tableLabel}
-              onChange={(e) => setTableLabel(e.target.value)}
-              className="field"
-              placeholder="Mesa 4"
-              required
-            />
-            <p className="mt-1 text-xs text-ink-soft">
-              Cadastre o salão em{" "}
-              <a href="/painel/mesas" className="font-medium text-chili">
-                Mesas
-              </a>{" "}
-              para escolher na grade.
-            </p>
-          </label>
-        )}
-        <label className="mt-3 block text-sm">
-          <span className="mb-1 block font-medium">Nota</span>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={2}
-            maxLength={280}
-            className="field"
-          />
-        </label>
-        <div className="mt-4 space-y-4">
-          {catalog.map((cat) => (
-            <div key={cat.id}>
-              <p className="font-serif text-chili">{cat.name}</p>
-              <ul className="mt-1 divide-y divide-line">
-                {cat.items
-                  .filter((i) => i.active)
-                  .map((item) => (
-                    <li key={item.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                      <span>
-                        {item.name}
-                        <span className="ml-2 text-ink-soft">{formatBrlFromCents(item.priceCents)}</span>
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={99}
-                        value={qty[item.id] ?? 0}
-                        onChange={(e) =>
-                          setQty((cur) => ({ ...cur, [item.id]: Number(e.target.value) || 0 }))
-                        }
-                        className="field w-16 text-center"
-                      />
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="btn-ghost">
-            Cancelar
-          </button>
-          <button type="submit" disabled={pending} className="btn-primary !py-2 text-sm">
-            {pending ? "Lançando…" : "Lançar pedido"}
-          </button>
-        </div>
-      </form>
-    </div>
   );
 }

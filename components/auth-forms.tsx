@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { resolveOwnerLoginTarget } from "../lib/auth-redirect";
 import type { BillingPlan, BillingPlansPayload } from "../lib/load-billing-plans";
-import type { LoginResponse } from "../lib/types";
+import type { LoginResponse, Session } from "../lib/types";
 import { PlanPrice } from "./plan-price";
 
 export function LoginForm() {
@@ -16,14 +17,22 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [checking, setChecking] = useState(true);
 
-  function resolveRedirect(result: LoginResponse) {
-    const target = next?.startsWith("/") ? next : result.redirectPath;
-    if (result.role === "staff" && target.startsWith("/painel")) {
-      return "/garcom";
-    }
-    return target;
-  }
+  useEffect(() => {
+    let cancelled = false;
+    api<Session>("/v1/auth/me")
+      .then((session) => {
+        if (cancelled) return;
+        router.replace(resolveOwnerLoginTarget(session, next));
+      })
+      .catch(() => {
+        if (!cancelled) setChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router, next]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,13 +43,17 @@ export function LoginForm() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      router.push(resolveRedirect(result));
+      router.push(resolveOwnerLoginTarget(result, next));
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Falha no login.");
     } finally {
       setPending(false);
     }
+  }
+
+  if (checking) {
+    return <p className="text-ink-soft">Verificando sessão…</p>;
   }
 
   return (
@@ -58,11 +71,11 @@ export function LoginForm() {
         {pending ? "Entrando…" : "Entrar"}
       </button>
       <p className="text-center text-sm text-ink-soft">
-        Garçom? Use o mesmo login — você vai para{" "}
+        Garçom ou caixa? Mesmo login — vocês vão para{" "}
         <Link href="/login?next=/garcom" className="font-medium text-ink underline">
           /garcom
         </Link>
-        .
+        . Monitor da cozinha ou do bar (perfil Painel) abre o Kanban.
       </p>
       <p className="text-center text-sm text-ink-soft">
         Novo bar?{" "}
@@ -109,7 +122,7 @@ export function RegisterForm() {
         method: "POST",
         body: JSON.stringify({ email, password, venueName, slug, plan }),
       });
-      router.push(result.redirectPath || "/painel/cardapio");
+      router.push(result.redirectPath || "/painel/configuracoes/cardapio");
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível cadastrar.");

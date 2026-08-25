@@ -16,7 +16,7 @@ Staging (`develop`) e produção (`main`) compartilham a conta FTP e diferem pel
 |---------|---------|
 | `develop` → staging, `main` → prod | Mesmo job reutilizável; destinos FTP separados |
 | `FTP_SERVER_DIR_DEV` / `FTP_SERVER_DIR_PRD` | Um diretório por ambiente; o sync FTP não mistura staging e prod |
-| Sync incremental + `scripts/ftp-prepare.py` | Wipe completo estoura timeout; sem o prepare, replace em pasta apagada vira FTP 550 (`__venue/bem-vindo/`) |
+| Sync incremental + `scripts/ftp-prepare.py` | Wipe completo estoura timeout; sem o prepare, replace em pasta apagada vira FTP 550 (`__venue/bem-vindo/`). O prepare **retenta** connect (backoff) — Hostinger às vezes timeout no runner |
 | URLs de staging: `NEXT_PUBLIC_*` (sem sufixo) | Já configuradas e em uso |
 | URLs de prod: `NEXT_PUBLIC_*_PRD` | O HTML do `pnpm build` não pode apontar para `dev.eaimesa.com` |
 | FTP (`SamKirkland/FTP-Deploy-Action`), IP sem `ftp://` | Hostinger shared, porta 21 |

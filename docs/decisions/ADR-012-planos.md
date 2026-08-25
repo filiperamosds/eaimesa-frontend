@@ -11,9 +11,11 @@ Um único “Plano Bar” misturava cardápio QR com comanda self-service. Há q
 
 - Planos: `cardapio` e `auto_atendimento` (vendáveis). `equipamento` só no spec.
 - Trial de **7 dias** no plano escolhido no cadastro; cobrança depois.
-- `POST /v1/billing/checkout` **stub**: sem gateway; espera **2s** e responde `status: success` (vigência 30 dias). Front tem UI de cartão/PIX; **não** envia PAN.
+- `POST /v1/billing/checkout` **stub** (driver `immediate`): sem gateway; espera **2s** e responde `status: success` (vigência 30 dias). Front envia cartão no POST; o stub ignora.
+- Checkout Asaas (`hosted`): [ADR-018](ADR-018-payment-gateway-asaas.md).
 - Landing e `/preco` com **dois cards** (nome, valor, features).
 - Upgrade imediato; downgrade só após `current_period_ends_at` (vigência paga). No trial, pode descer.
+- Pagamento antecipado **não** queima o restante: `current_period_ends_at` empilha 30 dias no fim da cobertura ([ADR-019](ADR-019-vigencia-empilhada.md)).
 - Enforcement no servidor (`PLAN_FEATURE`, `BILLING_INACTIVE`). UI esconde o que o plano não tem.
 
 ## Alternativas rejeitadas

@@ -18,7 +18,11 @@ Login do dono.
 - `planKind` na API: `cardapio` | `auto_atendimento` (o que o bar pode fazer)
 - `subscription_status`: `trial` | `active` | `past_due` | `suspended`
 - `accepts_orders`: true só no Auto atendimento com assinatura válida
+- `staff_can_close_tabs` (default true): se false, garçom não fecha comanda/mesa (caixa e dono sim)
+- `representative` (JSON/API camelCase): responsável / pagador Asaas — `name`, `cpfCnpj`, `email`, `phone`, `postalCode`, `addressNumber` ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)). `null` se nunca cadastrou.
 - `trial_ends_at`, `current_period_ends_at` (vigência paga)
+- Sem tabela de períodos: um pagamento soma `paid_period_days` (default 30) no **fim da cobertura atual** — `max(agora, trial_ends_at, current_period_ends_at)` — ver [ADR-019](../decisions/ADR-019-vigencia-empilhada.md).
+- Console (`PATCH /v1/platform/venues/{id}`): operador pode adiantar/estender essas datas. Sem `subscriptionStatus` no body, a API recalcula o status (exceto `suspended`). Não sincroniza o gateway.
 - `created_at`, `updated_at`
 
 Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendimento.
@@ -39,7 +43,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 - `source`: `counter` | `guest`
 - `table_id` (nullable → VenueTable)
 - `table_label` (snapshot)
-- `tab_id` nullable → Tab (obrigatório quando `source = guest`)
+- `tab_id` nullable → Tab (obrigatório quando `source = guest`; no `counter`, preenchido quando o staff lança na comanda)
 - `idempotency_key` (nullable; único por venue quando preenchido)
 - `note`
 - timestamps
@@ -48,6 +52,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 
 - `id`, `order_id`, `venue_id`
 - `catalog_item_id` (nullable se o item do cardápio for apagado)
+- `category_id` (snapshot da categoria no momento do pedido; Kanban Painel filtra por isto)
 - `name_snapshot`, `unit_price_cents_snapshot`, `qty`, `note`
 
 ## Entidades — fatia 3 (mesas)
@@ -58,7 +63,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 - `label` (ex. "Mesa 4", "Balcão") — único por venue
 - `sort_order`, `active`, timestamps
 
-No máximo **15 mesas ativas** por venue no plano Auto atendimento.
+No máximo **15 mesas ativas** por venue (Cardápio e Auto atendimento).
 
 ## Entidades — fatia 4 (equipe + comanda)
 
@@ -67,10 +72,14 @@ No máximo **15 mesas ativas** por venue no plano Auto atendimento.
 Garçom vinculado ao venue (mesmo login do painel).
 
 - `id`, `venue_id` → Venue, `account_id` → Account
-- `role`: `staff` (owner continua via `venues.owner_account_id`)
+- `role`: `staff` (garçom) | `cashier` (caixa) | `panel` (Kanban da estação). Owner continua via `venues.owner_account_id`. JWT do cookie é `staff` para os três.
 - `name`, `active`, timestamps
 
-Máximo **5 membros staff ativos** por venue no plano Auto atendimento.
+### VenueMemberCategory (fatia 14)
+
+Pivot `venue_member_id` + `catalog_category_id`. Só faz sentido quando `role = panel`. O Kanban daquele login mostra itens dessas categorias.
+
+Máximo **5 membros ativos** (garçom + caixa + painel) por venue no plano Auto atendimento. Caixa usa `/garcom` e sempre encerra comanda/mesa. Garçom só encerra se `venues.staff_can_close_tabs` for true ([ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md)). Painel nunca encerra; só o Kanban filtrado ([ADR-024](../decisions/ADR-024-kanban-painel-categorias.md)).
 
 ## Entidades — fatia 6 (comandas individuais)
 
@@ -128,13 +137,31 @@ Catálogo vendável. `id` = slug do SKU (3–48; kebab ou underscore, para o see
 - `name`, `price_cents`, `promo_price_cents` (nullable; se preenchido e menor que o cheio, vitrine e checkout usam a promo)
 - `blurb`, `features` (json), `listed`, `sort_order`
 
-`GET /v1/billing/plans` lê daqui. Landing, cadastro e checkout não usam só a constante do código. Sem DELETE: `listed=false` esconde. Máximo 12 linhas.
+`GET /v1/billing/plans` lê daqui. Landing, cadastro e checkout não usam só a constante do código. Sem DELETE: `listed=false` esconde. Máximo 12 linhas. `gateway` no payload vem do driver (`stub` | `asaas`), não do catálogo.
 
 ### BillingEvent
 
-Histórico do checkout stub.
+Histórico de checkout (stub e Asaas).
 
-- `venue_id`, `plan`, `plan_name`, `method`, `amount_cents`, `provider`, `status`, `created_at`
+- `venue_id`, `plan`, `plan_name`, `method`, `amount_cents`
+- `provider` (`stub` | `asaas` | futuro)
+- `provider_ref` nullable — id da cobrança no provedor
+- `status`: `pending` | `success` | `failed`
+- `created_at`
+
+Não guardar CPF/CNPJ nem PAN. O front envia pagador + cartão no POST de checkout (cartão); a API encaminha ao Asaas e descarta o PAN.
+
+### VenueBilling
+
+1:1 com o venue. Expõe `pendingCheckout` em `GET /v1/billing/me` (`url`, `plan`, `method`, `amountCents`).
+
+- `venue_id` UNIQUE
+- `provider`
+- `customer_id`, `subscription_id`, `checkout_id` — ids do Asaas
+- `credit_card_token` (cifrado), `card_last4`, `card_brand` — cofre Asaas; nunca PAN/CVV
+- `pending_plan`, `pending_method`, `pending_amount_cents`, `pending_event_id`, `checkout_url`
+
+Pendente some quando o webhook confirma.
 
 ## Entidades — planejadas
 
@@ -161,6 +188,8 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 - `platform_users(lower(email))` UNIQUE
 - `billing_events(created_at DESC)`
 - `billing_events(venue_id, created_at DESC)`
+- `billing_events(provider, provider_ref)` UNIQUE (NULLs repetíveis)
+- `venue_billing(venue_id)` UNIQUE
 
 ## Regras de negócio
 
@@ -169,12 +198,22 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 3. DELETE categoria com itens → `CATEGORY_NOT_EMPTY`.
 4. `OrderItem` sempre grava snapshot de preço/nome; o cliente **não** envia preço.
 5. Pedido público pelo slug **exige** comanda pessoal `open` (fatia 7). Slug sozinho não autoriza.
-6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo.
+6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo. Com `tabId`, a mesa vem da comanda `open` e o pedido grava `tab_id`.
 7. PIN join casa o PIN com uma **TableSession** `open`.
 8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no bar, 409 `TAB_ALREADY_OPEN`.
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
-11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`.
+11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`. Os dois (e o guest) podem existir juntos no browser.
+12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
+13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado).
+
+## Planejado — fatia 15 (chamar garçom)
+
+- `venues.waiter_call_enabled`, `venues.waiter_call_ttl_minutes`
+- `venue_tables.menu_code` (opaco, único no venue) → QR `/{slug}?mesa={menuCode}`
+- `presence_sessions` + cookie `eaimesa_presence`
+- `waiter_calls` (`open` \| `acked` \| `expired`)
+- Detalhe: [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md), [backend-waiter-call.md](../api/backend-waiter-call.md)
 
 ## Diagrama ER
 
@@ -187,11 +226,14 @@ erDiagram
   CatalogCategory ||--o{ CatalogItem : contains
   Venue ||--o{ VenueTable : has
   VenueTable ||--o{ TableSession : occupancy
+  VenueTable ||--o{ PresenceSession : menu_scan
+  VenueTable ||--o{ WaiterCall : calls
   TableSession ||--o{ Tab : comandas
   Tab ||--o{ GuestSession : devices
   Tab ||--o{ Order : parcial
   Venue ||--o{ Order : has
   Venue ||--o{ BillingEvent : checkouts
+  Venue ||--o| VenueBilling : gateway
   Order ||--|{ OrderItem : contains
   PlatformUser
   PlatformSettings

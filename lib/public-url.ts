@@ -12,10 +12,13 @@ export function appPublicOrigin(): string {
   return DEFAULT_PUBLIC_ORIGIN;
 }
 
-/** URL do cardápio público — QR fixo da mesa aponta para cá. Nunca abre comanda. */
-export function publicMenuUrl(slug: string): string {
+/** URL do cardápio público — QR fixo. Com `mesa` (menuCode) → `/{slug}?mesa=…` no QR; o cardápio move para sessionStorage. */
+export function publicMenuUrl(slug: string, opts?: { mesa?: string | null }): string {
   const base = appPublicOrigin().replace(/\/$/, "");
-  return `${base}/${slug}`;
+  const path = `${base}/${slug}`;
+  const code = opts?.mesa?.trim();
+  if (!code) return path;
+  return `${path}?mesa=${encodeURIComponent(code)}`;
 }
 
 /** URL de redeem do claim — QR do garçom. Abre comanda. */

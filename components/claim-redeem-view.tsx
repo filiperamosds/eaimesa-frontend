@@ -23,6 +23,7 @@ export function ClaimRedeemView() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (slug === undefined || token === undefined) return;
     if (!slug || !token) return;
     const venueSlug = slug;
     const claimToken = token;

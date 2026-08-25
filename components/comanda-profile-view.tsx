@@ -14,6 +14,12 @@ export function ComandaProfileView() {
   const hasTab = Boolean(tab && !tab.needsProfile);
   const { orders, totalCents, error } = useGuestOrders(hasTab);
 
+  if (slug === undefined) {
+    return (
+      <div className="mx-auto max-w-lg px-5 py-16 text-center text-ink-soft">Carregando comanda…</div>
+    );
+  }
+
   if (!slug) return null;
 
   if (tab === undefined) {

@@ -4,23 +4,36 @@ import { formatBrlFromCents, planAllowsService } from "@eaimesa/shared";
 import Link from "next/link";
 import { useState } from "react";
 import { GuestCart, type CartLine } from "./guest-cart";
+import { GuestPartialDialog } from "./guest-partial-dialog";
 import { GuestTabBar } from "./guest-tab-bar";
+import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
 import { mediaSrc } from "../lib/media";
 import { useGuestOrders } from "../lib/use-guest-orders";
 import { useGuestTab } from "../lib/use-guest-tab";
+import { useWaiterPresence } from "../lib/use-waiter-presence";
 import type { PublicMenu } from "../lib/types";
 
 export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const groups = menu.categories.filter((c) => c.items.length > 0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [partialOpen, setPartialOpen] = useState(false);
   const ordering =
     planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "") && Boolean(menu.venue.acceptsOrders);
   const tab = useGuestTab(menu.venue.slug, ordering);
   const suspended = menu.venue.subscriptionStatus === "suspended";
   const canOrder = Boolean(ordering && tab && !tab.needsProfile && !suspended);
   const hasTab = Boolean(ordering && tab && !tab.needsProfile);
-  const { orders, totalCents, reload } = useGuestOrders(hasTab);
+  const { orders, totalCents, error: ordersError, reload } = useGuestOrders(hasTab);
+  /**
+   * Chamar garçom: não depende mais de “não ser Auto atendimento”.
+   * Liga com waiterCallEnabled=true no payload público; no Cardápio, undefined ainda tenta (?mesa=).
+   */
+  const servicePlan = planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "");
+  const flag = menu.venue.waiterCallEnabled;
+  const waiterFeatureOn = flag === true || (flag !== false && !servicePlan);
+  const waiterEnabled = !suspended && waiterFeatureOn;
+  const waiter = useWaiterPresence(menu.venue.slug, waiterEnabled);
 
   function addItem(item: PublicMenu["categories"][number]["items"][number]) {
     setCart((cur) => {
@@ -61,11 +74,33 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
             <p className="mt-4 text-sm text-white/65">
               Cardápio só leitura até entrar na mesa. Peça o QR do garçom ou use o PIN.
             </p>
+          ) : waiter.presence ? (
+            <p className="mt-4 text-sm text-white/65">
+              Precisa de ajuda? Chame o garçom pela faixa abaixo.
+            </p>
           ) : null}
         </div>
       </header>
       {ordering ? (
-        <GuestTabBar slug={menu.venue.slug} tab={tab} partialCents={totalCents} showJoin />
+        <GuestTabBar
+          slug={menu.venue.slug}
+          tab={tab}
+          partialCents={totalCents}
+          showJoin
+          onOpenPartial={hasTab ? () => setPartialOpen(true) : undefined}
+        />
+      ) : null}
+      {waiterEnabled ? (
+        <GuestWaiterCallBar
+          presence={waiter.presence}
+          mesaStored={waiter.mesaStored}
+          loadError={waiter.loadError}
+          featureHint={flag === true}
+          calling={waiter.calling}
+          callMsg={waiter.callMsg}
+          callError={waiter.callError}
+          onCall={() => void waiter.callWaiter()}
+        />
       ) : null}
 
       {groups.length > 0 ? (
@@ -194,6 +229,17 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
           orders={orders}
           partialCents={totalCents}
           onOrdered={() => void reload()}
+        />
+      ) : null}
+
+      {partialOpen && tab && !tab.needsProfile ? (
+        <GuestPartialDialog
+          guestName={tab.guestName ?? "Sua comanda"}
+          tableLabel={tab.tableLabel}
+          orders={orders}
+          totalCents={totalCents}
+          error={ordersError}
+          onClose={() => setPartialOpen(false)}
         />
       ) : null}
 

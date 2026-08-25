@@ -10,13 +10,29 @@ export type Venue = {
   acceptsOrders: boolean;
   trialEndsAt?: string | null;
   currentPeriodEndsAt?: string | null;
+  staffCanCloseTabs?: boolean;
+  waiterCallEnabled?: boolean;
+  waiterCallTtlMinutes?: number;
+  representative?: {
+    name: string;
+    cpfCnpj: string;
+    email: string;
+    phone: string;
+    postalCode: string;
+    addressNumber: string;
+  } | null;
 };
 
 export type Session = {
   role: "owner" | "staff";
   account: { id: string; email: string };
   venue: Venue;
-  member?: { id: string; name: string };
+  member?: {
+    id: string;
+    name: string;
+    role?: "staff" | "cashier" | "panel";
+    categoryIds?: string[];
+  };
 };
 
 export type LoginResponse = Session & {
@@ -50,6 +66,9 @@ export type PublicMenu = {
     plan?: string;
     planKind?: string;
     acceptsOrders: boolean;
+    /** Plano Cardápio — chamar garçom (ADR-026). Ausente = tentar presença se houver ?mesa=. */
+    waiterCallEnabled?: boolean;
+    waiterCallTtlMinutes?: number;
   };
   categories: {
     id: string;
@@ -65,6 +84,20 @@ export type PublicMenu = {
   }[];
 };
 
+export type PresenceSession = {
+  tableLabel: string;
+  expiresAt: string;
+  expiresInSeconds?: number;
+};
+
+export type WaiterCall = {
+  id: string;
+  tableId: string;
+  tableLabel: string;
+  createdAt: string;
+  status: "open" | "acked" | "expired";
+};
+
 export type OrderStatus = "pending" | "accepted" | "preparing" | "delivered" | "cancelled";
 
 export type VenueTable = {
@@ -72,12 +105,16 @@ export type VenueTable = {
   label: string;
   sortOrder: number;
   active: boolean;
+  /** Código opaco no QR `?mesa=` (ADR-026). */
+  menuCode?: string | null;
 };
 
 export type StaffMember = {
   id: string;
   name: string;
   email: string;
+  role?: "staff" | "cashier" | "panel";
+  categoryIds?: string[];
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -99,6 +136,7 @@ export type StaffTable = {
   claimPending: boolean;
   openTabCount: number;
   openTabs: StaffTableOpenTab[];
+  pinDisplay?: string | null;
 };
 
 export type ClaimResponse = {
@@ -108,6 +146,7 @@ export type ClaimResponse = {
   claimUrl: string;
   expiresAt: string;
   expiresInSeconds: number;
+  pinDisplay?: string | null;
 };
 
 export type JoinTabResponse = {
@@ -151,8 +190,15 @@ export type StaffTableTab = {
 };
 
 export type StaffTableTabsPayload = {
-  table: { id: string; label: string; sessionOpen: boolean; openTabCount: number };
+  table: {
+    id: string;
+    label: string;
+    sessionOpen: boolean;
+    openTabCount: number;
+    pinDisplay?: string | null;
+  };
   tabs: StaffTableTab[];
+  unassignedOrders?: StaffOrder[];
 };
 
 export type StaffOrder = {
@@ -170,6 +216,7 @@ export type StaffOrder = {
   items: {
     id: string;
     catalogItemId: string | null;
+    categoryId?: string | null;
     name: string;
     unitPriceCents: number;
     qty: number;

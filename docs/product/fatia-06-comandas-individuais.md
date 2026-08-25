@@ -10,16 +10,19 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 - **Tab** = comanda pessoal: `guest_name`, `guest_phone`, ligada à sessão da mesa
 - Várias comandas `open` na mesma mesa
 - Guest: após claim ou PIN, formulário nome + telefone (`/{slug}/comanda`) — máscara `(11) 98888-7777`; a API grava só dígitos
-- Telefone único enquanto a comanda está `open`: mesmo número não abre outra (nesta mesa ou em outra do bar) → 409 `TAB_ALREADY_OPEN`
-- Garçom `/garcom`: o salão mostra os **nomes** nas mesas ocupadas e atualiza sozinho; toque abre **dialog** com as contas e a parcial
-- Guest `/{slug}/comanda` e a cesta: a **própria** parcial ([fatia 9](fatia-09-parcial-guest.md))
-- `POST /v1/staff/tabs/{id}/close` — fecha uma comanda
+- Telefone único enquanto a comanda está `open`: mesmo número em **outra** mesa → 409 `TAB_ALREADY_OPEN`. Se o garçom já abriu a comanda **nesta** mesa com esse telefone, o guest retoma essa conta.
+- Garçom `/garcom`: toque na mesa (livre ou ocupada) abre o **dialog**. Vê o **PIN**, abre comanda (nome + telefone), parcial com **A receber**, **Imprimir** (cupom de conferência), lança pedido, fecha conta.
+- Guest `/{slug}`: **Parcial** em dialog; `/{slug}/comanda` para abrir perfil ([fatia 9](fatia-09-parcial-guest.md))
+- `POST /v1/staff/tables/{id}/tabs` — garçom abre comanda `{ name, phone }`
+- `POST /v1/staff/orders` com `tabId` — garçom lança itens na comanda (dialog)
+- `POST /v1/staff/tabs/{id}/close` — fecha uma comanda (UI destaca o valor a receber)
 - `POST /v1/staff/tables/{id}/close` — encerra a mesa; **409** se ainda houver comanda aberta
 - Telefone mascarado no painel do garçom (últimos 4 dígitos)
 
 ## Não inclui
 
-- Pagamento / split
+- Pagamento / split (só conferência + close; sem gateway na conta da mesa)
+- Cupom fiscal oficial (SAT/NFC-e) — o cupom na tela é **conferência**
 - Travamento (`locked`) além do close
 
 ## Fluxo cliente
@@ -31,11 +34,11 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 
 ## Fluxo garçom
 
-1. Mesa livre: toque gera QR. Cartão fica “QR ativo” até o primeiro redeem.
-2. Quando há comandas, o cartão lista os **nomes** (Maria · João). O quadro recarrega a cada poucos segundos.
-3. Toque numa mesa ocupada consulta o estado atual (não reusa o snapshot antigo) e abre as contas.
-4. Seleciona uma → itens/pedidos daquela conta.
-5. Fecha comanda por pessoa. **Encerrar mesa** só com zero comandas abertas.
+1. Toque na mesa abre o dialog (livre ou ocupada). PIN grande se a sessão existir.
+2. **Abrir comanda**: nome + telefone. **Novo QR** para o cliente escanear. Os dois geram/mostram o PIN.
+3. Cartão da mesa lista os **nomes**. O quadro recarrega sozinho.
+4. Seleciona uma conta → **A receber** em destaque, itens e **Imprimir** (cupom de conferência na tela / impressora do aparelho). **Adicionar pedido**: escolhe categorias (só aí há **Cancelar**), soma itens de várias categorias (ex. bebida + petisco) e **Lança** um pedido.
+5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`) — botão mostra o valor. **Encerrar mesa** só com zero comandas abertas.
 
 ## Por que não uma comanda só
 

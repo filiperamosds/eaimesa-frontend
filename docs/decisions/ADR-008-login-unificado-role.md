@@ -12,8 +12,8 @@ A fatia 4 criou `staff_accounts` com login em `/garcom/login` e cookie `eaimesa_
 
 - Garçom é **`venue_member`** (`account_id` + `venue_id`, role `staff`) — mesma tabela `accounts` que o dono
 - **Um login** em `/login`; JWT no cookie `eaimesa_owner` carrega `role: owner | staff`
-- Dono cadastra garçom em `/painel/equipe` (cria account + member)
-- Após login: `owner` → painel; `staff` → `/garcom`
+- Dono cadastra garçom em `/painel/equipe` (cria account + member) — hoje: `/painel/bar/equipe`, ver [ADR-021](ADR-021-caixa-encerra-comanda.md)
+- Após login: `owner` → painel; `staff` (garçom/caixa) → `/garcom`; `member.role=panel` → `/painel/pedidos`
 - Dono **também** pode abrir `/garcom` (mesma sessão, role owner)
 
 ## Consequências
@@ -21,7 +21,7 @@ A fatia 4 criou `staff_accounts` com login em `/garcom/login` e cookie `eaimesa_
 - Removidos `/garcom/login`, `/v1/staff/auth/*`, cookie `eaimesa_staff`, tabela `staff_accounts`
 - Migration `0006_venue_members.sql`
 - API `/v1/auth/me` retorna `role` (+ `member` se staff)
-- Painel bloqueia role `staff`; garçom usa `/login?next=/garcom`
+- Painel bloqueia role `staff` **exceto** `member.role=panel` (só `/painel/pedidos`); garçom usa `/login?next=/garcom`
 
 ## Alternativa rejeitada
 

@@ -1,77 +1,185 @@
 "use client";
 
-import { formatBrlFromCents, hasPromoPrice, type PaymentMethod } from "@eaimesa/shared";
+import {
+  creditCardSchema,
+  formatBrlFromCents,
+  formatCepInput,
+  formatCpfCnpjInput,
+  formatPhoneInput,
+  hasPromoPrice,
+  isRepresentativeComplete,
+  payerSchema,
+  representativeFingerprint,
+  type CheckoutCreditCard,
+  type CheckoutMode,
+  type CheckoutPayer,
+  type PaymentMethod,
+} from "@eaimesa/shared";
 import { useState } from "react";
 import { PlanPrice } from "./plan-price";
 
 type Props = {
-  planId: string;
   planName: string;
   amountCents: number;
   listPriceCents?: number;
   promoPriceCents?: number | null;
   pending: boolean;
+  checkoutMode: CheckoutMode;
+  requiresPayer: boolean;
+  methods: PaymentMethod[];
+  defaultEmail?: string;
+  /** Pré-fill do responsável (ADR-025). Se inalterado no submit, omite `payer`. */
+  initialPayer?: CheckoutPayer | null;
+  provider?: string;
+  coverageNote?: string;
   onCancel: () => void;
-  onPay: (method: PaymentMethod) => void;
+  onPay: (method: PaymentMethod, payer?: CheckoutPayer, creditCard?: CheckoutCreditCard) => void;
 };
 
 function onlyDigits(value: string, max: number) {
   return value.replace(/\D/g, "").slice(0, max);
 }
 
+function formatCard(raw: string) {
+  const digits = onlyDigits(raw, 16);
+  return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+}
+
+function formatExpiry(raw: string) {
+  const digits = onlyDigits(raw, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+function expiryParts(raw: string): { expiryMonth: string; expiryYear: string } | null {
+  const digits = onlyDigits(raw, 4);
+  if (digits.length !== 4) return null;
+  const month = digits.slice(0, 2);
+  const year = `20${digits.slice(2)}`;
+  return { expiryMonth: month, expiryYear: year };
+}
+
 export function PaymentForm({
-  planId,
   planName,
   amountCents,
   listPriceCents,
   promoPriceCents,
   pending,
+  checkoutMode,
+  requiresPayer,
+  methods,
+  defaultEmail = "",
+  initialPayer = null,
+  provider,
+  coverageNote,
   onCancel,
   onPay,
 }: Props) {
-  const [method, setMethod] = useState<PaymentMethod>("card");
+  const available = methods.length ? methods : (["card", "pix"] as PaymentMethod[]);
+  const [method, setMethod] = useState<PaymentMethod>(available[0] ?? "card");
   const [holder, setHolder] = useState("");
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
+  const [payerName, setPayerName] = useState(initialPayer?.name ?? "");
+  const [cpfCnpj, setCpfCnpj] = useState(
+    initialPayer?.cpfCnpj ? formatCpfCnpjInput(initialPayer.cpfCnpj) : "",
+  );
+  const [email, setEmail] = useState(initialPayer?.email || defaultEmail);
+  const [phone, setPhone] = useState(
+    initialPayer?.phone ? formatPhoneInput(initialPayer.phone) : "",
+  );
+  const [postalCode, setPostalCode] = useState(
+    initialPayer?.postalCode ? formatCepInput(initialPayer.postalCode) : "",
+  );
+  const [addressNumber, setAddressNumber] = useState(initialPayer?.addressNumber ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
   const amount = formatBrlFromCents(amountCents);
-  const pixCode = `eaimesa-stub-${planId}-${amountCents}`;
-
-  function formatCard(raw: string) {
-    const digits = onlyDigits(raw, 16);
-    return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
-  }
-
-  function formatExpiry(raw: string) {
-    const digits = onlyDigits(raw, 4);
-    if (digits.length <= 2) return digits;
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  }
+  const hosted = checkoutMode === "hosted";
+  const asaas = provider === "asaas" || hosted;
+  const captureCard = method === "card";
+  const needPayer = asaas && (requiresPayer || captureCard);
+  const providerLabel = provider === "asaas" ? "Asaas" : provider || "provedor";
+  const baselineFp = representativeFingerprint(initialPayer);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setLocalError(null);
-    if (method === "card") {
-      const digits = onlyDigits(number, 16);
-      if (digits.length < 13) {
-        setLocalError("Informe o número do cartão.");
-        return;
+
+    let payer: CheckoutPayer | undefined;
+    if (needPayer) {
+      const current = {
+        name: payerName,
+        cpfCnpj,
+        email,
+        phone,
+        postalCode: captureCard ? postalCode : initialPayer?.postalCode,
+        addressNumber: captureCard ? addressNumber : initialPayer?.addressNumber,
+      };
+      const unchanged =
+        isRepresentativeComplete(initialPayer) &&
+        representativeFingerprint({
+          name: payerName,
+          cpfCnpj,
+          email,
+          phone,
+          postalCode,
+          addressNumber,
+        }) === baselineFp;
+
+      if (unchanged) {
+        payer = undefined;
+      } else {
+        const parsed = payerSchema.safeParse({
+          name: current.name,
+          cpfCnpj: current.cpfCnpj,
+          email: current.email,
+          phone: current.phone,
+          postalCode: captureCard ? current.postalCode : undefined,
+          addressNumber: captureCard ? current.addressNumber : undefined,
+        });
+        if (!parsed.success) {
+          setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do pagador.");
+          return;
+        }
+        if (captureCard && !parsed.data.phone) {
+          setLocalError("Informe o telefone do titular.");
+          return;
+        }
+        if (captureCard && !parsed.data.postalCode) {
+          setLocalError("Informe o CEP do titular.");
+          return;
+        }
+        if (captureCard && !parsed.data.addressNumber) {
+          setLocalError("Informe o número do endereço.");
+          return;
+        }
+        payer = parsed.data;
       }
-      if (holder.trim().length < 3) {
-        setLocalError("Informe o nome impresso no cartão.");
-        return;
-      }
-      if (onlyDigits(expiry, 4).length !== 4) {
+    }
+
+    let card: CheckoutCreditCard | undefined;
+    if (captureCard) {
+      const parts = expiryParts(expiry);
+      if (!parts) {
         setLocalError("Validade no formato MM/AA.");
         return;
       }
-      if (onlyDigits(cvv, 4).length < 3) {
-        setLocalError("Informe o CVV.");
+      const parsed = creditCardSchema.safeParse({
+        holderName: holder,
+        number,
+        expiryMonth: parts.expiryMonth,
+        expiryYear: parts.expiryYear,
+        ccv: cvv,
+      });
+      if (!parsed.success) {
+        setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do cartão.");
         return;
       }
+      card = parsed.data;
     }
-    onPay(method);
+
+    onPay(method, payer, card);
   }
 
   return (
@@ -91,32 +199,134 @@ export function PaymentForm({
           ) : (
             <span className="font-medium text-ink">{amount}</span>
           )}{" "}
-          (mensal). Sem gateway nesta fatia — o formulário não envia dados do cartão.
+          (mensal).{" "}
+          {captureCard
+            ? asaas
+              ? `Você digita o cartão aqui. O EaiMesa envia número, validade e CVV ao ${providerLabel} em HTTPS e não grava PAN — só o token para as próximas cobranças.`
+              : "Ambiente de teste: o POST leva plano, meio e os dados do cartão. O stub não cobra de verdade."
+            : asaas
+              ? `PIX na página segura do ${providerLabel}.`
+              : "PIX simulado neste ambiente."}
         </p>
+        {coverageNote ? <p className="mt-2 text-sm text-ink-soft">{coverageNote}</p> : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {(
-          [
-            ["card", "Cartão"],
-            ["pix", "PIX"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            disabled={pending}
-            onClick={() => setMethod(id)}
-            className={`rounded-2xl border px-3 py-2.5 text-sm ${
-              method === id ? "border-chili bg-chili/5 font-medium" : "border-line"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Meio de pagamento</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {available.map((id) => (
+            <button
+              key={id}
+              type="button"
+              disabled={pending}
+              onClick={() => setMethod(id)}
+              aria-pressed={method === id}
+              className={`rounded-2xl border px-3 py-3 text-left text-sm ${
+                method === id ? "border-chili bg-chili/5 font-medium" : "border-line"
+              }`}
+            >
+              <span className="block">{id === "pix" ? "PIX" : "Cartão"}</span>
+              <span className="mt-0.5 block text-xs font-normal text-ink-soft">
+                {id === "pix"
+                  ? asaas
+                    ? "QR na próxima página"
+                    : "Simulado neste ambiente"
+                  : asaas
+                    ? `Enviado ao ${providerLabel}`
+                    : "Enviado no POST (teste)"}
+              </span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
-      {method === "card" ? (
+      {needPayer ? (
+        <div className="space-y-3">
+          {isRepresentativeComplete(initialPayer) ? (
+            <p className="rounded-2xl border border-line bg-paper-2/60 px-3 py-2 text-xs text-ink-soft">
+              Pagador pré-preenchido com o responsável. Sem alterar os campos, o checkout usa o
+              cadastro salvo (sem reenviar `payer`).
+            </p>
+          ) : null}
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium">Nome do pagador</span>
+            <input
+              className="field"
+              autoComplete="name"
+              placeholder="Como no documento"
+              value={payerName}
+              disabled={pending}
+              onChange={(e) => setPayerName(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium">CPF ou CNPJ</span>
+            <input
+              className="field font-mono tracking-wide"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="000.000.000-00"
+              value={cpfCnpj}
+              disabled={pending}
+              onChange={(e) => setCpfCnpj(formatCpfCnpjInput(e.target.value))}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium">E-mail de cobrança (opcional)</span>
+            <input
+              className="field"
+              type="email"
+              autoComplete="email"
+              value={email}
+              disabled={pending}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium">
+              Telefone{captureCard ? "" : " (opcional)"}
+            </span>
+            <input
+              className="field"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="(11) 98888-7777"
+              value={phone}
+              disabled={pending}
+              onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+            />
+          </label>
+          {captureCard ? (
+            <>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">CEP do titular</span>
+                <input
+                  className="field font-mono tracking-wide"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  placeholder="00000-000"
+                  value={postalCode}
+                  disabled={pending}
+                  onChange={(e) => setPostalCode(formatCepInput(e.target.value))}
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">Número do endereço</span>
+                <input
+                  className="field"
+                  autoComplete="address-line2"
+                  placeholder="123"
+                  value={addressNumber}
+                  disabled={pending}
+                  onChange={(e) => setAddressNumber(e.target.value)}
+                />
+              </label>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {captureCard ? (
         <div className="space-y-3">
           <label className="block text-sm">
             <span className="mb-1 block font-medium">Número do cartão</span>
@@ -168,21 +378,21 @@ export function PaymentForm({
             </label>
           </div>
         </div>
-      ) : (
-        <div className="rounded-2xl border border-line bg-paper-2/60 p-4">
-          <p className="text-sm font-medium">PIX (simulado)</p>
-          <p className="mt-1 text-sm text-ink-soft">
-            Código de teste — não é um PIX real. Confirme para o stub aprovar {amount}.
-          </p>
-          <p className="mt-3 break-all rounded-xl bg-card px-3 py-2 font-mono text-xs">{pixCode}</p>
-        </div>
-      )}
+      ) : asaas ? (
+        <p className="text-sm text-ink-soft">Você confirma o PIX na página do {providerLabel}.</p>
+      ) : null}
 
       {localError ? <p className="text-sm text-chili">{localError}</p> : null}
 
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={pending} className="btn-primary">
-          {pending ? "Confirmando pagamento…" : `Pagar ${amount}`}
+          {pending
+            ? captureCard
+              ? "Enviando pagamento…"
+              : "Abrindo o pagamento…"
+            : captureCard
+              ? `Pagar ${amount}`
+              : `Continuar para pagar ${amount}`}
         </button>
         <button type="button" disabled={pending} onClick={onCancel} className="btn-ghost">
           Cancelar

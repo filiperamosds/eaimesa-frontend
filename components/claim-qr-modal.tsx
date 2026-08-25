@@ -8,6 +8,7 @@ type Props = {
   tableLabel: string;
   claimUrl: string;
   expiresAt: string;
+  pinDisplay?: string | null;
   onClose: () => void;
 };
 
@@ -21,7 +22,7 @@ function formatCountdown(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function ClaimQrModal({ venueName, tableLabel, claimUrl, expiresAt, onClose }: Props) {
+export function ClaimQrModal({ venueName, tableLabel, claimUrl, expiresAt, pinDisplay, onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [left, setLeft] = useState(() => secondsLeft(expiresAt));
@@ -59,13 +60,20 @@ export function ClaimQrModal({ venueName, tableLabel, claimUrl, expiresAt, onClo
           {tableLabel}
         </h2>
         <p className="mt-2 text-sm text-ink-soft">
-          Cliente escaneia para abrir a comanda em <strong className="font-medium text-ink">{venueName}</strong>.
+          Cliente escaneia para entrar na mesa em <strong className="font-medium text-ink">{venueName}</strong>.
           Uso único — expira em{" "}
           <span className={expired ? "font-medium text-chili" : "font-medium text-ink"}>
             {expired ? "0:00" : formatCountdown(left)}
           </span>
           .
         </p>
+        {pinDisplay ? (
+          <div className="mt-4 rounded-2xl border border-chili/30 bg-paper-2 px-4 py-3 text-center">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-soft">PIN para o cliente</p>
+            <p className="mt-1 font-serif text-4xl tracking-[0.35em] text-chili">{pinDisplay}</p>
+            <p className="mt-1 text-xs text-ink-soft">Quem não escanear o QR entra em /entrar com este código.</p>
+          </div>
+        ) : null}
         <div className="mt-5 flex flex-col items-center">
           <canvas
             ref={canvasRef}

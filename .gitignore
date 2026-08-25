@@ -20,8 +20,8 @@ build/
 !.vscode/extensions.json
 .DS_Store
 
-# Logs / tmp
-logs/
+# Logs / tmp (só na raiz — não ignore a rota /admin/logs)
+/logs/
 *.log
 tmp/
 .cache/

@@ -28,13 +28,12 @@ export function OpenComandaForm({ slug }: { slug: string }) {
         method: "POST",
         body: JSON.stringify({ name, phone }),
       });
-      router.replace(result.redirectPath || `/${slug}`);
-      router.refresh();
+      const href = result.redirectPath || `/${slug}`;
+      router.replace(href.endsWith("/") ? href : `${href}/`);
     } catch (err) {
       const blocked = err instanceof ApiError && err.code === ERROR_CODES.TAB_ALREADY_OPEN;
       setPhoneBlocked(blocked);
       setError(blocked ? PHONE_IN_USE : err instanceof ApiError ? err.message : "Não foi possível abrir a comanda.");
-    } finally {
       setPending(false);
     }
   }

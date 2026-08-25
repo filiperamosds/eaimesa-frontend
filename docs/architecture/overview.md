@@ -14,7 +14,7 @@
 | Auth platform | Cookie **httpOnly** `eaimesa_platform` | JWT próprio (`PLATFORM_JWT_SECRET`) |
 | Cache/fila | Redis | Fase 2 |
 
-Ver [ADR-001](../decisions/ADR-001-stack.md) (histórico), [ADR-003](../decisions/ADR-003-frontend-unico.md), [ADR-004](../decisions/ADR-004-slug-publico.md), [ADR-015](../decisions/ADR-015-dois-repositorios.md), [ADR-016](../decisions/ADR-016-laravel-mysql.md), [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
+Ver [ADR-001](../decisions/ADR-001-stack.md) (histórico), [ADR-003](../decisions/ADR-003-frontend-unico.md), [ADR-004](../decisions/ADR-004-slug-publico.md), [ADR-015](../decisions/ADR-015-dois-repositorios.md), [ADR-016](../decisions/ADR-016-laravel-mysql.md), [ADR-017](../decisions/ADR-017-github-actions-hostinger.md), [ADR-018](../decisions/ADR-018-payment-gateway-asaas.md).
 
 ## Repositórios
 
@@ -40,7 +40,7 @@ Não existem `apps/guest` nem `apps/staff`.
 - URL pública do cardápio: `venue.slug` (`bar-do-tiao`).
 - `venue.public_id` é opaco e estável (uso interno / claims futuros).
 - Sessão do dono carrega `account_id` + `venue_id` + `role=owner` — nunca confiar no body para tenancy.
-- Staff JWT carrega `venue_id` + `role` (`owner` | `staff`).
+- Staff JWT carrega `venue_id` + `role` (`owner` | `staff`). Perfil caixa/garçom/painel: `member.role`. Painel ainda leva `categoryIds`.
 
 ## Rotas do front
 
@@ -48,10 +48,19 @@ Não existem `apps/guest` nem `apps/staff`.
 |------|-----|
 | `/` | Landing SaaS |
 | `/cadastro`, `/login` | Auth estabelecimento |
-| `/painel` | Redirect pedidos ou cardápio conforme o plano |
-| `/painel/pedidos` | Kanban do dono (Auto atendimento) |
-| `/painel/cardapio`, `/painel/mesas`, `/painel/bar` | Cardápio, salão e dados do bar |
-| `/painel/pagamento` | Checkout stub |
+| `/painel` | Redirect pedidos ou configurações/cardápio conforme o plano |
+| `/painel/pedidos` | Kanban do dono (tudo) ou do perfil Painel (filtrado por categoria) |
+| `/painel/mesas` | Redirect → `/painel/configuracoes/mesas` |
+| `/painel/configuracoes` | Hub: cardápio, bar, mesas, chamada, equipe, responsável |
+| `/painel/configuracoes/cardapio` | CRUD do cardápio |
+| `/painel/configuracoes/bar` | Nome, slug; CTAs para mesas / chamada |
+| `/painel/configuracoes/mesas` | Mesas (CRUD + QR fixo) — Cardápio e Auto |
+| `/painel/configuracoes/chamada` | Ligar/desligar “Chamar garçom” + TTL (ADR-026) |
+| `/painel/configuracoes/equipe` | Staff / caixa / painel |
+| `/painel/configuracoes/responsavel` | Responsável / pagador Asaas ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)) |
+| `/painel/pagamento` | Checkout (cartão ou PIX). `/painel/bar/plano` redireciona para cá |
+| `/painel/chamados` | Fila “chamar garçom” (plano Cardápio / ADR-026) |
+| `/painel/cardapio`, `/painel/bar/*`, `/painel/equipe` | Redirects legados |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |
 | `/{slug}/c/{token}` | Redeem do claim (redirect se plano Cardápio) |
 | `/{slug}/bem-vindo` | PIN no primeiro aparelho |
@@ -60,14 +69,14 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/garcom` | Mesas do garçom |
 | `/garcom/pedidos` | Kanban do garçom |
 | `/admin/login`, `/admin` | Console da plataforma (operador) |
-| `/admin/bares`, `/admin/planos` | Tenants e catálogo |
+| `/admin/bares`, `/admin/planos`, `/admin/logs` | Tenants, catálogo e logs Laravel |
 
-## Integrações futuras
+## Integrações
 
 | Integração | Fase |
 |------------|------|
-| Asaas / Iugu (assinatura B2B) | MVP+ |
-| Mercado Pago / Stripe BR (pagamento conta) | Depois |
+| Asaas (assinatura B2B, checkout hospedado) | Fatia 12 |
+| Mercado Pago / Stripe BR (pagamento conta da mesa) | Depois |
 | Agente ESC/POS local | Fase 2 |
 
 ## Ambientes

@@ -112,8 +112,8 @@ export default async function HomePage() {
           <h2 className="mt-3 font-serif text-4xl">Escolha o que o bar precisa</h2>
           <p className="mt-3 max-w-xl text-ink-soft">
             Dois tipos de produto — Cardápio ou Auto atendimento — e quantos SKUs o operador
-            cadastrar. Trial de {catalog.trialDays} dias; depois cobra o valor do plano (ou a promo,
-            se houver). Pagamento (cartão ou PIX) no painel — ainda sem gateway.
+            cadastrar. Trial de {catalog.trialDays} dias. A cobrança (cartão ou PIX) aparece no
+            painel quando o trial estiver acabando.
           </p>
           <div className="mt-10">
             <PlanMarketingCards plans={catalog.plans} trialDays={catalog.trialDays} />

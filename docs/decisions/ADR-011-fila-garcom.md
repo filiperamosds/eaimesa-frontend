@@ -24,6 +24,7 @@ A fatia 7 manda o pedido do cliente para o Kanban do **dono**. No salão, quem o
 
 ## Consequências
 
-- Pedido guest e balcão aparecem para o garçom
+- Pedido guest e o lançado na comanda aparecem para o garçom
 - Dono pode abrir `/garcom/pedidos` com a mesma sessão
 - `/v1/owner/orders` permanece para o painel
+- Incluir itens saiu do Kanban: [ADR-022](ADR-022-pedido-garcom-na-comanda.md)

@@ -26,22 +26,25 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 |------------|------|---------|----------|--------------|
 | **Landing** | `/` | Visitante B2B | Cards do catálogo (de/por se houver promo) | Sim |
 | **Auth estabelecimento** | `/cadastro`, `/login` | Dono / garçom | Trial 7 dias no plano escolhido | Sim |
-| **Painel** | `/painel/*` | Dono | Cardápio; resto só no Auto atendimento | — |
-| **Pagamento** | `/painel/pagamento` | Dono | Checkout stub (sucesso) | Gateway |
-| **Garçom** | `/garcom` | Staff | Só Auto atendimento | — |
+| **Painel** | `/painel/*` | Dono | Nav: Pedidos, Mesas, Configurações (plano Cardápio: Mesas + Configurações) | — |
+| **Pagamento** | `/painel/pagamento` | Dono | Destaque no fim do trial; checkout stub ou Asaas; pagador = responsável | Conta da mesa |
+| **Garçom / caixa** | `/garcom` | Staff (`member.role` staff ou cashier) | Só Auto atendimento | — |
+| **Painel (KDS)** | `/painel/pedidos` | Staff (`member.role` panel) | Só Auto atendimento; categorias no cadastro | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
-| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos | SSO/2FA |
+| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos, logs | SSO/2FA |
 
 ## Personas
 
 - **Dono** — 1 bar, ~10 mesas, quer menos hardware e pedido confiável. Publica o cardápio, vê a fila, cadastra o salão e a equipe.
-- **Garçom** — gera QR na mesa; vê parciais; avança a fila; encerra a mesa quando todas as comandas fecham.
+- **Garçom** — gera QR na mesa; vê parciais; avança a fila. Encerra comanda/mesa só se o dono permitir.
+- **Caixa** — mesma tela `/garcom`; sempre pode fechar comanda e mesa.
+- **Painel** — login no monitor da cozinha ou do bar; só o Kanban das categorias que o dono marcou.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
-- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, stub de vendas e catálogo. Não atende o salão nem edita o cardápio de um bar.
+- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, vendas da assinatura, catálogo e logs da API. Não atende o salão nem edita o cardápio de um bar.
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 11 — console SaaS](fatia-11-console-saas.md).
+Implementação **agora**: [fatia 13 — log viewer](fatia-13-log-viewer.md).
 
 ### MVP (quando as fatias somarem)
 
@@ -50,7 +53,7 @@ Implementação **agora**: [fatia 11 — console SaaS](fatia-11-console-saas.md)
 - Cardápio CRUD (texto, preço no servidor)
 - Auto atendimento: mesas + claim + PIN + pedido guest + fila staff
 - Multi-tenant com `venue_id` em toda query
-- Billing stub + console: trial/vigência/suspensão; catálogo de planos no banco
+- Billing: trial/vigência/suspensão; catálogo no banco; cartão no painel (token Asaas) ou PIX hosted
 
 ### Fora do MVP
 

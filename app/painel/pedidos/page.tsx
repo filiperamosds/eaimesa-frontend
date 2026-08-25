@@ -1,5 +1,5 @@
-import { OrdersBoard } from "../../../components/orders-board";
+import { PainelOrdersBoard } from "../../../components/painel-orders-board";
 
 export default function PedidosPage() {
-  return <OrdersBoard />;
+  return <PainelOrdersBoard />;
 }

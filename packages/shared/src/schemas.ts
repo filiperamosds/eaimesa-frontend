@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ORDER_STATUSES } from "./orders";
+import { isCep, isCpfOrCnpj, normalizeCep, normalizeCpfCnpj } from "./payer";
 import { normalizePhone } from "./phone";
 import { isReservedSlug, normalizeSlug, SLUG_MAX, SLUG_MIN, SLUG_REGEX } from "./slug";
 import {
@@ -37,6 +38,98 @@ export const registerSchema = z.object({
     .regex(PLAN_ID_REGEX, "Plano inválido."),
 });
 
+export const payerSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome do pagador (3 a 80 caracteres).")
+    .max(80),
+  cpfCnpj: z
+    .string()
+    .transform(normalizeCpfCnpj)
+    .refine(isCpfOrCnpj, { message: "Informe um CPF ou CNPJ válido." }),
+  email: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z
+      .string()
+      .trim()
+      .email("Informe um e-mail de cobrança válido.")
+      .transform((e) => e.toLowerCase())
+      .optional(),
+  ),
+  phone: z.preprocess((v) => {
+    if (typeof v !== "string" || v.trim() === "") return undefined;
+    const digits = normalizePhone(v);
+    return digits === "" ? undefined : digits;
+  }, z.string().min(10, "Telefone inválido.").max(13, "Telefone inválido.").optional()),
+  postalCode: z.preprocess((v) => {
+    if (typeof v !== "string" || v.trim() === "") return undefined;
+    const digits = normalizeCep(v);
+    return digits === "" ? undefined : digits;
+  }, z.string().refine(isCep, { message: "Informe um CEP válido." }).optional()),
+  addressNumber: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().trim().min(1, "Informe o número do endereço.").max(20).optional(),
+  ),
+});
+
+export type CheckoutPayer = z.infer<typeof payerSchema>;
+
+/** Responsável do bar (ADR-025) — mesmo shape camelCase do pagador, campos obrigatórios no form. */
+export const representativeSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome do responsável (3 a 80 caracteres).")
+    .max(80),
+  cpfCnpj: z
+    .string()
+    .transform(normalizeCpfCnpj)
+    .refine(isCpfOrCnpj, { message: "Informe um CPF ou CNPJ válido." }),
+  email: z
+    .string()
+    .trim()
+    .email("Informe um e-mail válido.")
+    .transform((e) => e.toLowerCase()),
+  phone: z
+    .string()
+    .transform((v) => normalizePhone(v))
+    .refine((d) => d.length >= 10 && d.length <= 11, {
+      message: "Telefone: DDD + número (10 ou 11 dígitos).",
+    }),
+  postalCode: z
+    .string()
+    .transform(normalizeCep)
+    .refine(isCep, { message: "Informe um CEP válido." }),
+  addressNumber: z.string().trim().min(1, "Informe o número do endereço.").max(20),
+});
+
+export type RepresentativeInput = z.infer<typeof representativeSchema>;
+
+export const creditCardSchema = z.object({
+  holderName: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome impresso no cartão.")
+    .max(80),
+  number: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => v.length >= 13 && v.length <= 19, {
+      message: "Informe o número do cartão.",
+    }),
+  expiryMonth: z
+    .string()
+    .regex(/^(0[1-9]|1[0-2])$/, "Validade no formato MM/AA."),
+  expiryYear: z.string().regex(/^\d{4}$/, "Validade no formato MM/AA."),
+  ccv: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => v.length >= 3 && v.length <= 4, { message: "Informe o CVV." }),
+});
+
+export type CheckoutCreditCard = z.infer<typeof creditCardSchema>;
+
 export const checkoutSchema = z.object({
   plan: z
     .string()
@@ -48,6 +141,8 @@ export const checkoutSchema = z.object({
     .enum(PAYMENT_METHODS, { errorMap: () => ({ message: "Escolha cartão ou PIX." }) })
     .optional()
     .default("card"),
+  payer: payerSchema.optional(),
+  creditCard: creditCardSchema.optional(),
 });
 
 export const loginSchema = z.object({
@@ -59,10 +154,28 @@ export const patchVenueSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
     slug: slugSchema.optional(),
+    staffCanCloseTabs: z.boolean().optional(),
+    representative: representativeSchema.optional(),
+    waiterCallEnabled: z.boolean().optional(),
+    waiterCallTtlMinutes: z
+      .number()
+      .int("Validade em minutos inteiros.")
+      .min(15, "Mínimo 15 minutos.")
+      .max(480, "Máximo 480 minutos (8h).")
+      .optional(),
   })
-  .refine((b) => b.name !== undefined || b.slug !== undefined, {
-    message: "Envie name e/ou slug.",
-  });
+  .refine(
+    (b) =>
+      b.name !== undefined ||
+      b.slug !== undefined ||
+      b.staffCanCloseTabs !== undefined ||
+      b.representative !== undefined ||
+      b.waiterCallEnabled !== undefined ||
+      b.waiterCallTtlMinutes !== undefined,
+    {
+      message: "Envie ao menos um campo para atualizar.",
+    },
+  );
 
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1, "Nome da categoria.").max(60),
@@ -109,6 +222,7 @@ export const patchItemSchema = z.object({
 
 export const createOrderSchema = z
   .object({
+    tabId: z.string().uuid().optional(),
     tableId: z.string().uuid().optional(),
     tableLabel: z.string().trim().min(1, "Informe a mesa ou o balcão.").max(40).optional(),
     note: z.string().trim().max(280).optional().nullable(),
@@ -122,8 +236,8 @@ export const createOrderSchema = z
       )
       .min(1, "Inclua pelo menos um item."),
   })
-  .refine((b) => Boolean(b.tableId || b.tableLabel), {
-    message: "Escolha a mesa.",
+  .refine((b) => Boolean(b.tabId || b.tableId || b.tableLabel), {
+    message: "Escolha a mesa ou a comanda.",
   });
 
 export const patchOrderSchema = z.object({
@@ -145,20 +259,56 @@ export const patchTableSchema = z
     message: "Envie label, sortOrder e/ou active.",
   });
 
-export const createStaffSchema = z.object({
-  name: z.string().trim().min(2, "Nome: mínimo 2 caracteres.").max(80),
-  email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
-  password: z.string().min(8, "Senha: mínimo 8 caracteres."),
-});
+export const memberRoleSchema = z.enum(["staff", "cashier", "panel"]);
+
+export const categoryIdsSchema = z.array(z.string().uuid()).max(40);
+
+function assertPanelCategories(
+  role: "staff" | "cashier" | "panel" | undefined,
+  categoryIds: string[] | undefined,
+  ctx: z.RefinementCtx,
+) {
+  if (role === "panel" && (!categoryIds || categoryIds.length < 1)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["categoryIds"],
+      message: "Selecione ao menos uma categoria do cardápio.",
+    });
+  }
+}
+
+export const createStaffSchema = z
+  .object({
+    name: z.string().trim().min(2, "Nome: mínimo 2 caracteres.").max(80),
+    email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
+    password: z.string().min(8, "Senha: mínimo 8 caracteres."),
+    role: memberRoleSchema.optional(),
+    categoryIds: categoryIdsSchema.optional(),
+  })
+  .superRefine((b, ctx) => assertPanelCategories(b.role, b.categoryIds, ctx));
 
 export const patchStaffSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
     active: z.boolean().optional(),
     password: z.string().min(8).optional(),
+    role: memberRoleSchema.optional(),
+    categoryIds: categoryIdsSchema.optional(),
   })
-  .refine((b) => b.name !== undefined || b.active !== undefined || b.password !== undefined, {
-    message: "Envie name, active e/ou password.",
+  .superRefine((b, ctx) => {
+    if (
+      b.name === undefined &&
+      b.active === undefined &&
+      b.password === undefined &&
+      b.role === undefined &&
+      b.categoryIds === undefined
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Envie name, active, password, role e/ou categoryIds.",
+      });
+    }
+    assertPanelCategories(b.role, b.categoryIds, ctx);
   });
 
 export const joinTabSchema = z.object({
