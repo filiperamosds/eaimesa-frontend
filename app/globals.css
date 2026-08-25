@@ -99,6 +99,12 @@ body {
   border-color: rgba(226, 60, 20, 0.45);
 }
 
+.field:disabled {
+  cursor: not-allowed;
+  background: var(--color-paper-2, #f3eee6);
+  color: var(--color-ink-soft);
+}
+
 /** Inputs do console `/admin` (fundo night). */
 .field-night {
   width: 100%;

@@ -11,7 +11,7 @@ sequenceDiagram
   participant API as API
   participant C as Cliente
 
-  D->>W: /cadastro (e-mail, senha, nome, slug)
+  D->>W: /cadastro (nome do estabelecimento, responsável, e-mail, senha)
   W->>API: POST /v1/auth/register
   API-->>W: Set-Cookie eaimesa_owner
   D->>W: /painel — Kanban de pedidos (abas: Pedidos, Mesas, Configurações)
@@ -23,7 +23,7 @@ sequenceDiagram
   API-->>C: Cardápio (somente leitura)
 ```
 
-1. Dono cria conta + venue (nome + slug único).
+1. Dono cria conta + venue (nome; slug gerado a partir do nome).
 2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor) em **Configurações → Cardápio**.
 3. Comparte `https://eaimesa.com.br/{slug}` (QR fixo na mesa, Instagram, balcão) — **só cardápio**.
 4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: **Configurações → Mesas**.
@@ -68,9 +68,9 @@ sequenceDiagram
 
 ## 1. Onboarding do estabelecimento (B2B)
 
-1. Dono cria conta (e-mail + senha).
-2. Cadastra venue: nome e **slug** (`bar-do-tiao`). CNPJ, CPF responsável e OTP entram em fatia posterior.
-3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem pagador. O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
+1. Dono cria conta (e-mail + senha + nome e CPF do responsável).
+2. Cadastra venue: **nome**; o slug sai do nome (`bar-do-tiao`, ou `bar-do-tiao-2` se já existir). URL do cardápio não é editável.
+3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem cartão (nome e CPF do responsável já entram no cadastro). O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
 6. Divulga `/{slug}` — **não** o claim.

@@ -61,7 +61,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 
 - **Controlador:** estabelecimento (quando houver pedidos).
 - **Operador:** EaiMesa (infra, processamento).
-- Cadastro B2B na fatia 1: só e-mail + senha + nome do estabelecimento. CNPJ/CPF de **pagador** só no checkout hosted (trânsito; API não persiste). KYC do responsável entra em fatia posterior.
+- Cadastro B2B: e-mail, senha, nome do estabelecimento, **nome e CPF do responsável**. Telefone, CEP e número entram em Configurações → Responsável. CNPJ/CPF de **pagador** no checkout hosted se o responsável ainda não estiver completo. KYC extra entra em fatia posterior.
 - CPF do **consumidor** não coletar no MVP para pedir.
 - **Telefone + nome** na comanda pessoal (fatia 6): PII do estabelecimento (controlador). API staff devolve telefone **mascarado**. Não logar telefone.
 - PAN / CVV: só em trânsito HTTPS no `POST /v1/billing/checkout` (cartão) até o Asaas. Não persistir, não logar. Guardamos `credit_card_token` cifrado + last4. PIX continua na página hosted. [ADR-020](../decisions/ADR-020-cartao-no-painel.md).

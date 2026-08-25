@@ -22,8 +22,21 @@ export const slugSchema = z
     message: "Use só letras minúsculas, números e hífen (ex. bar-do-tiao).",
   })
   .refine((s) => !isReservedSlug(s), {
-    message: "Este caminho é reservado pelo produto. Escolha outro slug.",
+    message: "Este caminho é reservado. Altere o nome do estabelecimento.",
   });
+
+/** Nome + CPF no cadastro. Telefone, e-mail, CEP e número entram depois em Configurações → Responsável. */
+export const registerRepresentativeSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome do responsável (3 a 80 caracteres).")
+    .max(80),
+  cpfCnpj: z
+    .string()
+    .transform(normalizeCpfCnpj)
+    .refine((d) => d.length === 11, { message: "Informe um CPF válido." }),
+});
 
 export const registerSchema = z.object({
   email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
@@ -36,6 +49,7 @@ export const registerSchema = z.object({
     .min(PLAN_ID_MIN, "Escolha um plano.")
     .max(PLAN_ID_MAX)
     .regex(PLAN_ID_REGEX, "Plano inválido."),
+  representative: registerRepresentativeSchema,
 });
 
 export const payerSchema = z.object({
