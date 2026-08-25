@@ -22,7 +22,7 @@
 
 | Ameaça | Controle |
 |--------|----------|
-| IDOR entre bares | Filtro `venue_id` da sessão; testes depois; RLS |
+| IDOR entre estabelecimentos | Filtro `venue_id` da sessão; testes depois; RLS |
 | Pedido remoto | Claim + PIN + comanda pessoal; slug sozinho não cria pedido; plano Cardápio não tem pedido |
 | Plano / feature | `PLAN_FEATURE` no servidor; Cardápio tem mesas (QR), sem equipe/pedido/comanda |
 | Preço adulterado no pedido | Recalcular no servidor |
@@ -61,7 +61,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 
 - **Controlador:** estabelecimento (quando houver pedidos).
 - **Operador:** EaiMesa (infra, processamento).
-- Cadastro B2B na fatia 1: só e-mail + senha + nome do bar. CNPJ/CPF de **pagador** só no checkout hosted (trânsito; API não persiste). KYC do responsável entra em fatia posterior.
+- Cadastro B2B na fatia 1: só e-mail + senha + nome do estabelecimento. CNPJ/CPF de **pagador** só no checkout hosted (trânsito; API não persiste). KYC do responsável entra em fatia posterior.
 - CPF do **consumidor** não coletar no MVP para pedir.
 - **Telefone + nome** na comanda pessoal (fatia 6): PII do estabelecimento (controlador). API staff devolve telefone **mascarado**. Não logar telefone.
 - PAN / CVV: só em trânsito HTTPS no `POST /v1/billing/checkout` (cartão) até o Asaas. Não persistir, não logar. Guardamos `credit_card_token` cifrado + last4. PIX continua na página hosted. [ADR-020](../decisions/ADR-020-cartao-no-painel.md).
@@ -87,5 +87,5 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Enviar PAN/CVV para a API fora do checkout, persistir PAN ou logar cartão
 - Tratar `?checkout=ok` como pagamento confirmado
 - Expor `/admin/logs` sem cookie `eaimesa_platform`
-- Impressora do bar exposta na internet (fase 2: agente outbound)
+- Impressora do estabelecimento exposta na internet (fase 2: agente outbound)
 - Commitar senha FTP, `.env` de staging ou `out/`

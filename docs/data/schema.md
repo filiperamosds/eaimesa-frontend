@@ -15,7 +15,7 @@ Login do dono.
 - `id`, `owner_account_id` → Account
 - `name`, `slug` UNIQUE, `public_id` UNIQUE
 - `plan`: id do catálogo (`cardapio`, `auto_atendimento` ou SKU criado no console). Sem CHECK nos dois ids seed.
-- `planKind` na API: `cardapio` | `auto_atendimento` (o que o bar pode fazer)
+- `planKind` na API: `cardapio` | `auto_atendimento` (o que o estabelecimento pode fazer)
 - `subscription_status`: `trial` | `active` | `past_due` | `suspended`
 - `accepts_orders`: true só no Auto atendimento com assinatura válida
 - `staff_can_close_tabs` (default true): se false, garçom não fecha comanda/mesa (caixa e dono sim)
@@ -200,7 +200,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 5. Pedido público pelo slug **exige** comanda pessoal `open` (fatia 7). Slug sozinho não autoriza.
 6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo. Com `tabId`, a mesa vem da comanda `open` e o pedido grava `tab_id`.
 7. PIN join casa o PIN com uma **TableSession** `open`.
-8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no bar, 409 `TAB_ALREADY_OPEN`.
+8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no estabelecimento, 409 `TAB_ALREADY_OPEN`.
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`. Os dois (e o guest) podem existir juntos no browser.

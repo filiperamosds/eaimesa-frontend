@@ -7,7 +7,7 @@ Não abre comanda, PIN nem pedido. Ver [ADR-026](../decisions/ADR-026-chamar-gar
 ## Inclui
 
 - QR da mesa: `/{slug}?mesa={menuCode}` no adesivo; após scan o front guarda o código no **sessionStorage** e limpa a URL
-- Cookie `eaimesa_presence` após o scan (TTL do bar)
+- Cookie `eaimesa_presence` após o scan (TTL do estabelecimento)
 - Botão **Chamar garçom** no `/{slug}` só com presença válida e feature ligada
 - `/painel/chamados` — fila de mesas que chamaram (poll)
 - Configurações: ligar/desligar + minutos de validade da sessão (`/painel/configuracoes/chamada`)

@@ -31,7 +31,7 @@ Quem tem **comanda pessoal aberta** pede pelo `/{slug}`. O preço sai do servido
 - Sem cookie guest → 401.
 - Cookie sem tab (ainda sem nome) → 403 `TAB_REQUIRED`.
 - Comanda ou mesa encerrada → 409 `TAB_CLOSED`.
-- Item inativo / de outro bar → 400 `ITEM_NOT_FOUND`.
+- Item inativo / de outro estabelecimento → 400 `ITEM_NOT_FOUND`.
 - Mesma `Idempotency-Key` no mesmo venue devolve o **mesmo** pedido.
 - A chave é UUID v4 gerado no cliente mesmo em HTTP (`.local` / IP da LAN), sem `crypto.randomUUID`.
 

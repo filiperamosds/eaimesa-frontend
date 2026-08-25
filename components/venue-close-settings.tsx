@@ -54,8 +54,8 @@ export function VenueCloseSettings() {
         <span>
           <span className="block font-medium">Garçom pode encerrar comanda e mesa</span>
           <span className="mt-1 block text-sm text-ink-soft">
-            Desligado, só o caixa (e o dono em /garcom) fecha contas abertas. O garçom continua gerando
-            QR e avançando a fila.
+            Desligado, só o caixa (e o dono na tela da equipe) fecha contas abertas. O garçom continua
+            gerando QR e avançando a fila.
           </span>
         </span>
       </label>

@@ -310,7 +310,7 @@ Cookie guest: `eaimesa_guest`. Join não exige cookie. Abrir comanda exige cooki
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/guest/tabs/join` | — | `{ slug, pin }` → sessão na mesa |
-| POST | `/v1/guest/tabs` | Cookie guest | `{ name, phone }` → cria comanda. 409 `TAB_ALREADY_OPEN` se o número já tem comanda `open` no bar (mesma mesa ou outra) |
+| POST | `/v1/guest/tabs` | Cookie guest | `{ name, phone }` → cria comanda. 409 `TAB_ALREADY_OPEN` se o número já tem comanda `open` no estabelecimento (mesma mesa ou outra) |
 | GET | `/v1/guest/tab` | Cookie guest | Mesa + comanda + `pinDisplay` (PIN da mesa, para quem já entrou) |
 
 #### POST /v1/guest/tabs/join (body)
@@ -460,7 +460,7 @@ Cookie `eaimesa_platform`. Body camelCase; enviar **só** os campos que mudam (a
 
 Resposta: o mesmo shape de um item de `venues[]`.
 
-Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futura; senão `trial` se o trial for futuro; senão `past_due`. **Não** recalcula se o bar já está `suspended` ou se o operador envia `subscriptionStatus`. Não sincroniza cobrança no Asaas — ajuste só no cadastro do bar. Front não envia `subscriptionStatus` ao salvar datas (deixa o recálculo com a API).
+Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futura; senão `trial` se o trial for futuro; senão `past_due`. **Não** recalcula se o estabelecimento já está `suspended` ou se o operador envia `subscriptionStatus`. Não sincroniza cobrança no Asaas — ajuste só no cadastro do estabelecimento. Front não envia `subscriptionStatus` ao salvar datas (deixa o recálculo com a API).
 
 `GET /v1/platform/logs/{name}`: só basename `*.log` sob `storage/logs` (sem path traversal). Resposta: `content` (texto do tail), `entries[]` (`timestamp`, `env`, `level`, `message`, `raw`), `truncated`. `level`/`q` filtram `entries`. Front: `/admin/logs`. Ver [fatia 13](../product/fatia-13-log-viewer.md).
 

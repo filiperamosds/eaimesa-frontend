@@ -175,7 +175,7 @@ export function AdminPlans() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-white/60">Dias da vigência paga (stub)</span>
+            <span className="mb-1 block text-white/60">Dias da vigência paga</span>
             <input
               className="field-night"
               type="number"
@@ -199,8 +199,8 @@ export function AdminPlans() {
       <div className="rounded-2xl border border-dashed border-amber/40 bg-white/5 p-5">
         <p className="font-medium">Criar plano</p>
         <p className="mt-1 text-sm text-white/45">
-          O id vira slug do nome (ex. Cardápio Plus → cardapio-plus). Tipo define o que o bar pode
-          fazer.
+          O nome vira o identificador do plano (ex. Cardápio Plus). O tipo define o que o
+          estabelecimento pode fazer.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="text-sm">

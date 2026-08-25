@@ -1,6 +1,6 @@
 # Fatia 2 — Pedidos (Kanban / KDS)
 
-Fila do bar na tela. O dono (depois o garçom) vê os pedidos em colunas de status. **Ainda sem claim, PIN ou pedido pelo cliente no `/{slug}`.**
+Fila do estabelecimento na tela. O dono (depois o garçom) vê os pedidos em colunas de status. **Ainda sem claim, PIN ou pedido pelo cliente no `/{slug}`.**
 
 ## Inclui
 

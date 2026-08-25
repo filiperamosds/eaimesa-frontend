@@ -4,7 +4,7 @@ Operador EaiMesa consulta os ficheiros de log do Laravel (`storage/logs`) em `/a
 
 ## Inclui
 
-- `/admin/logs` no console (nav **Logs**, junto de Dashboard / Bares / Planos)
+- `/admin/logs` no console (nav **Logs**, junto de Dashboard / Estabelecimentos / Planos)
 - `GET /v1/platform/logs` — lista `*.log` (`name`, `sizeBytes`, `modifiedAt`)
 - `GET /v1/platform/logs/{name}` — tail + entries Monolog (`lines`, `level`, `q`)
 - Cookie `eaimesa_platform` (mesmo layout/proteção das outras `/admin/*`)

@@ -16,11 +16,11 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: {
-    default: "EaiMesa — cardápio do bar no celular",
+    default: "EaiMesa — cardápio do estabelecimento no celular",
     template: "%s · EaiMesa",
   },
   description:
-    "SaaS para bares pequenos: publique o cardápio numa URL sua. Sem app para o cliente, sem tablet sujo na mesa.",
+    "SaaS para bares e restaurantes: publique o cardápio numa URL sua. Sem app para o cliente, sem tablet sujo na mesa.",
   icons: {
     icon: [
       { url: "/logo.svg", type: "image/svg+xml" },

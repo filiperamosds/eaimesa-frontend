@@ -37,7 +37,7 @@ Site: http://localhost:3000
 | Web | http://localhost:3000 |
 | Cardápio seed | http://localhost:3000/bar-do-tiao |
 | Pedidos (Kanban) | http://localhost:3000/painel/pedidos |
-| Meu bar | http://localhost:3000/painel/configuracoes/bar |
+| Estabelecimento | http://localhost:3000/painel/configuracoes/bar |
 | Mesas | http://localhost:3000/painel/configuracoes/mesas |
 | Chamada | http://localhost:3000/painel/configuracoes/chamada |
 | Chamados | http://localhost:3000/painel/chamados |

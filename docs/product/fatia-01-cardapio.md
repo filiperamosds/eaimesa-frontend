@@ -6,7 +6,7 @@ Primeira entrega cobrável em pedaço: o estabelecimento entra, publica um card�
 
 - Landing do SaaS (`/`)
 - Cadastro e login do **estabelecimento** (`/cadastro`, `/login`). `/login` chama `GET /v1/auth/me`: sessão válida pula o form (dono → painel, staff → `/garcom`).
-- Painel do dono: dados do bar + CRUD de categorias e itens (`/painel`)
+- Painel do dono: dados do estabelecimento + CRUD de categorias e itens (`/painel`)
 - Cardápio público gerado pela URL configurada: `https://eaimesa.com.br/{slug}`  
   Exemplo: `/bar-do-tiao`
 - API REST correspondente (auth cookie + catálogo + menu público)

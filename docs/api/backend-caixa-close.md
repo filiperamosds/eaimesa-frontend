@@ -1,6 +1,6 @@
 # Backend — caixa, `staffCanCloseTabs` e close de comanda/mesa
 
-Repo: **eaimesa-backend** (Laravel). Front: Configurações (`/painel/configuracoes/*`) + check em Meu bar + perfil Caixa na Equipe.
+Repo: **eaimesa-backend** (Laravel). Front: Configurações (`/painel/configuracoes/*`) + check em Estabelecimento + perfil Caixa na Equipe.
 
 Não criar path novo. Cookie `eaimesa_owner`. JWT continua `role: owner | staff`. Caixa e garçom compartilham JWT `staff`; o perfil vai em `member.role`.
 

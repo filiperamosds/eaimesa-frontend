@@ -1,4 +1,4 @@
-# ADR-025: Responsável do bar + painel em Operação / Configurações
+# ADR-025: Responsável do estabelecimento + painel em Operação / Configurações
 
 **Status:** Aceito  
 **Data:** 2026-08-24  
@@ -12,7 +12,7 @@ O dono misturava operação (fila, mesas) com cadastro (cardápio, equipe, pagad
 
 - Nav dono (Auto atendimento): **Pedidos | Configurações**
 - Plano Cardápio: **Chamados | Configurações**
-- Configurações: Cardápio, Meu bar, **Mesas**, **Chamada**, Equipe (Auto), Responsável, Pagamento
+- Configurações: Cardápio, Estabelecimento, **Mesas**, **Chamada**, Equipe (Auto), Responsável, Pagamento
 - Rotas: `/painel/configuracoes/*`; `/painel/chamados` (fila); `/painel/mesas` → redirect para `configuracoes/mesas`; `/painel/pagamento` checkout
 - Redirects: `/painel/cardapio` → configuracoes/cardapio; `/painel/bar/*` → equivalentes
 - Responsável: `PATCH /v1/owner/venue` `{ representative }`; pagamento pré-preenche e omite `payer` se inalterado

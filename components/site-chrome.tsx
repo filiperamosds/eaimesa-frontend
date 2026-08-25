@@ -52,7 +52,8 @@ export function SiteFooter() {
         <div>
           <Logo invert />
           <p className="mt-3 max-w-sm text-sm text-white/60">
-            Cardápio e comanda para bar pequeno. O cliente usa o celular; o link da porta não abre pedido.
+            Cardápio e comanda para bares e restaurantes. O cliente usa o celular; o link da porta
+            não abre pedido.
           </p>
         </div>
         <div className="flex gap-5 text-sm text-white/70">

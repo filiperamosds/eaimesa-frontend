@@ -202,8 +202,8 @@ export function PaymentForm({
           (mensal).{" "}
           {captureCard
             ? asaas
-              ? `Você digita o cartão aqui. O EaiMesa envia número, validade e CVV ao ${providerLabel} em HTTPS e não grava PAN — só o token para as próximas cobranças.`
-              : "Ambiente de teste: o POST leva plano, meio e os dados do cartão. O stub não cobra de verdade."
+              ? `Você informa o cartão aqui. Os dados vão ao ${providerLabel} e não ficam guardados no EaiMesa.`
+              : "Pagamento simulado — sem cobrança real."
             : asaas
               ? `PIX na página segura do ${providerLabel}.`
               : "PIX simulado neste ambiente."}
@@ -233,7 +233,7 @@ export function PaymentForm({
                     : "Simulado neste ambiente"
                   : asaas
                     ? `Enviado ao ${providerLabel}`
-                    : "Enviado no POST (teste)"}
+                    : "Simulado neste ambiente"}
               </span>
             </button>
           ))}
@@ -245,7 +245,7 @@ export function PaymentForm({
           {isRepresentativeComplete(initialPayer) ? (
             <p className="rounded-2xl border border-line bg-paper-2/60 px-3 py-2 text-xs text-ink-soft">
               Pagador pré-preenchido com o responsável. Sem alterar os campos, o checkout usa o
-              cadastro salvo (sem reenviar `payer`).
+              cadastro salvo.
             </p>
           ) : null}
           <label className="block text-sm">

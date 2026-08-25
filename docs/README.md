@@ -12,7 +12,7 @@
 1h. [Fatia 8 — Fila do garçom](product/fatia-08-fila-garcom.md) — Kanban em `/garcom/pedidos`
 1i. [Fatia 9 — Parcial do cliente](product/fatia-09-parcial-guest.md) — comanda no celular: itens, status, total
 1j. [Fatia 10 — Planos](product/fatia-10-planos.md) — Cardápio vs Auto atendimento, trial, checkout stub
-1k. [Fatia 11 — Console SaaS](product/fatia-11-console-saas.md) — login da plataforma, dashboard, bares (expiração + suspender), catálogo (criar plano + promo)
+1k. [Fatia 11 — Console SaaS](product/fatia-11-console-saas.md) — login da plataforma, dashboard, estabelecimentos (expiração + suspender), catálogo (criar plano + promo)
 1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — cartão no painel + token; PIX hosted; stub local
 1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, tail Laravel
 1n. [Fatia 14 — Painel Kanban](product/fatia-14-kanban-painel.md) — perfil Painel, categorias por monitor

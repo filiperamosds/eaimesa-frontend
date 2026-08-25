@@ -14,8 +14,7 @@ export default async function PrecoPage() {
         <h1 className="mt-3 font-serif text-4xl">Planos com valor na hora de adquirir.</h1>
         <p className="mt-3 text-ink-soft">
           Mensalidade fixa, sem comissão. Trial de {catalog.trialDays} dias; depois cobra o valor do
-          plano ou a promoção, se estiver preenchida. No painel você escolhe cartão ou PIX — a API
-          ainda só confirma sucesso.
+          plano ou a promoção, se estiver preenchida. No painel você escolhe cartão ou PIX.
         </p>
         <div className="mt-10">
           <PlanMarketingCards plans={catalog.plans} trialDays={catalog.trialDays} />

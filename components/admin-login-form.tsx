@@ -53,8 +53,8 @@ export function AdminLoginForm() {
       <p className="eyebrow">Console</p>
       <h1 className="mt-2 font-serif text-3xl">Operação EaiMesa</h1>
       <p className="mt-2 mb-8 text-ink-soft">
-        Login da plataforma — não é o painel do bar. Os dois cookies são independentes: dá para ficar
-        logado no console e no estabelecimento ao mesmo tempo.
+        Login da plataforma — não é o painel do estabelecimento. Você pode ficar logado no console e
+        no estabelecimento ao mesmo tempo.
       </p>
       {checking ? (
         <p className="text-ink-soft">Verificando sessão…</p>
@@ -89,7 +89,7 @@ export function AdminLoginForm() {
         </form>
       )}
       <p className="mt-8 text-center text-sm text-ink-soft">
-        Dono do bar?{" "}
+        Dono do estabelecimento?{" "}
         <Link href="/login" className="font-medium text-ink underline">
           Login do estabelecimento
         </Link>
