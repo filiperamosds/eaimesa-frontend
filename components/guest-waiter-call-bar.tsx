@@ -4,7 +4,7 @@ import type { PresenceSession } from "../lib/types";
 
 export function GuestWaiterCallBar({
   presence,
-  mesaParam,
+  mesaStored,
   loadError,
   featureHint,
   calling,
@@ -13,9 +13,8 @@ export function GuestWaiterCallBar({
   onCall,
 }: {
   presence: PresenceSession | null | undefined;
-  mesaParam: string | null;
+  mesaStored?: boolean;
   loadError: string | null;
-  /** Feature ligada no venue, mas sem ?mesa= / cookie — explica por que não há botão. */
   featureHint?: boolean;
   calling: boolean;
   callMsg: string | null;
@@ -62,11 +61,11 @@ export function GuestWaiterCallBar({
     );
   }
 
-  if (featureHint && !mesaParam) {
+  if (featureHint && !mesaStored) {
     return (
       <div className="border-b border-line/80 bg-card/90 px-5 py-3 text-center text-sm text-ink-soft">
-        Escaneie o <span className="font-medium text-ink">QR da mesa</span> (não o QR geral) para chamar o
-        garçom.
+        Escaneie o <span className="font-medium text-ink">QR da mesa</span> no salão para chamar o garçom.
+        O link compartilhado não leva o código da mesa.
       </div>
     );
   }

@@ -58,7 +58,7 @@ export function WaiterCallSettings() {
       setTtl(readTtl(v));
       setMsg(
         enabled
-          ? "Salvo. No cardápio, abra o QR da mesa (?mesa=) — o QR geral não mostra o botão."
+          ? "Salvo. Escaneie o QR da mesa no salão — o link na barra de endereço não mostra o código."
           : "Salvo. Chamada desligada no cardápio.",
       );
     } catch (err) {
@@ -87,7 +87,7 @@ export function WaiterCallSettings() {
           <span className="block font-medium">Chamar garçom pelo cardápio</span>
           <span className="mt-1 block text-sm text-ink-soft">
             Com o QR da mesa (<span className="font-mono">?mesa=</span>), o cliente pode pedir atendimento.
-            Desligado: o QR ainda abre o cardápio, sem botão de chamar.
+            Desligado: o QR ainda abre o cardápio, sem botão de chamar. Após escanear, o código da mesa fica só neste aparelho (não na URL).
           </span>
         </span>
       </label>

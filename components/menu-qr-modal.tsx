@@ -128,8 +128,8 @@ export function MenuQrModal({
             </>
           ) : mesaCode ? (
             <>
-              URL desta mesa: inclui <span className="font-mono text-ink">?mesa=</span> para o celular
-              saber onde o cliente está (chamar garçom, se ligado).
+              URL desta mesa: o QR inclui <span className="font-mono text-ink">?mesa=</span> só na
+              1ª abertura; depois o app guarda no aparelho e limpa a barra de endereço.
             </>
           ) : (
             <>QR geral do cardápio (porta / Instagram). Sem identificação de mesa.</>

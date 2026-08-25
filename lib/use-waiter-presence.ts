@@ -4,14 +4,8 @@ import { ERROR_CODES } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import { pickStr } from "./api-case";
+import { clearStoredMesa, resolveMesaCode } from "./mesa-session-storage";
 import type { PresenceSession } from "./types";
-
-function readMesaFromUrl(): string | null {
-  if (typeof window === "undefined") return null;
-  const raw = new URLSearchParams(window.location.search).get("mesa");
-  const code = raw?.trim();
-  return code || null;
-}
 
 function normalizePresence(data: unknown): PresenceSession | null {
   if (!data || typeof data !== "object") return null;
@@ -29,12 +23,11 @@ function normalizePresence(data: unknown): PresenceSession | null {
 }
 
 /**
- * Presença no cardápio (ADR-026): `?mesa=` → POST presence; cookie → GET presence.
- * Só exibe “Chamar garçom” quando a API confirma sessão válida.
+ * Presença no cardápio (ADR-026): menuCode no sessionStorage (bootstrap via QR ?mesa=) → POST presence.
  */
 export function useWaiterPresence(slug: string, enabled: boolean) {
   const [presence, setPresence] = useState<PresenceSession | null | undefined>(null);
-  const [mesaParam, setMesaParam] = useState<string | null>(null);
+  const [mesaStored, setMesaStored] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [calling, setCalling] = useState(false);
   const [callMsg, setCallMsg] = useState<string | null>(null);
@@ -43,13 +36,13 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
   useEffect(() => {
     if (!enabled || !slug) {
       setPresence(null);
-      setMesaParam(null);
+      setMesaStored(false);
       setLoadError(null);
       return;
     }
     let cancelled = false;
-    const mesa = readMesaFromUrl();
-    setMesaParam(mesa);
+    const mesa = resolveMesaCode(slug);
+    setMesaStored(Boolean(mesa));
     setLoadError(null);
     if (mesa) setPresence(undefined);
 
@@ -87,8 +80,10 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
             return;
           }
           if (err.code === ERROR_CODES.TABLE_NOT_FOUND) {
+            clearStoredMesa(slug);
+            setMesaStored(false);
             setPresence(null);
-            setLoadError("Mesa não encontrada. Exporte de novo o QR em Configurações → Mesas.");
+            setLoadError("Mesa não encontrada. Escaneie de novo o QR em Configurações → Mesas.");
             return;
           }
           if (
@@ -144,5 +139,5 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
     }
   }
 
-  return { presence, mesaParam, loadError, calling, callMsg, callError, callWaiter };
+  return { presence, mesaStored, loadError, calling, callMsg, callError, callWaiter };
 }
