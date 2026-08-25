@@ -40,11 +40,13 @@ sequenceDiagram
   D->>API: PATCH .../acked
 ```
 
-1. Dono liga **Chamar garçom**, define TTL (ex. 120 min), cadastra mesas, exporta QR por mesa.
-2. Cliente escaneia → presença na mesa → vê o botão.
+1. Dono liga **Chamar garçom**, define TTL (ex. 120 min), cadastra mesas, exporta QR **por mesa** (URL com `?mesa=`).
+2. Cliente escaneia esse QR (não o QR geral da porta) → presença na mesa → vê o botão.
 3. Toca **Chamar garçom** → aparece em `/painel/chamados`.
 4. Dono marca **Atendido**.
-5. Sem `?mesa=` ou feature off ou TTL vencido → só cardápio leitura.
+5. Sem `?mesa=` ou feature off (`waiterCallEnabled=false` no payload público) ou TTL vencido → sem botão (no Cardápio pode aparecer aviso para escanear o QR da mesa).
+
+**Front:** o botão não fica restrito ao plano Cardápio — se `waiterCallEnabled=true` no `GET /v1/public/venues/{slug}`, a faixa aparece também no Auto atendimento (além da comanda).
 
 ## Configuração (UI)
 
