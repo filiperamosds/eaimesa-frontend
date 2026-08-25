@@ -1,6 +1,6 @@
 "use client";
 
-import { PLAN_BAR_MAX_TABLES } from "@eaimesa/shared";
+import { PLAN_BAR_MAX_TABLES, planAllowsService } from "@eaimesa/shared";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
@@ -55,22 +55,36 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
 
   if (loading) return <p className="text-ink-soft">Carregando mesas…</p>;
 
+  const service = venue ? planAllowsService(venue.planKind ?? venue.plan) : false;
+
   return (
     <div>
       <div className="surface mb-6 border-sage/20 bg-sage-soft/40 p-4 text-sm text-ink-soft">
-        <p className="font-medium text-ink">QR fixo = cardápio. QR do garçom = comanda.</p>
-        <p className="mt-1">
-          Exporte o QR de cada mesa e cole no salão. Para abrir comanda, o garçom gera o QR em{" "}
-          <strong className="font-medium text-ink">/garcom</strong> (cadastre a equipe em Meu bar).
-        </p>
+        {service ? (
+          <>
+            <p className="font-medium text-ink">QR fixo = cardápio. QR do garçom = comanda.</p>
+            <p className="mt-1">
+              Exporte o QR de cada mesa e cole no salão. Para abrir comanda, o garçom gera o QR em{" "}
+              <strong className="font-medium text-ink">/garcom</strong> (equipe em Configurações).
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-medium text-ink">Cadastre as mesas e exporte o QR de cada uma.</p>
+            <p className="mt-1">
+              O adesivo leva o cliente ao cardápio da casa. Sem pedido no celular neste plano — só leitura
+              (e chamada ao garçom, quando estiver ligada).
+            </p>
+          </>
+        )}
       </div>
       {showVenueQr && venue ? (
         <section className="surface mb-6 p-5">
           <p className="eyebrow">QR do cardápio</p>
-          <h2 className="mt-2 font-serif text-xl">Geral — porta, Instagram ou mesa</h2>
+          <h2 className="mt-2 font-serif text-xl">Geral — porta ou Instagram</h2>
           <p className="mt-2 text-sm text-ink-soft">
-            Aponta para <span className="font-medium text-ink">/{venue.slug}</span>. Só leitura — comanda
-            abre com o QR do garçom.
+            Aponta para <span className="font-medium text-ink">/{venue.slug}</span>
+            {service ? " — só leitura; comanda abre com o QR do garçom." : "."}
           </p>
           <button type="button" onClick={() => setVenueQr(true)} className="btn-secondary mt-4 !py-2 text-sm">
             Ver e exportar QR geral
@@ -79,11 +93,18 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
       ) : null}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <p className="text-sm text-ink-soft">
-          {activeCount}/{maxActive} mesas ativas no plano Auto atendimento. Pedido de balcão escolhe daqui.
+          {activeCount}/{maxActive} mesas ativas
+          {service ? ". Pedido de balcão e claim usam esta lista." : ". Use o QR por mesa no salão."}
         </p>
-        <Link href="/painel/pedidos" className="text-sm font-medium text-chili">
-          Ir para pedidos →
-        </Link>
+        {service ? (
+          <Link href="/painel/pedidos" className="text-sm font-medium text-chili">
+            Ir para pedidos →
+          </Link>
+        ) : (
+          <Link href="/painel/configuracoes/cardapio" className="text-sm font-medium text-chili">
+            Ir para cardápio →
+          </Link>
+        )}
       </div>
       <form onSubmit={add} className="mb-6 flex flex-wrap gap-2">
         <input

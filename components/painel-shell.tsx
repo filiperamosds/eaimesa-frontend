@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isPanelMember, planAllowsService, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
+import { isPanelMember, planAllowsService, planAllowsTables, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
 import { api } from "../lib/api";
 import { paymentPromptForVenue } from "../lib/billing-prompt";
 import type { Session } from "../lib/types";
@@ -11,17 +11,16 @@ import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
 
 const ALL_LINKS = [
-  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true },
-  { href: "/painel/mesas", label: "Mesas", icon: "▦", service: true },
-  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false },
+  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true, tables: false },
+  { href: "/painel/mesas", label: "Mesas", icon: "▦", service: false, tables: true },
+  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false, tables: false },
 ] as const;
 
-const SERVICE_PREFIXES = [
+/** Rotas só do Auto atendimento — Cardápio é redirecionado. Mesas ficam de fora (ADR-026). */
+const SERVICE_ONLY_PREFIXES = [
   "/painel/pedidos",
-  "/painel/mesas",
   "/painel/equipe",
   "/painel/configuracoes/equipe",
-  "/painel/bar/mesas",
   "/painel/bar/equipe",
   "/painel/bar/configuracoes",
 ];
@@ -49,7 +48,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
         }
         setMe(session);
         const service = planAllowsService(session.venue.planKind ?? session.venue.plan);
-        if (!service && SERVICE_PREFIXES.some((p) => path.startsWith(p))) {
+        if (!service && SERVICE_ONLY_PREFIXES.some((p) => path.startsWith(p))) {
           router.replace("/painel/configuracoes/cardapio");
         }
       })
@@ -83,7 +82,9 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
   const links = panel
     ? []
     : ALL_LINKS.filter((l) => {
-        if (l.service && !planAllowsService(me.venue.planKind ?? me.venue.plan)) return false;
+        const kind = me.venue.planKind ?? me.venue.plan;
+        if (l.service && !planAllowsService(kind)) return false;
+        if (l.tables && !planAllowsTables(kind)) return false;
         return true;
       });
 

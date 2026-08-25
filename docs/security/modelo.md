@@ -24,7 +24,7 @@
 |--------|----------|
 | IDOR entre bares | Filtro `venue_id` da sessão; testes depois; RLS |
 | Pedido remoto | Claim + PIN + comanda pessoal; slug sozinho não cria pedido; plano Cardápio não tem pedido |
-| Plano / feature | `PLAN_FEATURE` no servidor; UI esconde mesas/garçom no Cardápio |
+| Plano / feature | `PLAN_FEATURE` no servidor; Cardápio tem mesas (QR), sem equipe/pedido/comanda |
 | Preço adulterado no pedido | Recalcular no servidor |
 | XSS no cardápio | Texto; escape no React; CSP depois |
 | Guest → admin | Cookies distintos; RBAC server-side |

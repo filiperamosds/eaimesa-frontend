@@ -197,7 +197,7 @@ sequenceDiagram
 2. Stub (`immediate`): (~2s) aprova e grava `active`. `currentPeriodEndsAt` = `max(agora, trial_ends_at, current_period_ends_at) + paidPeriodDays`. Front envia o cartão no POST; o stub ignora.
 3. Asaas cartão: form no painel envia `creditCard`; Laravel cobra e guarda token. PIX: redirect hosted. `?checkout=ok` não confirma.
 4. Subir `kind` Cardápio → Auto atendimento: sempre. Troca lateral (mesmo kind): sempre. Descer: só depois do fim da vigência **paga**.
-5. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em mesas, equipe, pedidos, claim, PIN e comanda. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.
+5. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em equipe, pedidos, claim, PIN e comanda. **Mesas** (`/v1/owner/tables`) são liberadas para QR. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.
 
 ## 5c. Fatia 11 — console SaaS
 
