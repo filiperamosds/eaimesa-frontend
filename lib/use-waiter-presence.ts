@@ -18,7 +18,6 @@ function readMesaFromUrl(): string | null {
  */
 export function useWaiterPresence(slug: string, enabled: boolean) {
   const [presence, setPresence] = useState<PresenceSession | null | undefined>(null);
-  const [busy, setBusy] = useState(false);
   const [calling, setCalling] = useState(false);
   const [callMsg, setCallMsg] = useState<string | null>(null);
   const [callError, setCallError] = useState<string | null>(null);
@@ -26,16 +25,12 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
   useEffect(() => {
     if (!enabled || !slug) {
       setPresence(null);
-      setBusy(false);
       return;
     }
     let cancelled = false;
     const mesa = readMesaFromUrl();
     // Com ?mesa= mostra “Identificando…”; sem query, tenta cookie em silêncio.
-    if (mesa) {
-      setPresence(undefined);
-      setBusy(true);
-    }
+    if (mesa) setPresence(undefined);
 
     async function load() {
       try {
@@ -64,8 +59,6 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
           return;
         }
         setPresence(null);
-      } finally {
-        if (!cancelled) setBusy(false);
       }
     }
 
@@ -97,5 +90,5 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
     }
   }
 
-  return { presence, busy, calling, callMsg, callError, callWaiter };
+  return { presence, calling, callMsg, callError, callWaiter };
 }
