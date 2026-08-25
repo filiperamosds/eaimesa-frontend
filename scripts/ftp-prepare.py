@@ -4,14 +4,23 @@
 O FTP-Deploy-Action trata arquivo existente no .ftp-deploy-sync-state.json
 como replace. Se o wipe anterior apagou a pasta, o STOR vira 550
 (No such file or directory) — caso de `__venue/bem-vindo/index.html`.
+
+Conexão Hostinger às vezes timeout a partir do runner do Actions — retry
+com backoff antes de falhar o job.
 """
 
 from __future__ import annotations
 
 import ftplib
 import os
+import socket
 import sys
+import time
 from pathlib import Path
+
+CONNECT_ATTEMPTS = 5
+CONNECT_TIMEOUT_S = 60
+BACKOFF_S = (4, 8, 16, 32)
 
 
 def mkdir_cwd(ftp: ftplib.FTP, parts: list[str]) -> None:
@@ -26,6 +35,31 @@ def mkdir_cwd(ftp: ftplib.FTP, parts: list[str]) -> None:
             ftp.cwd(part)
 
 
+def connect(host: str, user: str, password: str) -> ftplib.FTP:
+    last: BaseException | None = None
+    for attempt in range(1, CONNECT_ATTEMPTS + 1):
+        ftp = ftplib.FTP()
+        try:
+            print(f"FTP connect {host}:21 (tentativa {attempt}/{CONNECT_ATTEMPTS})")
+            ftp.connect(host, 21, timeout=CONNECT_TIMEOUT_S)
+            ftp.login(user, password)
+            return ftp
+        except (TimeoutError, socket.timeout, OSError, ftplib.error_temp) as exc:
+            last = exc
+            print(f"FTP falhou: {exc}", file=sys.stderr)
+            try:
+                ftp.close()
+            except Exception:
+                pass
+            if attempt >= CONNECT_ATTEMPTS:
+                break
+            wait = BACKOFF_S[min(attempt - 1, len(BACKOFF_S) - 1)]
+            print(f"Aguardando {wait}s…", file=sys.stderr)
+            time.sleep(wait)
+    assert last is not None
+    raise last
+
+
 def main() -> int:
     host = os.environ["FTP_SERVER"].strip()
     user = os.environ["FTP_USERNAME"]
@@ -36,9 +70,7 @@ def main() -> int:
         print("out/ não existe", file=sys.stderr)
         return 1
 
-    ftp = ftplib.FTP()
-    ftp.connect(host, 21, timeout=60)
-    ftp.login(user, password)
+    ftp = connect(host, user, password)
     mkdir_cwd(ftp, remote.split("/"))
 
     try:
