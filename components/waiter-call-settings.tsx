@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api, ApiError } from "../lib/api";
 import type { Venue } from "../lib/types";
 
@@ -96,9 +97,14 @@ export function WaiterCallSettings() {
       </label>
       {error ? <p className="text-sm text-chili">{error}</p> : null}
       {msg ? <p className="text-sm text-sage">{msg}</p> : null}
-      <button type="submit" disabled={pending} className="btn-primary !py-2">
-        {pending ? "Salvando…" : "Salvar"}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={pending} className="btn-primary !py-2">
+          {pending ? "Salvando…" : "Salvar"}
+        </button>
+        <Link href="/painel/chamados" className="text-sm font-medium text-chili">
+          Ver fila de chamados →
+        </Link>
+      </div>
     </form>
   );
 }
