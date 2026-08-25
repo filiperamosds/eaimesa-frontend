@@ -23,7 +23,7 @@ export default function CadastroPage() {
         <Logo className="mb-8 lg:hidden" />
         <h1 className="font-serif text-3xl">Cadastrar o estabelecimento</h1>
         <p className="mt-2 mb-8 text-ink-soft">
-          URL do cardápio + plano com o valor mensal. Trial de 7 dias, sem cartão no cadastro.
+          Nome do estabelecimento, responsável e plano. Trial de 7 dias, sem cartão no cadastro.
         </p>
         <Suspense fallback={<p className="text-ink-soft">Carregando…</p>}>
           <RegisterForm />
