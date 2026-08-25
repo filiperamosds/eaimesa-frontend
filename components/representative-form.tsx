@@ -65,12 +65,12 @@ export function RepresentativeForm({ defaultEmail = "" }: { defaultEmail?: strin
       });
       const r = v.representative;
       if (r) {
-        setName(r.name);
-        setCpfCnpj(formatCpfCnpjInput(r.cpfCnpj));
-        setEmail(r.email);
-        setPhone(formatPhoneInput(r.phone));
-        setPostalCode(formatCepInput(r.postalCode));
-        setAddressNumber(r.addressNumber);
+        setName(r.name ?? "");
+        setCpfCnpj(formatCpfCnpjInput(r.cpfCnpj ?? ""));
+        setEmail(r.email ?? defaultEmail);
+        setPhone(formatPhoneInput(r.phone ?? ""));
+        setPostalCode(formatCepInput(r.postalCode ?? ""));
+        setAddressNumber(r.addressNumber ?? "");
       }
       setMsg("Responsável salvo. O checkout de pagamento usa estes dados.");
     } catch (err) {

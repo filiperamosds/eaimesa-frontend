@@ -10,7 +10,7 @@ A visão inicial usava `venue_public_id` opaco na URL (`/d1de031d33`). Para o ca
 ## Decisão
 
 - URL pública do cardápio: `/{slug}` (ex. `/bar-do-tiao`)
-- `slug` é único, escolhido pelo estabelecimento, kebab-case `[a-z0-9]+(-[a-z0-9]+)*`, 3–48 chars
+- `slug` é único, **gerado a partir do nome** (`Bar do Tião` → `bar-do-tiao`; ocupado → `bar-do-tiao-2`), kebab-case `[a-z0-9]+(-[a-z0-9]+)*`, 3–48 chars. A UI não deixa editar.
 - `public_id` opaco **permanece** na tabela `venues` como identificador estável (claims/QR futuros podem usá-lo se o slug mudar)
 - Sem domínio customizado no MVP (`bar.com.br` próprio continua fora de escopo)
 

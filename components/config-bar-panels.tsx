@@ -21,8 +21,8 @@ export function ConfigBarPanels() {
       <div>
         <h2 className="font-serif text-2xl">Meu estabelecimento</h2>
         <p className="mt-2 mb-8 text-ink-soft">
-          Este nome curto entra na URL do cardápio. Exemplo: /bar-do-tiao. Palavras como login e
-          painel não podem ser usadas.
+          A URL do cardápio sai do nome. Se o caminho já existir, o sistema acrescenta um número
+          (bar-do-tiao-2).
         </p>
         <VenueSettings />
       </div>

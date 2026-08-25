@@ -2,7 +2,7 @@
 
 O dono paga a mensalidade em `/painel/pagamento`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas. **PIX** usa checkout hospedado. O stub da [fatia 10](fatia-10-planos.md) continua quando `checkoutMode=immediate`.
 
-Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Depois do cadastro o front abre o produto (cardápio/pedidos). O checkout em `/painel/pagamento` (cartão e PIX) é destacado nos últimos 3 dias do trial ou se a assinatura estiver `past_due`. Callbacks PIX usam `?checkout=` na mesma rota. Pagador vem do **responsável** (`venue.representative`) — [ADR-025](../decisions/ADR-025-responsavel-configuracoes.md).
+Landing, `/preco` e `/cadastro` **não** pedem cartão. O cadastro pede nome e CPF do responsável. O trial segue igual. Depois do cadastro o front abre o produto (cardápio/pedidos). O checkout em `/painel/pagamento` (cartão e PIX) é destacado nos últimos 3 dias do trial ou se a assinatura estiver `past_due`. Callbacks PIX usam `?checkout=` na mesma rota. Pagador vem do **responsável** (`venue.representative`) — [ADR-025](../decisions/ADR-025-responsavel-configuracoes.md).
 
 ## Inclui
 

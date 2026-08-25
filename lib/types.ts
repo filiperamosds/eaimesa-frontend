@@ -16,10 +16,10 @@ export type Venue = {
   representative?: {
     name: string;
     cpfCnpj: string;
-    email: string;
-    phone: string;
-    postalCode: string;
-    addressNumber: string;
+    email?: string;
+    phone?: string;
+    postalCode?: string;
+    addressNumber?: string;
   } | null;
 };
 

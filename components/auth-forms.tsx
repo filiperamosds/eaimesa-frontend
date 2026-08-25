@@ -1,12 +1,13 @@
 "use client";
 
-import { PLANS } from "@eaimesa/shared";
+import { ERROR_CODES, formatCpfCnpjInput, PLANS, registerSchema, SLUG_MIN, slugifyFromName, withSlugSuffix } from "@eaimesa/shared";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { resolveOwnerLoginTarget } from "../lib/auth-redirect";
 import type { BillingPlan, BillingPlansPayload } from "../lib/load-billing-plans";
+import { useMenuSlugFromName } from "../lib/menu-slug";
 import type { LoginResponse, Session } from "../lib/types";
 import { PlanPrice } from "./plan-price";
 
@@ -90,12 +91,14 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [venueName, setVenueName] = useState("");
-  const [slug, setSlug] = useState("");
+  const [representativeName, setRepresentativeName] = useState("");
+  const [representativeCpf, setRepresentativeCpf] = useState("");
   const [plan, setPlan] = useState(requested && requested.length >= 3 ? requested : "cardapio");
   const [plans, setPlans] = useState<BillingPlan[]>(Object.values(PLANS));
   const [trialDays, setTrialDays] = useState(7);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const slug = useMenuSlugFromName(venueName);
 
   useEffect(() => {
     api<BillingPlansPayload>("/v1/billing/plans")
@@ -113,12 +116,36 @@ export function RegisterForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const parsed = registerSchema.safeParse({
+      email,
+      password,
+      venueName,
+      slug,
+      plan,
+      representative: { name: representativeName, cpfCnpj: representativeCpf },
+    });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Revise os dados.");
+      return;
+    }
     setPending(true);
     try {
-      const result = await api<LoginResponse>("/v1/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ email, password, venueName, slug, plan }),
-      });
+      let nextSlug = parsed.data.slug;
+      let result: LoginResponse | null = null;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        try {
+          result = await api<LoginResponse>("/v1/auth/register", {
+            method: "POST",
+            body: JSON.stringify({ ...parsed.data, slug: nextSlug }),
+          });
+          break;
+        } catch (err) {
+          const taken = err instanceof ApiError && err.code === ERROR_CODES.SLUG_TAKEN;
+          if (!taken || attempt === 7) throw err;
+          nextSlug = withSlugSuffix(slugifyFromName(parsed.data.venueName), attempt + 2);
+        }
+      }
+      if (!result) throw new Error("Não foi possível cadastrar.");
       router.push(result.redirectPath || "/painel/configuracoes/cardapio");
       router.refresh();
     } catch (err) {
@@ -130,16 +157,41 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Nome do estabelecimento" value={venueName} onChange={setVenueName} placeholder="Bar do Tião" />
+      <Field
+        label="Nome do estabelecimento"
+        value={venueName}
+        onChange={setVenueName}
+        placeholder="Bar do Tião"
+      />
       <div>
         <Field
           label="URL do cardápio"
           value={slug}
-          onChange={setSlug}
+          onChange={() => undefined}
           placeholder="bar-do-tiao"
+          disabled
         />
-        <p className="mt-1 text-xs text-ink-soft">eaimesa.com.br/{slug || "seu-slug"}</p>
+        <p className="mt-1 text-xs text-ink-soft">eaimesa.com.br/{slug || "sua-casa"}</p>
       </div>
+      <Field
+        label="Nome do responsável"
+        value={representativeName}
+        onChange={setRepresentativeName}
+        autoComplete="name"
+        placeholder="Maria Silva"
+      />
+      <label className="block text-sm">
+        <span className="mb-1 block font-medium">CPF do responsável</span>
+        <input
+          className="field font-mono tracking-wide"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="000.000.000-00"
+          value={representativeCpf}
+          onChange={(e) => setRepresentativeCpf(formatCpfCnpjInput(e.target.value.replace(/\D/g, "").slice(0, 11)))}
+          required
+        />
+      </label>
       <Field label="E-mail" type="email" value={email} onChange={setEmail} autoComplete="email" />
       <Field
         label="Senha"
@@ -181,7 +233,7 @@ export function RegisterForm() {
         </div>
       </fieldset>
       {error ? <p className="text-sm text-chili">{error}</p> : null}
-      <button type="submit" disabled={pending} className="btn-primary w-full">
+      <button type="submit" disabled={pending || slug.length < SLUG_MIN} className="btn-primary w-full">
         {pending ? "Criando…" : "Criar cardápio"}
       </button>
       <p className="text-center text-sm text-ink-soft">
@@ -201,6 +253,7 @@ function Field({
   type = "text",
   placeholder,
   autoComplete,
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -208,6 +261,7 @@ function Field({
   type?: string;
   placeholder?: string;
   autoComplete?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="block text-sm">
@@ -217,9 +271,11 @@ function Field({
         value={value}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         className="field"
-        required
+        required={!disabled}
+        readOnly={disabled}
       />
     </label>
   );

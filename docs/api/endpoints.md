@@ -42,9 +42,15 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
   "password": "mínimo 8 chars",
   "venueName": "Bar do Tião",
   "slug": "bar-do-tiao",
-  "plan": "auto_atendimento"
+  "plan": "auto_atendimento",
+  "representative": {
+    "name": "Maria Silva",
+    "cpfCnpj": "12345678909"
+  }
 }
 ```
+
+O front **não deixa editar** o slug: gera a partir de `venueName` (`Bar do Tião` → `bar-do-tiao`). Se o caminho já existir (ou for reservado), usa `-2`, `-3`… (`bar-do-tiao-2`). Confere com `GET /v1/public/venues/{slug}` (404 = livre). `representative.name` + `representative.cpfCnpj` (CPF, 11 dígitos) entram em `venue.representative`; e-mail, telefone, CEP e número continuam em Configurações → Responsável. Laravel persiste o par no register.
 
 #### POST /v1/auth/login (body)
 

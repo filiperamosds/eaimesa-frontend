@@ -48,7 +48,7 @@ Implementação **agora**: [fatia 13 — log viewer](fatia-13-log-viewer.md).
 
 ### MVP (quando as fatias somarem)
 
-- Signup B2B: e-mail, senha; CNPJ/OTP entram depois
+- Signup B2B: e-mail, senha, nome do estabelecimento, nome e CPF do responsável
 - Planos com `kind` Cardápio ou Auto atendimento (SKUs extras no console); trial 7 dias
 - Cardápio CRUD (texto, preço no servidor)
 - Auto atendimento: mesas + claim + PIN + pedido guest + fila staff
