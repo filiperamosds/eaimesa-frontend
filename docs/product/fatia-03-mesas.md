@@ -24,10 +24,10 @@ O cardápio público `/{slug}` **não muda de contrato** — só leitura, sem pe
 
 | QR | Onde | Destino | Autoriza pedir? |
 |----|------|---------|-----------------|
-| **Fixo da mesa** | Adesivo / export do painel | `/{slug}` (cardápio do bar) | **Não** — só leitura |
+| **Fixo da mesa** | Adesivo / export do painel | `/{slug}?mesa={menuCode}` (cardápio; presença se feature ligada) | **Não** — só leitura (+ chamar garçom opcional, [fatia 15](fatia-15-chamar-garcom-cardapio.md)) |
 | **Garçom (claim)** | Gerado na hora no painel | `/{slug}/c/{token}` | **Sim** — abre comanda (TTL, uso único) |
 
-O modo comanda **só** abre ao escanear o QR do garçom. O QR fixo na mesa nunca abre pedido, mesmo que alguém tire foto ou mande no WhatsApp.
+O modo comanda **só** abre ao escanear o QR do garçom. O QR fixo na mesa nunca abre pedido. No plano Cardápio, o mesmo QR fixo pode criar **presença** e liberar **Chamar garçom** sem comanda.
 
 Ver [ADR-002](../decisions/ADR-002-claim-garcom.md) e [sessão claim + PIN](../architecture/sessao-claim-pin.md).
 
@@ -42,7 +42,7 @@ Ver [ADR-006](../decisions/ADR-006-mesas.md).
 - Rótulo (`Mesa 4`, `Balcão`, `Varanda`)
 - Ativa / oculta (oculta some do pedido de balcão; pedidos antigos mantêm o snapshot)
 - Ordem de exibição
-- QR fixo do cardápio (mesmo `/{slug}` em todas as mesas; o adesivo leva o **rótulo** impresso para o cliente saber onde está)
+- QR fixo do cardápio ( `/{slug}?mesa={menuCode}` por mesa; adesivo também leva o **rótulo** impresso)
 
 ## Pedido de balcão
 

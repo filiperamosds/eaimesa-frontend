@@ -207,6 +207,14 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
 13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado).
 
+## Planejado — fatia 15 (chamar garçom)
+
+- `venues.waiter_call_enabled`, `venues.waiter_call_ttl_minutes`
+- `venue_tables.menu_code` (opaco, único no venue) → QR `/{slug}?mesa={menuCode}`
+- `presence_sessions` + cookie `eaimesa_presence`
+- `waiter_calls` (`open` \| `acked` \| `expired`)
+- Detalhe: [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md), [backend-waiter-call.md](../api/backend-waiter-call.md)
+
 ## Diagrama ER
 
 ```mermaid
@@ -218,6 +226,8 @@ erDiagram
   CatalogCategory ||--o{ CatalogItem : contains
   Venue ||--o{ VenueTable : has
   VenueTable ||--o{ TableSession : occupancy
+  VenueTable ||--o{ PresenceSession : menu_scan
+  VenueTable ||--o{ WaiterCall : calls
   TableSession ||--o{ Tab : comandas
   Tab ||--o{ GuestSession : devices
   Tab ||--o{ Order : parcial

@@ -13,8 +13,9 @@ O catálogo não está mais limitado a dois ids. Os seed:
 | Mensal (cheio) | **R$ 49/mês** | **R$ 149/mês** |
 | Promo | opcional (`promo_price_cents`) | opcional |
 | Cardápio público + QR | Sim | Sim |
+| Mesas (QR / adesivo) | Sim (até **15**; chamada ao garçom opcional — [fatia 15](fatia-15-chamar-garcom-cardapio.md)) | Até **15** |
+| Chamar garçom (presença na mesa) | Opcional (config) | Opcional / futuro no `/garcom` |
 | Pedido no celular / comanda / Kanban | Não | Sim |
-| Mesas | — | Até **15** |
 | Staff | — | Até **5** |
 | Pedidos | — | Ilimitados |
 | Térmica | Não | Não |
