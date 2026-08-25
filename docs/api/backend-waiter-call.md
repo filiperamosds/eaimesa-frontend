@@ -121,7 +121,7 @@ Lista: `{ id, tableId, tableLabel, createdAt, status }[]` ordenada por `created_
 | `VALIDATION_ERROR` | 400 |
 | `PLAN_FEATURE` | 403 — **não** usar para tables no Cardápio nesta fatia |
 
-Front: **Configurações → Mesas** e **Chamada**. Enquanto o Laravel responder `PLAN_FEATURE` em `/v1/owner/tables`, o CRUD falha na UI.
+Front: botão no `/{slug}` após presença; **Configurações → Mesas/Chamada**; fila em `/painel/chamados`. Enquanto o Laravel responder `PLAN_FEATURE` em `/v1/owner/tables` ou não tiver presença/waiter-calls, a UI fica sem botão / com erro de API.
 
 ## Fora
 

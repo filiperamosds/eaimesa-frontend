@@ -6,9 +6,11 @@ import { useState } from "react";
 import { GuestCart, type CartLine } from "./guest-cart";
 import { GuestPartialDialog } from "./guest-partial-dialog";
 import { GuestTabBar } from "./guest-tab-bar";
+import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
 import { mediaSrc } from "../lib/media";
 import { useGuestOrders } from "../lib/use-guest-orders";
 import { useGuestTab } from "../lib/use-guest-tab";
+import { useWaiterPresence } from "../lib/use-waiter-presence";
 import type { PublicMenu } from "../lib/types";
 
 export function PublicMenuView({ menu }: { menu: PublicMenu }) {
@@ -23,6 +25,9 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const canOrder = Boolean(ordering && tab && !tab.needsProfile && !suspended);
   const hasTab = Boolean(ordering && tab && !tab.needsProfile);
   const { orders, totalCents, error: ordersError, reload } = useGuestOrders(hasTab);
+  /** Cardápio (sem comanda): presença + chamar garçom. Auto atendimento usa a faixa de comanda. */
+  const waiterEnabled = !ordering && !suspended && menu.venue.waiterCallEnabled !== false;
+  const waiter = useWaiterPresence(menu.venue.slug, waiterEnabled);
 
   function addItem(item: PublicMenu["categories"][number]["items"][number]) {
     setCart((cur) => {
@@ -63,6 +68,10 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
             <p className="mt-4 text-sm text-white/65">
               Cardápio só leitura até entrar na mesa. Peça o QR do garçom ou use o PIN.
             </p>
+          ) : waiter.presence ? (
+            <p className="mt-4 text-sm text-white/65">
+              Precisa de ajuda? Chame o garçom pela faixa abaixo.
+            </p>
           ) : null}
         </div>
       </header>
@@ -73,6 +82,14 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
           partialCents={totalCents}
           showJoin
           onOpenPartial={hasTab ? () => setPartialOpen(true) : undefined}
+        />
+      ) : waiterEnabled ? (
+        <GuestWaiterCallBar
+          presence={waiter.presence}
+          calling={waiter.calling}
+          callMsg={waiter.callMsg}
+          callError={waiter.callError}
+          onCall={() => void waiter.callWaiter()}
         />
       ) : null}
 

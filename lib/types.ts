@@ -66,6 +66,9 @@ export type PublicMenu = {
     plan?: string;
     planKind?: string;
     acceptsOrders: boolean;
+    /** Plano Cardápio — chamar garçom (ADR-026). Ausente = tentar presença se houver ?mesa=. */
+    waiterCallEnabled?: boolean;
+    waiterCallTtlMinutes?: number;
   };
   categories: {
     id: string;
@@ -79,6 +82,20 @@ export type PublicMenu = {
       maxNoteLength: number;
     }[];
   }[];
+};
+
+export type PresenceSession = {
+  tableLabel: string;
+  expiresAt: string;
+  expiresInSeconds?: number;
+};
+
+export type WaiterCall = {
+  id: string;
+  tableId: string;
+  tableLabel: string;
+  createdAt: string;
+  status: "open" | "acked" | "expired";
 };
 
 export type OrderStatus = "pending" | "accepted" | "preparing" | "delivered" | "cancelled";

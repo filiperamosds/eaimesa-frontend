@@ -57,8 +57,11 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | GET | `/v1/public/venues/{slug}` | — | Venue + categorias ativas + itens ativos |
+| POST | `/v1/public/venues/{slug}/presence` | — | Body `{ mesa }` (menuCode). Cookie `eaimesa_presence` |
+| GET | `/v1/public/presence` | Cookie presença | Sessão atual ou 401 |
+| POST | `/v1/public/waiter-calls` | Cookie presença | Abre chamado na mesa |
 
-Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio.
+Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
 
 ### Billing (fatias 10 e 12)
 

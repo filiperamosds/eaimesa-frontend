@@ -40,6 +40,7 @@ Site: http://localhost:3000
 | Meu bar | http://localhost:3000/painel/configuracoes/bar |
 | Mesas | http://localhost:3000/painel/configuracoes/mesas |
 | Chamada | http://localhost:3000/painel/configuracoes/chamada |
+| Chamados | http://localhost:3000/painel/chamados |
 | Equipe | http://localhost:3000/painel/configuracoes/equipe |
 | Responsável | http://localhost:3000/painel/configuracoes/responsavel |
 | Pagamento | http://localhost:3000/painel/pagamento |

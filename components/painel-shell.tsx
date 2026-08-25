@@ -11,8 +11,9 @@ import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
 
 const ALL_LINKS = [
-  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true },
-  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false },
+  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true, cardapioOnly: false },
+  { href: "/painel/chamados", label: "Chamados", icon: "◎", service: false, cardapioOnly: true },
+  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false, cardapioOnly: false },
 ] as const;
 
 /** Rotas só do Auto atendimento — Cardápio é redirecionado. */
@@ -81,7 +82,9 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
   const links = panel
     ? []
     : ALL_LINKS.filter((l) => {
-        if (l.service && !planAllowsService(me.venue.planKind ?? me.venue.plan)) return false;
+        const service = planAllowsService(me.venue.planKind ?? me.venue.plan);
+        if (l.service && !service) return false;
+        if (l.cardapioOnly && service) return false;
         return true;
       });
 
