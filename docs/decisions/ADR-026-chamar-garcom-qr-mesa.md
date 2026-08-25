@@ -49,7 +49,7 @@ Desligado: QR ainda pode ter `?mesa=` (rótulo útil), mas a API não cria prese
 
 ### Mesas no plano Cardápio
 
-Liberar CRUD de mesas (`GET/POST/PATCH/DELETE /v1/owner/tables`) no `kind=cardapio` — sem claim, staff, Kanban ou pedido. Limite: **15** ativas. Front: nav **Mesas** também no Cardápio.
+Liberar CRUD de mesas (`GET/POST/PATCH/DELETE /v1/owner/tables`) no `kind=cardapio` — sem claim, staff, Kanban ou pedido. Limite: **15** ativas. Front: **Configurações → Mesas** (e **Chamada** para ligar/desligar + TTL) nos dois planos.
 
 ### Chamada
 

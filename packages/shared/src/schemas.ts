@@ -156,15 +156,24 @@ export const patchVenueSchema = z
     slug: slugSchema.optional(),
     staffCanCloseTabs: z.boolean().optional(),
     representative: representativeSchema.optional(),
+    waiterCallEnabled: z.boolean().optional(),
+    waiterCallTtlMinutes: z
+      .number()
+      .int("Validade em minutos inteiros.")
+      .min(15, "Mínimo 15 minutos.")
+      .max(480, "Máximo 480 minutos (8h).")
+      .optional(),
   })
   .refine(
     (b) =>
       b.name !== undefined ||
       b.slug !== undefined ||
       b.staffCanCloseTabs !== undefined ||
-      b.representative !== undefined,
+      b.representative !== undefined ||
+      b.waiterCallEnabled !== undefined ||
+      b.waiterCallTtlMinutes !== undefined,
     {
-      message: "Envie name, slug, staffCanCloseTabs e/ou representative.",
+      message: "Envie ao menos um campo para atualizar.",
     },
   );
 

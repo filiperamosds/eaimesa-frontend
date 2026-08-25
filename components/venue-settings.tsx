@@ -45,7 +45,7 @@ export function VenueSettings() {
 
   if (!venue) return <p className="text-ink-soft">Carregando…</p>;
 
-  const showMenuQr = !planAllowsService(venue.planKind ?? venue.plan);
+  const service = planAllowsService(venue.planKind ?? venue.plan);
 
   return (
     <div className="max-w-lg space-y-8">
@@ -78,28 +78,35 @@ export function VenueSettings() {
         </button>
       </form>
 
-      {showMenuQr ? (
-        <section className="surface p-5">
-          <p className="eyebrow">QR e mesas</p>
-          <h2 className="mt-2 font-serif text-xl">Salão e adesivos</h2>
-          <p className="mt-2 text-sm text-ink-soft">
-            Cadastre as mesas e exporte o QR de cada uma em{" "}
-            <Link href="/painel/mesas" className="font-medium text-chili underline">
-              Mesas
+      <section className="surface p-5">
+        <p className="eyebrow">QR e mesas</p>
+        <h2 className="mt-2 font-serif text-xl">Salão e adesivos</h2>
+        <p className="mt-2 text-sm text-ink-soft">
+          Cadastre as mesas e exporte o QR em{" "}
+          <Link href="/painel/configuracoes/mesas" className="font-medium text-chili underline">
+            Mesas
+          </Link>
+          .{" "}
+          {service
+            ? "QR fixo abre o cardápio; comanda continua com o QR do garçom."
+            : "No Cardápio o QR da mesa leva ?mesa= para presença e chamada."}{" "}
+          QR geral (porta / Instagram):{" "}
+          <span className="font-medium text-ink">/{venue.slug}</span>.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/painel/configuracoes/mesas" className="btn-primary !py-2 text-sm">
+            Cadastrar mesas
+          </Link>
+          {!service ? (
+            <Link href="/painel/configuracoes/chamada" className="btn-secondary !py-2 text-sm">
+              Chamada ao garçom
             </Link>
-            . O QR geral (porta / Instagram) aponta para{" "}
-            <span className="font-medium text-ink">/{venue.slug}</span>.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/painel/mesas" className="btn-primary !py-2 text-sm">
-              Cadastrar mesas
-            </Link>
-            <button type="button" onClick={() => setShowQr(true)} className="btn-secondary !py-2 text-sm">
-              QR geral
-            </button>
-          </div>
-        </section>
-      ) : null}
+          ) : null}
+          <button type="button" onClick={() => setShowQr(true)} className="btn-secondary !py-2 text-sm">
+            QR geral
+          </button>
+        </div>
+      </section>
 
       {showQr ? (
         <MenuQrModal

@@ -10,16 +10,15 @@ O dono misturava operação (fila, mesas) com cadastro (cardápio, equipe, pagad
 
 ## Decisão (front)
 
-- Nav dono (Auto atendimento): **Pedidos | Mesas | Configurações**
-- Plano Cardápio: só **Configurações** (sem Pedidos/Mesas)
-- Configurações: Cardápio, Meu bar, Equipe, Responsável, Pagamento
-- Rotas: `/painel/configuracoes/*`; `/painel/mesas` operacional; `/painel/pagamento` checkout
+- Nav dono (Auto atendimento): **Pedidos | Configurações**
+- Plano Cardápio: só **Configurações**
+- Configurações: Cardápio, Meu bar, **Mesas**, **Chamada**, Equipe (Auto), Responsável, Pagamento
+- Rotas: `/painel/configuracoes/*`; `/painel/mesas` → redirect para `configuracoes/mesas`; `/painel/pagamento` checkout
 - Redirects: `/painel/cardapio` → configuracoes/cardapio; `/painel/bar/*` → equivalentes
 - Responsável: `PATCH /v1/owner/venue` `{ representative }`; pagamento pré-preenche e omite `payer` se inalterado
 - Asaas sem responsável completo → CTA antes do 400 `PAYER_REQUIRED`
 
 ## Consequências
 
-- Cardápio deixa de competir com Pedidos/Mesas na nav principal
-- Mesas voltaram ao operacional do dono (`/painel/mesas`, CRUD `/v1/owner/tables`)
+- Operação = Pedidos (só Auto); cadastro do salão (mesas + QR) fica em Configurações nos dois planos
 - Stub local continua sem exigir pagador

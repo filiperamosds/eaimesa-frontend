@@ -11,6 +11,8 @@ export type Venue = {
   trialEndsAt?: string | null;
   currentPeriodEndsAt?: string | null;
   staffCanCloseTabs?: boolean;
+  waiterCallEnabled?: boolean;
+  waiterCallTtlMinutes?: number;
   representative?: {
     name: string;
     cpfCnpj: string;
@@ -86,6 +88,8 @@ export type VenueTable = {
   label: string;
   sortOrder: number;
   active: boolean;
+  /** Código opaco no QR `?mesa=` (ADR-026). */
+  menuCode?: string | null;
 };
 
 export type StaffMember = {
