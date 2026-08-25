@@ -99,9 +99,9 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           <>
             <p className="font-medium text-ink">Mesas do salão + QR por mesa</p>
             <p className="mt-1">
-              O botão só aparece ao abrir o link com <span className="font-mono text-ink">?mesa=</span>
-              . Sem <span className="font-mono">menuCode</span> no servidor, o QR não identifica a mesa.
-              Ligue a feature em{" "}
+              O botão só aparece depois de escanear o QR da mesa (código fica no aparelho, não na URL
+              compartilhada). Sem <span className="font-mono">menuCode</span> no servidor, o QR não
+              identifica a mesa. Ligue a feature em{" "}
               <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
                 Chamada
               </Link>

@@ -25,7 +25,7 @@ https://eaimesa.com.br/{slug}?mesa={menuCode}
 ```
 
 - `menuCode`: código opaco curto por mesa (ex. 8 chars URL-safe), **não** o UUID interno.
-- Querystring (não hash): o front lê no load e pode chamar a API; hash não vai ao servidor e complica o primeiro paint.
+- Querystring no **QR** (não hash): na 1ª abertura o front lê `?mesa=`, grava em `sessionStorage` (por slug) e **remove** o parâmetro da barra de endereço (`history.replaceState`). Evita compartilhar link com código da mesa.
 - QR geral (porta/Instagram) continua `/{slug}` **sem** `?mesa=` — sem presença, sem botão de chamar.
 
 ### Sessão de presença
@@ -74,7 +74,7 @@ Sem equipe no plano Cardápio: a tela é do **dono** em `/painel/chamados` (celu
 
 ## Consequências
 
-- Front: `publicMenuUrl(slug, { mesa })`; cardápio lê `?mesa=`; Configurações + `/painel/chamados`.
+- Front: `publicMenuUrl(slug, { mesa })` no QR; cardápio bootstrap `?mesa=` → `sessionStorage` + URL limpa; Configurações + `/painel/chamados`.
 - Backend: ver [backend-waiter-call.md](../api/backend-waiter-call.md).
 - Docs de pricing/fatia 3: Cardápio passa a ter mesas (QR) se a feature estiver no produto.
 - Claim / Auto atendimento **inalterados**.

@@ -3,7 +3,7 @@
 ## Princípios
 
 1. **Tenancy:** `venue_id` sempre do token/sessão, nunca do body confiável.
-2. **QR público ≠ auth de comanda:** slug da casa / QR fixo na mesa **não** abre comanda. Modo comanda **só** com QR do garçom (claim). O QR fixo com `?mesa=` pode criar **presença** (chamar garçom) sem comanda — [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md).
+2. **QR público ≠ auth de comanda:** slug da casa / QR fixo na mesa **não** abre comanda. Modo comanda **só** com QR do garçom (claim). O QR da mesa traz `?mesa=` só na 1ª abertura; o front guarda em `sessionStorage` e limpa a URL antes de criar **presença** (chamar garçom) — [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md).
 3. **Presença (comanda):** claim do garçom (TTL, uso único) + PIN para o grupo. Export do claim não vira adesivo permanente.
 4. **Preço no servidor:** painel envia `priceCents` no cardápio; pedido (balcão ou guest) manda só `catalogItemId` + qtd.
 5. **Separação de auth:** cookie dono ≠ cookie guest ≠ cookie presença ≠ platform admin.

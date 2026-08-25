@@ -93,7 +93,7 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
       {waiterEnabled ? (
         <GuestWaiterCallBar
           presence={waiter.presence}
-          mesaParam={waiter.mesaParam}
+          mesaStored={waiter.mesaStored}
           loadError={waiter.loadError}
           featureHint={flag === true}
           calling={waiter.calling}

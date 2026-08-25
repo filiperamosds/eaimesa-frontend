@@ -12,7 +12,7 @@ export function appPublicOrigin(): string {
   return DEFAULT_PUBLIC_ORIGIN;
 }
 
-/** URL do cardápio público — QR fixo. Com `mesa` (menuCode) → `/{slug}?mesa=…` (ADR-026). */
+/** URL do cardápio público — QR fixo. Com `mesa` (menuCode) → `/{slug}?mesa=…` no QR; o cardápio move para sessionStorage. */
 export function publicMenuUrl(slug: string, opts?: { mesa?: string | null }): string {
   const base = appPublicOrigin().replace(/\/$/, "");
   const path = `${base}/${slug}`;

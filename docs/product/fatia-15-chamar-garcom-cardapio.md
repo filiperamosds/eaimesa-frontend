@@ -6,7 +6,7 @@ Não abre comanda, PIN nem pedido. Ver [ADR-026](../decisions/ADR-026-chamar-gar
 
 ## Inclui
 
-- QR da mesa: `/{slug}?mesa={menuCode}` (código opaco da mesa)
+- QR da mesa: `/{slug}?mesa={menuCode}` no adesivo; após scan o front guarda o código no **sessionStorage** e limpa a URL
 - Cookie `eaimesa_presence` após o scan (TTL do bar)
 - Botão **Chamar garçom** no `/{slug}` só com presença válida e feature ligada
 - `/painel/chamados` — fila de mesas que chamaram (poll)
@@ -31,6 +31,7 @@ sequenceDiagram
   participant D as Dono
 
   C->>W: GET /{slug}?mesa=ab12cd34
+  W->>W: sessionStorage + URL sem ?mesa=
   W->>API: POST /v1/public/venues/{slug}/presence { mesa }
   API-->>W: Set-Cookie eaimesa_presence
   C->>W: Chamar garçom
@@ -44,7 +45,7 @@ sequenceDiagram
 2. Cliente escaneia esse QR (não o QR geral da porta) → presença na mesa → vê o botão.
 3. Toca **Chamar garçom** → aparece em `/painel/chamados`.
 4. Dono marca **Atendido**.
-5. Sem `?mesa=` ou feature off (`waiterCallEnabled=false` no payload público) ou TTL vencido → sem botão (no Cardápio pode aparecer aviso para escanear o QR da mesa).
+5. Sem scan do QR da mesa (sem código no sessionStorage) ou feature off ou TTL vencido → sem botão (aviso para escanear no salão).
 
 **Front:** o botão não fica restrito ao plano Cardápio — se `waiterCallEnabled=true` no `GET /v1/public/venues/{slug}`, a faixa aparece também no Auto atendimento (além da comanda).
 
