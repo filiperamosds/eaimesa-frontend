@@ -71,14 +71,11 @@ export function LoginForm() {
         {pending ? "Entrando…" : "Entrar"}
       </button>
       <p className="text-center text-sm text-ink-soft">
-        Garçom ou caixa? Mesmo login — vocês vão para{" "}
-        <Link href="/login?next=/garcom" className="font-medium text-ink underline">
-          /garcom
-        </Link>
-        . Monitor da cozinha ou do bar (perfil Painel) abre o Kanban.
+        Garçom ou caixa? Mesmo login — vocês entram na tela da equipe. Monitor da cozinha ou do bar
+        (perfil Painel) abre a fila.
       </p>
       <p className="text-center text-sm text-ink-soft">
-        Novo bar?{" "}
+        Novo estabelecimento?{" "}
         <Link href="/cadastro" className="font-medium text-ink underline">
           Criar conta
         </Link>
@@ -133,7 +130,7 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Nome do bar" value={venueName} onChange={setVenueName} placeholder="Bar do Tião" />
+      <Field label="Nome do estabelecimento" value={venueName} onChange={setVenueName} placeholder="Bar do Tião" />
       <div>
         <Field
           label="URL do cardápio"

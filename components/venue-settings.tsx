@@ -60,7 +60,7 @@ export function VenueSettings() {
           />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-medium">Slug (URL)</span>
+          <span className="mb-1 block font-medium">URL do cardápio</span>
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
@@ -68,7 +68,7 @@ export function VenueSettings() {
             required
           />
           <p className="mt-1 text-xs text-ink-soft">
-            Cardápio em /{slug} · id interno {venue.publicId}
+            Cardápio em /{slug}
           </p>
         </label>
         {error ? <p className="text-sm text-chili">{error}</p> : null}
@@ -89,7 +89,7 @@ export function VenueSettings() {
           .{" "}
           {service
             ? "QR fixo abre o cardápio; comanda continua com o QR do garçom."
-            : "No Cardápio o QR da mesa leva ?mesa= para presença e chamada."}{" "}
+            : "No Cardápio o QR da mesa identifica o lugar para a chamada."}{" "}
           QR geral (porta / Instagram):{" "}
           <span className="font-medium text-ink">/{venue.slug}</span>.
         </p>

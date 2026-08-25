@@ -42,7 +42,7 @@ export const PLANS: Record<
     priceCents: 4900,
     blurb: "Cardápio público com a sua URL. Sem pedido no celular.",
     features: [
-      "URL pública /seu-bar",
+      "URL pública do cardápio",
       "Categorias, itens e foto",
       "Mesas e QR por mesa (até 15)",
       "1 estabelecimento",
@@ -77,7 +77,7 @@ export type PlanCatalogItem = {
 export const PLAN_FUTURE = {
   id: PLAN_FUTURE_ID,
   name: "Equipamento na mesa",
-  blurb: "Hardware/tablet na mesa. Fora desta fatia — em breve.",
+  blurb: "Hardware/tablet na mesa. Em breve.",
 };
 
 export const PLAN_KIND_LABEL: Record<PlanKind, string> = {

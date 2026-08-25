@@ -2,7 +2,7 @@
 
 ## Problema
 
-Bares pequenos usam tablets fixos na mesa (caro, sujo, gargalo) ou garçom anotando no papel (erro, fila). Cardápio QR “solto” permite pedido remoto se o link autorizar pedir.
+Bares e restaurantes pequenos usam tablets fixos na mesa (caro, sujo, gargalo) ou garçom anotando no papel (erro, fila). Cardápio QR “solto” permite pedido remoto se o link autorizar pedir.
 
 ## Proposta EaiMesa
 
@@ -31,16 +31,16 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Garçom / caixa** | `/garcom` | Staff (`member.role` staff ou cashier) | Só Auto atendimento | — |
 | **Painel (KDS)** | `/painel/pedidos` | Staff (`member.role` panel) | Só Auto atendimento; categorias no cadastro | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
-| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, bares, planos, logs | SSO/2FA |
+| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, estabelecimentos, planos, logs | SSO/2FA |
 
 ## Personas
 
-- **Dono** — 1 bar, ~10 mesas, quer menos hardware e pedido confiável. Publica o cardápio, vê a fila, cadastra o salão e a equipe.
+- **Dono** — 1 estabelecimento, ~10 mesas, quer menos hardware e pedido confiável. Publica o cardápio, vê a fila, cadastra o salão e a equipe.
 - **Garçom** — gera QR na mesa; vê parciais; avança a fila. Encerra comanda/mesa só se o dono permitir.
 - **Caixa** — mesma tela `/garcom`; sempre pode fechar comanda e mesa.
 - **Painel** — login no monitor da cozinha ou do bar; só o Kanban das categorias que o dono marcou.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
-- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê bares, vendas da assinatura, catálogo e logs da API. Não atende o salão nem edita o cardápio de um bar.
+- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê estabelecimentos, vendas da assinatura, catálogo e logs da API. Não atende o salão nem edita o cardápio de um estabelecimento.
 
 ## Fatia atual vs MVP
 
@@ -61,14 +61,14 @@ Implementação **agora**: [fatia 13 — log viewer](fatia-13-log-viewer.md).
 - CPF do consumidor para pedir
 - Agente impressora térmica
 - Delivery, iFood, WhatsApp bot
-- App nativo, domínio customizado por bar
+- App nativo, domínio customizado por estabelecimento
 - NFC-e
 
 ## Métricas de sucesso (piloto)
 
 - Pedido remoto (só slug da casa) → **403** (quando houver pedido)
-- Dois bares no mesmo DB → **isolamento** (A não lê B)
-- `/{slug}` de um bar não lista itens de outro
+- Dois estabelecimentos no mesmo DB → **isolamento** (A não lê B)
+- `/{slug}` de um estabelecimento não lista itens de outro
 - Sábado com rede ruim → fila staff funciona; claim expirado não abre tab
 
 ## Naming / URLs

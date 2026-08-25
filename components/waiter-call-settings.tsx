@@ -58,14 +58,14 @@ export function WaiterCallSettings() {
       setTtl(readTtl(v));
       setMsg(
         enabled
-          ? "Salvo. Escaneie o QR da mesa no salão — o link na barra de endereço não mostra o código."
+          ? "Salvo. O botão aparece quando o cliente escaneia o QR da mesa — o QR geral não mostra o botão."
           : "Salvo. Chamada desligada no cardápio.",
       );
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : "Não foi possível salvar. Confira se o Laravel aceita waiterCallEnabled no PATCH /v1/owner/venue.",
+          : "Não foi possível salvar.",
       );
     } finally {
       setPending(false);
@@ -86,8 +86,8 @@ export function WaiterCallSettings() {
         <span>
           <span className="block font-medium">Chamar garçom pelo cardápio</span>
           <span className="mt-1 block text-sm text-ink-soft">
-            Com o QR da mesa (<span className="font-mono">?mesa=</span>), o cliente pode pedir atendimento.
-            Desligado: o QR ainda abre o cardápio, sem botão de chamar. Após escanear, o código da mesa fica só neste aparelho (não na URL).
+            Com o QR da mesa, o cliente pode pedir atendimento. Desligado: o QR ainda abre o cardápio,
+            sem botão de chamar.
           </span>
         </span>
       </label>

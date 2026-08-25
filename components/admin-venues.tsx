@@ -32,12 +32,12 @@ type ExpiryDraft = {
 
 function expiryFieldHint(status: string): string {
   if (status === "trial") {
-    return "Bar em trial — o campo principal é o fim do teste. A vigência paga entra depois do checkout.";
+    return "Estabelecimento em trial — o campo principal é o fim do teste. A vigência paga entra depois do checkout.";
   }
   if (status === "suspended") {
-    return "Bar bloqueado. As datas continuam visíveis; reative quando quiser liberar de novo.";
+    return "Estabelecimento bloqueado. As datas continuam visíveis; reative quando quiser liberar de novo.";
   }
-  return "Bar com assinatura — o campo principal é a vigência paga. O trial serve de fallback se a vigência estiver vazia.";
+  return "Estabelecimento com assinatura — o campo principal é a vigência paga. O trial serve de fallback se a vigência estiver vazia.";
 }
 
 function AdminVenueExpiryDialog({
@@ -219,7 +219,7 @@ export function AdminVenues() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Tenants</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Cadastro</p>
         <h1 className="mt-2 font-serif text-3xl">Estabelecimentos</h1>
       </div>
       <form
@@ -323,7 +323,7 @@ export function AdminVenues() {
           );
         })}
       </ul>
-      {rows.length === 0 ? <p className="text-sm text-white/45">Nenhum bar com esse filtro.</p> : null}
+      {rows.length === 0 ? <p className="text-sm text-white/45">Nenhum estabelecimento com esse filtro.</p> : null}
       {editing ? (
         <AdminVenueExpiryDialog venue={editing} onClose={() => setEditing(null)} onSaved={applyUpdated} />
       ) : null}

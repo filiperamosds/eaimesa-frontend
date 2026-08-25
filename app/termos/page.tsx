@@ -10,7 +10,7 @@ export default function TermosPage() {
         <p className="eyebrow">Legal</p>
         <h1 className="mt-3 font-serif text-4xl">Termos de uso</h1>
         <p className="mt-4 text-ink-soft">
-          Texto jurídico completo entra antes do go-live. Nesta fatia o EaiMesa é um SaaS B2B: o
+          Texto jurídico completo entra antes do go-live. O EaiMesa é um SaaS B2B: o
           estabelecimento é responsável pelo cardápio publicado; a EaiMesa opera a plataforma.
         </p>
       </main>

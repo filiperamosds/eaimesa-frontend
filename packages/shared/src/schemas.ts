@@ -28,7 +28,7 @@ export const slugSchema = z
 export const registerSchema = z.object({
   email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
   password: z.string().min(8, "Senha: mínimo 8 caracteres."),
-  venueName: z.string().trim().min(2, "Nome do bar: mínimo 2 caracteres.").max(80),
+  venueName: z.string().trim().min(2, "Nome do estabelecimento: mínimo 2 caracteres.").max(80),
   slug: slugSchema,
   plan: z
     .string()
@@ -75,7 +75,7 @@ export const payerSchema = z.object({
 
 export type CheckoutPayer = z.infer<typeof payerSchema>;
 
-/** Responsável do bar (ADR-025) — mesmo shape camelCase do pagador, campos obrigatórios no form. */
+/** Responsável do estabelecimento (ADR-025) — mesmo shape camelCase do pagador, campos obrigatórios no form. */
 export const representativeSchema = z.object({
   name: z
     .string()

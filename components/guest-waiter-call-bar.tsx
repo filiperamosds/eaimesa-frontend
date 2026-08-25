@@ -64,8 +64,8 @@ export function GuestWaiterCallBar({
   if (featureHint && !mesaStored) {
     return (
       <div className="border-b border-line/80 bg-card/90 px-5 py-3 text-center text-sm text-ink-soft">
-        Escaneie o <span className="font-medium text-ink">QR da mesa</span> no salão para chamar o garçom.
-        O link compartilhado não leva o código da mesa.
+        Escaneie o <span className="font-medium text-ink">QR da mesa</span> no salão para chamar o
+        garçom.
       </div>
     );
   }

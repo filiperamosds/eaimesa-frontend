@@ -1,12 +1,12 @@
 # Fatia 3 — Mesas
 
-O salão vira entidade. O dono cadastra as mesas do bar (até 15 no plano Bar). Pedido de balcão **escolhe uma mesa**, em vez de digitar o rótulo livre. **Ainda sem claim, PIN ou pedido pelo cliente no `/{slug}`.**
+O salão vira entidade. O dono cadastra as mesas do estabelecimento (até 15 no plano atual). Pedido de balcão **escolhe uma mesa**, em vez de digitar o rótulo livre. **Ainda sem claim, PIN ou pedido pelo cliente no `/{slug}`.**
 
 ## Inclui
 
 - CRUD de mesas em `/painel/configuracoes/mesas` (aba Configurações → Mesas; Cardápio e Auto). Bookmark `/painel/mesas` redireciona.
 - API `GET/POST /v1/owner/tables` e `PATCH/DELETE /v1/owner/tables/{id}`
-- Limite de **15 mesas ativas** por venue (plano Bar)
+- Limite de **15 mesas ativas** por venue (plano atual)
 - Pedido de balcão: mesa + comanda em `/garcom`; `table_label` continua snapshot no pedido
 - Seed: Balcão + Mesa 1–10 no Bar do Tião
 - **QR fixo da mesa** (painel): aponta para o cardápio público `/{slug}`; exportável (PNG). Pode colar na mesa.

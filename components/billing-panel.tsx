@@ -446,8 +446,8 @@ export function BillingPanel() {
       <p className="text-xs text-ink-soft">
         {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb}{" "}
         {hosted
-          ? "Cartão é digitado neste painel e enviado ao Asaas. Guardamos só o token (não o número). PIX continua na página do provedor."
-          : "O POST de cartão leva plano, meio e os dados do cartão. O stub não cobra de verdade."}
+          ? "Cartão é informado neste painel e enviado ao provedor. Guardamos só o necessário para as próximas cobranças. PIX continua na página do provedor."
+          : "Pagamento simulado — sem cobrança real."}
       </p>
     </section>
   );

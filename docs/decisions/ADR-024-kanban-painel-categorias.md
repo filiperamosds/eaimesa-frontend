@@ -10,7 +10,7 @@ O dono vê o Kanban completo. Cozinha e bar precisam de **monitores separados**:
 ## Decisão
 
 - Novo `venue_members.role`: `panel` (UI: **Painel**). JWT continua `role: staff`. O perfil vem em `member.role`, como caixa.
-- Login do Painel abre **somente** `/painel/pedidos` (Kanban). Sem cardápio, Meu bar, `/garcom` ou close de comanda.
+- Login do Painel abre **somente** `/painel/pedidos` (Kanban). Sem cardápio, Estabelecimento, `/garcom` ou close de comanda.
 - No cadastro, o dono marca **uma ou mais categorias** do cardápio. Aquela sessão só recebe itens dessas categorias.
 - Um bar típico cria dois usuários Painel: “Cozinha” (Pratos, Porções) e “Bar” (Bebidas).
 - Status do pedido **continua no pedido inteiro**. A estação vê só os itens dela; avançar o status vale para o pedido. Pedido misto aparece nos dois monitores até o ciclo terminar.

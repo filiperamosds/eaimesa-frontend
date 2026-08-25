@@ -11,7 +11,7 @@ export default function LoginPage() {
         <Logo invert />
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Painel</p>
-          <h1 className="mt-3 font-serif text-4xl leading-tight">A fila do bar, na tela.</h1>
+          <h1 className="mt-3 font-serif text-4xl leading-tight">A fila do estabelecimento, na tela.</h1>
           <p className="mt-4 max-w-sm text-white/65">
             Pedidos, cardápio e mesas no mesmo lugar. O cliente lê o cardápio no celular — pedir exige o
             garçom na mesa.

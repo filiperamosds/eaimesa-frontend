@@ -27,5 +27,5 @@ QR fixo por mesa permite pedido remoto (foto, stories). CPF do consumidor adicio
 - Fluxo staff obrigatório no MVP para **abrir comanda**
 - **Dois QRs:** fixo → cardápio; claim → comanda
 - UI do claim **só no painel autenticado** (`/painel/*`): QR grande + countdown; export pontual ok
-- QR fixo do slug gerado/exportado em Mesas / Meu bar; pode colar na mesa
+- QR fixo do slug gerado/exportado em Mesas / Estabelecimento; pode colar na mesa
 - Sem claim impresso em adesivo permanente que autorize pedir

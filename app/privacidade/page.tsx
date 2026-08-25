@@ -10,7 +10,7 @@ export default function PrivacidadePage() {
         <p className="eyebrow">Legal</p>
         <h1 className="mt-3 font-serif text-4xl">Privacidade</h1>
         <p className="mt-4 text-ink-soft">
-          Na fatia de cardápio coletamos e-mail e senha do dono. Não pedimos CPF do consumidor.
+          Coletamos e-mail e senha do dono. Não pedimos CPF do consumidor.
           Política LGPD completa entra com cadastro KYC e pedidos.
         </p>
       </main>

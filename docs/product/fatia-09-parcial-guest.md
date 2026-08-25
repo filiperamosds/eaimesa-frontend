@@ -24,6 +24,6 @@ O garçom já vê a parcial por comanda. Quem pediu no celular também precisa v
 3. Vê fila → aceito → preparando → entregue, e o total.
 4. Para fechar, chama o garçom (como hoje).
 
-`GET` da parcial não exige o bar estar aceitando pedido novo (`accepts_orders`). `POST` continua exigindo.
+`GET` da parcial não exige o estabelecimento estar aceitando pedido novo (`accepts_orders`). `POST` continua exigindo.
 
 Ver [fatia 7](fatia-07-pedido-guest.md) (carrinho) e [fatia 6](fatia-06-comandas-individuais.md) (parcial do garçom).

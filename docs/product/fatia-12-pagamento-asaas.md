@@ -24,7 +24,7 @@ Landing, `/preco` e `/cadastro` **não** pedem pagador. O trial segue igual. Dep
 - Guardar PAN/CVV no banco ou em log
 - Tokenização no browser (Asaas não oferece)
 - Prorrata, NF, cupom, reembolso self-serve
-- Pagamento da conta do cliente no bar
+- Pagamento da conta do cliente no estabelecimento
 - Pedir pagador no cadastro ou na landing
 
 ## Superfície

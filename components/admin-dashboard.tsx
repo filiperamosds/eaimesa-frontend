@@ -52,7 +52,7 @@ function Breakdown({
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-sm font-medium">{title}</p>
         <p className="text-xs text-white/40">
-          {total} {total === 1 ? "bar" : "bares"}
+          {total} {total === 1 ? "estabelecimento" : "estabelecimentos"}
         </p>
       </div>
       <ul className="mt-4 space-y-3">
@@ -94,7 +94,7 @@ export function AdminDashboard() {
   if (!data) return <p className="text-white/55">{error ?? "Carregando…"}</p>;
 
   const cards = [
-    ["Bares", String(data.venues.total)],
+    ["Estabelecimentos", String(data.venues.total)],
     ["MRR estimado", formatBrlFromCents(data.mrrCents)],
     ["Checkouts 30d", String(data.checkouts30d.count)],
     ["Faturado 30d", formatBrlFromCents(data.checkouts30d.totalCents)],
@@ -127,7 +127,7 @@ export function AdminDashboard() {
       <div>
         <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Vendas</p>
         <h1 className="mt-2 font-serif text-3xl">Dashboard</h1>
-        <p className="mt-2 text-sm text-white/55">Assinatura B2B (stub). Não inclui consumo das mesas.</p>
+        <p className="mt-2 text-sm text-white/55">Assinatura dos estabelecimentos. Não inclui consumo das mesas.</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(([k, v]) => (
@@ -144,7 +144,7 @@ export function AdminDashboard() {
       <div>
         <p className="text-sm font-medium">Últimos checkouts</p>
         {data.recent.length === 0 ? (
-          <p className="mt-3 text-sm text-white/45">Nenhum pagamento stub ainda.</p>
+          <p className="mt-3 text-sm text-white/45">Nenhum pagamento ainda.</p>
         ) : (
           <ul className="mt-3 divide-y divide-white/10 rounded-2xl border border-white/10">
             {data.recent.map((e) => (
