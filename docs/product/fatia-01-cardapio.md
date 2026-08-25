@@ -4,7 +4,7 @@ Primeira entrega cobrável em pedaço: o estabelecimento entra, publica um card�
 
 ## Inclui
 
-- Landing do SaaS (`/`)
+- Landing do SaaS (`/`) — vídeo explicativo em `/videos/como-funciona.mp4`
 - Cadastro e login do **estabelecimento** (`/cadastro`, `/login`). Cadastro: nome do estabelecimento, nome e CPF do responsável, e-mail, senha, plano. `/login` chama `GET /v1/auth/me`: sessão válida pula o form (dono → painel, staff → `/garcom`).
 - Painel do dono: dados do estabelecimento + CRUD de categorias e itens (`/painel`)
 - Cardápio público gerado pela URL configurada: `https://eaimesa.com.br/{slug}`  

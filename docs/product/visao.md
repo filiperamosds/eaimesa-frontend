@@ -24,7 +24,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 
 | Superfície | Rota | Usuário | Fatia 10 | MVP completo |
 |------------|------|---------|----------|--------------|
-| **Landing** | `/` | Visitante B2B | Cards do catálogo (de/por se houver promo) | Sim |
+| **Landing** | `/` | Visitante B2B | Hero + vídeo “como funciona” + cards do catálogo | Sim |
 | **Auth estabelecimento** | `/cadastro`, `/login` | Dono / garçom | Trial 7 dias no plano escolhido | Sim |
 | **Painel** | `/painel/*` | Dono | Nav: Pedidos, Mesas, Configurações (plano Cardápio: Mesas + Configurações) | — |
 | **Pagamento** | `/painel/pagamento` | Dono | Destaque no fim do trial; checkout stub ou Asaas; pagador = responsável | Conta da mesa |

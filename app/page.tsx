@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LandingExplainer } from "../components/landing-explainer";
 import { PlanMarketingCards } from "../components/plan-cards";
 import { planCtaPrice } from "../components/plan-price";
 import { SiteFooter, SiteHeader } from "../components/site-chrome";
@@ -79,13 +80,15 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <LandingExplainer />
+
         <section className="border-y border-line bg-card/60">
           <div className="mx-auto grid max-w-6xl gap-6 px-5 py-16 sm:grid-cols-3">
             {[
               {
                 n: "01",
                 t: "Cadastre o estabelecimento",
-                d: "E-mail, senha e a URL do cardápio. Em minutos você está no ar.",
+                d: "Nome, responsável e plano. Em minutos você está no ar.",
               },
               {
                 n: "02",
