@@ -1,7 +1,23 @@
 import { isReservedSlug, planAllowsService } from "@eaimesa/shared";
 import { notFound, redirect } from "next/navigation";
 import { apiBase } from "./api";
+import { pickBool } from "./api-case";
 import type { PublicMenu } from "./types";
+
+function normalizePublicMenu(raw: PublicMenu): PublicMenu {
+  const v = raw.venue as PublicMenu["venue"] & Record<string, unknown>;
+  const waiterCallEnabled = pickBool(v, "waiterCallEnabled", "waiter_call_enabled");
+  const ttl = v.waiterCallTtlMinutes ?? v.waiter_call_ttl_minutes;
+  return {
+    ...raw,
+    venue: {
+      ...raw.venue,
+      waiterCallEnabled: waiterCallEnabled ?? raw.venue.waiterCallEnabled,
+      waiterCallTtlMinutes:
+        typeof ttl === "number" ? ttl : raw.venue.waiterCallTtlMinutes,
+    },
+  };
+}
 
 export async function loadPublicMenu(slug: string): Promise<PublicMenu | null> {
   const res = await fetch(`${apiBase()}/v1/public/venues/${encodeURIComponent(slug)}`, {
@@ -9,7 +25,8 @@ export async function loadPublicMenu(slug: string): Promise<PublicMenu | null> {
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("menu_unavailable");
-  return res.json() as Promise<PublicMenu>;
+  const data = (await res.json()) as PublicMenu;
+  return normalizePublicMenu(data);
 }
 
 export function venueAllowsGuestOrdering(menu: PublicMenu): boolean {

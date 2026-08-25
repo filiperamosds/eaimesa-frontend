@@ -25,8 +25,14 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const canOrder = Boolean(ordering && tab && !tab.needsProfile && !suspended);
   const hasTab = Boolean(ordering && tab && !tab.needsProfile);
   const { orders, totalCents, error: ordersError, reload } = useGuestOrders(hasTab);
-  /** Cardápio (sem comanda): presença + chamar garçom. Auto atendimento usa a faixa de comanda. */
-  const waiterEnabled = !ordering && !suspended && menu.venue.waiterCallEnabled !== false;
+  /**
+   * Chamar garçom: não depende mais de “não ser Auto atendimento”.
+   * Liga com waiterCallEnabled=true no payload público; no Cardápio, undefined ainda tenta (?mesa=).
+   */
+  const servicePlan = planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "");
+  const flag = menu.venue.waiterCallEnabled;
+  const waiterFeatureOn = flag === true || (flag !== false && !servicePlan);
+  const waiterEnabled = !suspended && waiterFeatureOn;
   const waiter = useWaiterPresence(menu.venue.slug, waiterEnabled);
 
   function addItem(item: PublicMenu["categories"][number]["items"][number]) {
@@ -83,9 +89,13 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
           showJoin
           onOpenPartial={hasTab ? () => setPartialOpen(true) : undefined}
         />
-      ) : waiterEnabled ? (
+      ) : null}
+      {waiterEnabled ? (
         <GuestWaiterCallBar
           presence={waiter.presence}
+          mesaParam={waiter.mesaParam}
+          loadError={waiter.loadError}
+          featureHint={flag === true}
           calling={waiter.calling}
           callMsg={waiter.callMsg}
           callError={waiter.callError}

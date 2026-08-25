@@ -4,6 +4,7 @@ import { ERROR_CODES, PLAN_BAR_MAX_TABLES, planAllowsService } from "@eaimesa/sh
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { pickStr } from "../lib/api-case";
 import type { Venue, VenueTable } from "../lib/types";
 import { MenuQrModal } from "./menu-qr-modal";
 
@@ -12,6 +13,12 @@ type TablesPayload = {
   maxActive: number;
   activeCount: number;
 };
+
+function normalizeTable(raw: VenueTable & Record<string, unknown>): VenueTable {
+  const menuCode =
+    pickStr(raw as Record<string, unknown>, "menuCode", "menu_code") ?? raw.menuCode ?? null;
+  return { ...raw, menuCode };
+}
 
 function tablesErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -39,7 +46,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
       api<TablesPayload>("/v1/owner/tables"),
       api<Venue>("/v1/owner/venue"),
     ]);
-    setTables(tablesData.tables);
+    setTables((tablesData.tables ?? []).map((t) => normalizeTable(t as VenueTable & Record<string, unknown>)));
     setMaxActive(tablesData.maxActive);
     setActiveCount(tablesData.activeCount);
     setVenue(venueData);
@@ -80,16 +87,21 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           <>
             <p className="font-medium text-ink">QR fixo = cardápio. QR do garçom = comanda.</p>
             <p className="mt-1">
-              Exporte o QR de cada mesa e cole no salão. Comanda: QR em{" "}
-              <strong className="font-medium text-ink">/garcom</strong>.
+              Exporte o QR de cada mesa (com <span className="font-mono">?mesa=</span>) para chamar
+              garçom pelo cardápio, se ligado em{" "}
+              <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
+                Chamada
+              </Link>
+              . Comanda continua com o QR em <strong className="font-medium text-ink">/garcom</strong>.
             </p>
           </>
         ) : (
           <>
             <p className="font-medium text-ink">Mesas do salão + QR por mesa</p>
             <p className="mt-1">
-              O QR da mesa inclui <span className="font-mono text-ink">?mesa=</span> (quando o servidor
-              devolver <span className="font-mono">menuCode</span>). Ligue a chamada ao garçom em{" "}
+              O botão só aparece ao abrir o link com <span className="font-mono text-ink">?mesa=</span>
+              . Sem <span className="font-mono">menuCode</span> no servidor, o QR não identifica a mesa.
+              Ligue a feature em{" "}
               <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
                 Chamada
               </Link>
@@ -258,7 +270,11 @@ function TableCard({
       )}
       {table.menuCode ? (
         <p className="mt-1 font-mono text-[11px] text-ink-soft">mesa={table.menuCode}</p>
-      ) : null}
+      ) : (
+        <p className="mt-1 text-[11px] text-chili">
+          Sem menuCode — QR sem ?mesa= (chamar garçom não funciona até o Laravel gerar o código).
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap gap-3 text-sm">
         <button type="button" onClick={onQr} className="font-medium text-chili hover:text-chili-dark">
           QR cardápio

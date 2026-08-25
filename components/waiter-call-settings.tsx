@@ -3,11 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "../lib/api";
+import { pickBool } from "../lib/api-case";
 import type { Venue } from "../lib/types";
 
 const TTL_MIN = 15;
 const TTL_MAX = 480;
 const TTL_DEFAULT = 120;
+
+function readWaiterFlag(v: Venue): boolean {
+  const o = v as Venue & Record<string, unknown>;
+  return Boolean(pickBool(o, "waiterCallEnabled", "waiter_call_enabled") ?? v.waiterCallEnabled);
+}
+
+function readTtl(v: Venue): number {
+  const o = v as Venue & Record<string, unknown>;
+  const n = o.waiterCallTtlMinutes ?? o.waiter_call_ttl_minutes;
+  return typeof n === "number" && n >= TTL_MIN ? n : TTL_DEFAULT;
+}
 
 export function WaiterCallSettings() {
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -21,12 +33,8 @@ export function WaiterCallSettings() {
     api<Venue>("/v1/owner/venue")
       .then((v) => {
         setVenue(v);
-        setEnabled(Boolean(v.waiterCallEnabled));
-        setTtl(
-          typeof v.waiterCallTtlMinutes === "number" && v.waiterCallTtlMinutes >= TTL_MIN
-            ? v.waiterCallTtlMinutes
-            : TTL_DEFAULT,
-        );
+        setEnabled(readWaiterFlag(v));
+        setTtl(readTtl(v));
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Falha ao carregar."));
   }, []);
@@ -46,9 +54,13 @@ export function WaiterCallSettings() {
         }),
       });
       setVenue(v);
-      setEnabled(Boolean(v.waiterCallEnabled));
-      if (typeof v.waiterCallTtlMinutes === "number") setTtl(v.waiterCallTtlMinutes);
-      setMsg("Salvo.");
+      setEnabled(readWaiterFlag(v));
+      setTtl(readTtl(v));
+      setMsg(
+        enabled
+          ? "Salvo. No cardápio, abra o QR da mesa (?mesa=) — o QR geral não mostra o botão."
+          : "Salvo. Chamada desligada no cardápio.",
+      );
     } catch (err) {
       setError(
         err instanceof ApiError
