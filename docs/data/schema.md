@@ -63,7 +63,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 - `label` (ex. "Mesa 4", "Balcão") — único por venue
 - `sort_order`, `active`, timestamps
 
-No máximo **15 mesas ativas** por venue no plano Auto atendimento.
+No máximo **15 mesas ativas** por venue (Cardápio e Auto atendimento).
 
 ## Entidades — fatia 4 (equipe + comanda)
 

@@ -183,7 +183,7 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 
 ### Owner — mesas (fatia 3)
 
-Auth: cookie `eaimesa_owner`. `venue_id` da sessão. Limite: 15 mesas **ativas**.
+Auth: cookie `eaimesa_owner`. `venue_id` da sessão. Limite: 15 mesas **ativas**. Disponível no plano **Cardápio** e **Auto atendimento** (Cardápio: só QR/adesivo; sem claim/pedido). Laravel: não responder `PLAN_FEATURE` em tables no Cardápio — ver [backend-waiter-call.md](backend-waiter-call.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|

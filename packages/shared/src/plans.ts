@@ -41,7 +41,12 @@ export const PLANS: Record<
     kind: "cardapio",
     priceCents: 4900,
     blurb: "Cardápio público com a sua URL. Sem pedido no celular.",
-    features: ["URL pública /seu-bar", "Categorias, itens e foto", "QR do cardápio", "1 estabelecimento"],
+    features: [
+      "URL pública /seu-bar",
+      "Categorias, itens e foto",
+      "Mesas e QR por mesa (até 15)",
+      "1 estabelecimento",
+    ],
   },
   auto_atendimento: {
     id: "auto_atendimento",
@@ -51,8 +56,7 @@ export const PLANS: Record<
     blurb: "O cliente pede no celular. O garçom opera a fila.",
     features: [
       "Tudo do Cardápio",
-      "Mesas e equipe (até 15 mesas, 5 garçons)",
-      "QR do garçom + PIN",
+      "Equipe (até 5) + QR do garçom + PIN",
       "Pedido, parcial e Kanban",
     ],
   },
@@ -89,9 +93,14 @@ export function isPlanKind(value: string): value is PlanKind {
   return value === "cardapio" || value === "auto_atendimento";
 }
 
-/** Feature gate: pedido/garçom. Aceita `kind` ou o id seed `auto_atendimento`. */
+/** Feature gate: pedido/garçom/equipe/Kanban. Aceita `kind` ou o id seed `auto_atendimento`. */
 export function planAllowsService(planOrKind: string): boolean {
   return resolvePlanKind(planOrKind) === "auto_atendimento";
+}
+
+/** Cadastro de mesas + QR fixo — Cardápio e Auto atendimento (ADR-026). */
+export function planAllowsTables(planOrKind: string): boolean {
+  return isPlanKind(resolvePlanKind(planOrKind));
 }
 
 export function resolvePlanKind(planOrKind: string): PlanKind {

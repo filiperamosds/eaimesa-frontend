@@ -4,7 +4,7 @@ O salão vira entidade. O dono cadastra as mesas do bar (até 15 no plano Bar). 
 
 ## Inclui
 
-- CRUD de mesas em `/painel/mesas` — nav operacional do dono (Pedidos | Mesas | Configurações)
+- CRUD de mesas em `/painel/mesas` — nav do dono (Cardápio: Mesas | Configurações; Auto: Pedidos | Mesas | Configurações)
 - API `GET/POST /v1/owner/tables` e `PATCH/DELETE /v1/owner/tables/{id}`
 - Limite de **15 mesas ativas** por venue (plano Bar)
 - Pedido de balcão: mesa + comanda em `/garcom`; `table_label` continua snapshot no pedido

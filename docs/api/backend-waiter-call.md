@@ -121,6 +121,8 @@ Lista: `{ id, tableId, tableLabel, createdAt, status }[]` ordenada por `created_
 | `VALIDATION_ERROR` | 400 |
 | `PLAN_FEATURE` | 403 — **não** usar para tables no Cardápio nesta fatia |
 
+Front já mostra **Mesas** no Cardápio. Enquanto o Laravel responder `PLAN_FEATURE` em `/v1/owner/tables`, o CRUD falha na UI.
+
 ## Fora
 
 - Staff `/v1/staff/waiter-calls` (pode vir depois)
