@@ -50,10 +50,12 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/cadastro`, `/login` | Auth estabelecimento |
 | `/painel` | Redirect pedidos ou configurações/cardápio conforme o plano |
 | `/painel/pedidos` | Kanban do dono (tudo) ou do perfil Painel (filtrado por categoria) |
-| `/painel/mesas` | Mesas (CRUD + QR fixo) — Cardápio e Auto atendimento |
-| `/painel/configuracoes` | Hub: cardápio, bar, equipe, responsável |
+| `/painel/mesas` | Redirect → `/painel/configuracoes/mesas` |
+| `/painel/configuracoes` | Hub: cardápio, bar, mesas, chamada, equipe, responsável |
 | `/painel/configuracoes/cardapio` | CRUD do cardápio |
-| `/painel/configuracoes/bar` | Nome, slug, encerramento no salão |
+| `/painel/configuracoes/bar` | Nome, slug; CTAs para mesas / chamada |
+| `/painel/configuracoes/mesas` | Mesas (CRUD + QR fixo) — Cardápio e Auto |
+| `/painel/configuracoes/chamada` | Ligar/desligar “Chamar garçom” + TTL (ADR-026) |
 | `/painel/configuracoes/equipe` | Staff / caixa / painel |
 | `/painel/configuracoes/responsavel` | Responsável / pagador Asaas ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)) |
 | `/painel/pagamento` | Checkout (cartão ou PIX). `/painel/bar/plano` redireciona para cá |

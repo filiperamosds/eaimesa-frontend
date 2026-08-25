@@ -10,8 +10,8 @@ Não abre comanda, PIN nem pedido. Ver [ADR-026](../decisions/ADR-026-chamar-gar
 - Cookie `eaimesa_presence` após o scan (TTL do bar)
 - Botão **Chamar garçom** no `/{slug}` só com presença válida e feature ligada
 - `/painel/chamados` — fila de mesas que chamaram (poll)
-- Configurações: ligar/desligar + minutos de validade da sessão
-- Mesas no plano Cardápio (CRUD) para exportar QR com `?mesa=`
+- Configurações: ligar/desligar + minutos de validade da sessão (`/painel/configuracoes/chamada`)
+- Mesas no plano Cardápio (CRUD em `/painel/configuracoes/mesas`) para exportar QR com `?mesa=`
 - Contrato API: [backend-waiter-call.md](../api/backend-waiter-call.md)
 
 ## Não inclui
@@ -50,9 +50,9 @@ sequenceDiagram
 
 | Campo | Onde |
 |-------|------|
-| Ligar / desligar | Configurações → Chamada ao garçom (ou Meu bar) |
+| Ligar / desligar | Configurações → **Chamada** |
 | Validade da sessão (minutos) | Mesmo formulário |
-| Mesas + QR | `/painel/mesas` (liberado no Cardápio para esta fatia) |
+| Mesas + QR | Configurações → **Mesas** (`/painel/configuracoes/mesas`) |
 
 ## Conferência
 

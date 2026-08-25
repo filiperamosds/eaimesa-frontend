@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isPanelMember, planAllowsService, planAllowsTables, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
+import { isPanelMember, planAllowsService, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
 import { api } from "../lib/api";
 import { paymentPromptForVenue } from "../lib/billing-prompt";
 import type { Session } from "../lib/types";
@@ -11,12 +11,11 @@ import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
 
 const ALL_LINKS = [
-  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true, tables: false },
-  { href: "/painel/mesas", label: "Mesas", icon: "▦", service: false, tables: true },
-  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false, tables: false },
+  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true },
+  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false },
 ] as const;
 
-/** Rotas só do Auto atendimento — Cardápio é redirecionado. Mesas ficam de fora (ADR-026). */
+/** Rotas só do Auto atendimento — Cardápio é redirecionado. */
 const SERVICE_ONLY_PREFIXES = [
   "/painel/pedidos",
   "/painel/equipe",
@@ -82,9 +81,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
   const links = panel
     ? []
     : ALL_LINKS.filter((l) => {
-        const kind = me.venue.planKind ?? me.venue.plan;
-        if (l.service && !planAllowsService(kind)) return false;
-        if (l.tables && !planAllowsTables(kind)) return false;
+        if (l.service && !planAllowsService(me.venue.planKind ?? me.venue.plan)) return false;
         return true;
       });
 

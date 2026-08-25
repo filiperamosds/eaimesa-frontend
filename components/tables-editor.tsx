@@ -1,6 +1,6 @@
 "use client";
 
-import { PLAN_BAR_MAX_TABLES, planAllowsService } from "@eaimesa/shared";
+import { ERROR_CODES, PLAN_BAR_MAX_TABLES, planAllowsService } from "@eaimesa/shared";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
@@ -12,6 +12,16 @@ type TablesPayload = {
   maxActive: number;
   activeCount: number;
 };
+
+function tablesErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.code === ERROR_CODES.PLAN_FEATURE) {
+      return "O servidor ainda bloqueia mesas neste plano (PLAN_FEATURE). No Laravel, libere GET/POST /v1/owner/tables para kind=cardapio — ver docs/api/backend-waiter-call.md.";
+    }
+    return err.message;
+  }
+  return "Erro ao carregar.";
+}
 
 export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean }) {
   const [tables, setTables] = useState<VenueTable[]>([]);
@@ -37,7 +47,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
 
   useEffect(() => {
     load()
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Erro ao carregar."))
+      .catch((e) => setError(tablesErrorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -49,7 +59,13 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
       setLabel("");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível criar.");
+      setError(
+        err instanceof ApiError && err.code === ERROR_CODES.PLAN_FEATURE
+          ? tablesErrorMessage(err)
+          : err instanceof ApiError
+            ? err.message
+            : "Não foi possível criar.",
+      );
     }
   }
 
@@ -64,16 +80,20 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           <>
             <p className="font-medium text-ink">QR fixo = cardápio. QR do garçom = comanda.</p>
             <p className="mt-1">
-              Exporte o QR de cada mesa e cole no salão. Para abrir comanda, o garçom gera o QR em{" "}
-              <strong className="font-medium text-ink">/garcom</strong> (equipe em Configurações).
+              Exporte o QR de cada mesa e cole no salão. Comanda: QR em{" "}
+              <strong className="font-medium text-ink">/garcom</strong>.
             </p>
           </>
         ) : (
           <>
-            <p className="font-medium text-ink">Cadastre as mesas e exporte o QR de cada uma.</p>
+            <p className="font-medium text-ink">Mesas do salão + QR por mesa</p>
             <p className="mt-1">
-              O adesivo leva o cliente ao cardápio da casa. Sem pedido no celular neste plano — só leitura
-              (e chamada ao garçom, quando estiver ligada).
+              O QR da mesa inclui <span className="font-mono text-ink">?mesa=</span> (quando o servidor
+              devolver <span className="font-mono">menuCode</span>). Ligue a chamada ao garçom em{" "}
+              <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
+                Chamada
+              </Link>
+              .
             </p>
           </>
         )}
@@ -83,8 +103,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           <p className="eyebrow">QR do cardápio</p>
           <h2 className="mt-2 font-serif text-xl">Geral — porta ou Instagram</h2>
           <p className="mt-2 text-sm text-ink-soft">
-            Aponta para <span className="font-medium text-ink">/{venue.slug}</span>
-            {service ? " — só leitura; comanda abre com o QR do garçom." : "."}
+            Aponta para <span className="font-medium text-ink">/{venue.slug}</span> (sem mesa).
           </p>
           <button type="button" onClick={() => setVenueQr(true)} className="btn-secondary mt-4 !py-2 text-sm">
             Ver e exportar QR geral
@@ -94,19 +113,16 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <p className="text-sm text-ink-soft">
           {activeCount}/{maxActive} mesas ativas
-          {service ? ". Pedido de balcão e claim usam esta lista." : ". Use o QR por mesa no salão."}
+          {service ? ". Pedido de balcão e claim usam esta lista." : "."}
         </p>
-        {service ? (
-          <Link href="/painel/pedidos" className="text-sm font-medium text-chili">
-            Ir para pedidos →
-          </Link>
-        ) : (
-          <Link href="/painel/configuracoes/cardapio" className="text-sm font-medium text-chili">
-            Ir para cardápio →
-          </Link>
-        )}
+        <Link
+          href={service ? "/painel/pedidos" : "/painel/configuracoes/chamada"}
+          className="text-sm font-medium text-chili"
+        >
+          {service ? "Ir para pedidos →" : "Configurar chamada →"}
+        </Link>
       </div>
-      <form onSubmit={add} className="mb-6 flex flex-wrap gap-2">
+      <form onSubmit={(e) => void add(e)} className="mb-6 flex flex-wrap gap-2">
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -120,9 +136,10 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
         </button>
       </form>
       {error ? <p className="mb-4 text-sm text-chili">{error}</p> : null}
-      {tables.length === 0 ? (
+      {tables.length === 0 && !error ? (
         <p className="text-ink-soft">Nenhuma mesa ainda. Comece por Balcão e Mesa 1.</p>
-      ) : (
+      ) : null}
+      {tables.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {tables.map((table) => (
             <TableCard
@@ -134,17 +151,24 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
             />
           ))}
         </ul>
-      )}
+      ) : null}
       {qrTable && venue ? (
         <MenuQrModal
           slug={venue.slug}
           venueName={venue.name}
           tableLabel={qrTable.label}
+          mesaCode={qrTable.menuCode}
+          servicePlan={service}
           onClose={() => setQrTable(null)}
         />
       ) : null}
       {venueQr && venue ? (
-        <MenuQrModal slug={venue.slug} venueName={venue.name} onClose={() => setVenueQr(false)} />
+        <MenuQrModal
+          slug={venue.slug}
+          venueName={venue.name}
+          servicePlan={service}
+          onClose={() => setVenueQr(false)}
+        />
       ) : null}
     </div>
   );
@@ -221,7 +245,7 @@ function TableCard({
         <div className="space-y-2">
           <input value={name} onChange={(e) => setName(e.target.value)} className="field" maxLength={40} />
           <div className="flex gap-2 text-sm">
-            <button type="button" onClick={save} className="font-medium text-sage">
+            <button type="button" onClick={() => void save()} className="font-medium text-sage">
               Salvar
             </button>
             <button type="button" onClick={() => setEditing(false)} className="text-ink-soft">
@@ -232,6 +256,9 @@ function TableCard({
       ) : (
         <p className="font-serif text-xl">{table.label}</p>
       )}
+      {table.menuCode ? (
+        <p className="mt-1 font-mono text-[11px] text-ink-soft">mesa={table.menuCode}</p>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-3 text-sm">
         <button type="button" onClick={onQr} className="font-medium text-chili hover:text-chili-dark">
           QR cardápio
@@ -239,10 +266,10 @@ function TableCard({
         <button type="button" onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink">
           Renomear
         </button>
-        <button type="button" onClick={toggle} className="text-ink-soft hover:text-ink">
+        <button type="button" onClick={() => void toggle()} className="text-ink-soft hover:text-ink">
           {table.active ? "Ocultar" : "Ativar"}
         </button>
-        <button type="button" onClick={remove} className="text-chili">
+        <button type="button" onClick={() => void remove()} className="text-chili">
           Excluir
         </button>
       </div>

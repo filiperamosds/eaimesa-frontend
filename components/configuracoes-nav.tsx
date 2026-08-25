@@ -10,6 +10,8 @@ import type { Session } from "../lib/types";
 const LINKS = [
   { href: "/painel/configuracoes/cardapio", label: "Cardápio", service: false },
   { href: "/painel/configuracoes/bar", label: "Meu bar", service: false },
+  { href: "/painel/configuracoes/mesas", label: "Mesas", service: false },
+  { href: "/painel/configuracoes/chamada", label: "Chamada", service: false },
   { href: "/painel/configuracoes/equipe", label: "Equipe", service: true },
   { href: "/painel/configuracoes/responsavel", label: "Responsável", service: false },
   { href: "/painel/pagamento", label: "Pagamento", service: false },

@@ -7,8 +7,12 @@ import { publicMenuUrl } from "../lib/public-url";
 type Props = {
   slug: string;
   venueName: string;
-  /** Rótulo impresso no adesivo (ex. Mesa 4). URL continua só o cardápio. */
+  /** Rótulo impresso no adesivo (ex. Mesa 4). */
   tableLabel?: string;
+  /** Código opaco → URL `?mesa=` (plano Cardápio / chamada). */
+  mesaCode?: string | null;
+  /** Auto atendimento menciona comanda; Cardápio não. */
+  servicePlan?: boolean;
   onClose: () => void;
 };
 
@@ -22,13 +26,20 @@ function slugifyFile(s: string) {
     .slice(0, 48);
 }
 
-export function MenuQrModal({ slug, venueName, tableLabel, onClose }: Props) {
+export function MenuQrModal({
+  slug,
+  venueName,
+  tableLabel,
+  mesaCode,
+  servicePlan = false,
+  onClose,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const target = publicMenuUrl(slug);
+    const target = publicMenuUrl(slug, { mesa: mesaCode });
     setUrl(target);
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -38,7 +49,7 @@ export function MenuQrModal({ slug, venueName, tableLabel, onClose }: Props) {
       color: { dark: "#161311", light: "#fffdf8" },
       errorCorrectionLevel: "M",
     }).catch(() => setError("Não foi possível gerar o QR."));
-  }, [slug]);
+  }, [slug, mesaCode]);
 
   async function downloadPng() {
     const canvas = canvasRef.current;
@@ -72,13 +83,21 @@ export function MenuQrModal({ slug, venueName, tableLabel, onClose }: Props) {
 
     ctx.fillStyle = "#6a5c51";
     ctx.font = "14px system-ui, sans-serif";
-    ctx.fillText("Cardápio · só leitura", w / 2, qrY + qrSize + 36);
-    ctx.fillText("Comanda: peça o QR do garçom", w / 2, qrY + qrSize + 58);
+    if (servicePlan) {
+      ctx.fillText("Cardápio · só leitura", w / 2, qrY + qrSize + 36);
+      ctx.fillText("Comanda: peça o QR do garçom", w / 2, qrY + qrSize + 58);
+    } else if (mesaCode) {
+      ctx.fillText("Cardápio desta mesa", w / 2, qrY + qrSize + 36);
+      ctx.fillText("Escaneie no celular", w / 2, qrY + qrSize + 58);
+    } else {
+      ctx.fillText("Cardápio · só leitura", w / 2, qrY + qrSize + 36);
+      ctx.fillText("Escaneie no celular", w / 2, qrY + qrSize + 58);
+    }
 
     ctx.fillStyle = "#161311";
     ctx.font = "12px system-ui, sans-serif";
     const short = url.replace(/^https?:\/\//, "");
-    ctx.fillText(short, w / 2, h - 36);
+    ctx.fillText(short.length > 42 ? `${short.slice(0, 40)}…` : short, w / 2, h - 36);
 
     const a = document.createElement("a");
     const name = tableLabel
@@ -102,8 +121,19 @@ export function MenuQrModal({ slug, venueName, tableLabel, onClose }: Props) {
           {tableLabel ? tableLabel : "Cardápio do bar"}
         </h2>
         <p className="mt-2 text-sm text-ink-soft">
-          Aponta para o cardápio público. <strong className="font-medium text-ink">Não abre comanda</strong> —
-          pedir exige o QR do garçom.
+          {servicePlan ? (
+            <>
+              Aponta para o cardápio. <strong className="font-medium text-ink">Não abre comanda</strong> —
+              pedir exige o QR do garçom.
+            </>
+          ) : mesaCode ? (
+            <>
+              URL desta mesa: inclui <span className="font-mono text-ink">?mesa=</span> para o celular
+              saber onde o cliente está (chamar garçom, se ligado).
+            </>
+          ) : (
+            <>QR geral do cardápio (porta / Instagram). Sem identificação de mesa.</>
+          )}
         </p>
         <div className="mt-5 flex flex-col items-center">
           <canvas ref={canvasRef} className="rounded-2xl border border-line bg-card" />
