@@ -22,7 +22,7 @@ export function ConfigBarPanels() {
         <h2 className="font-serif text-2xl">Meu estabelecimento</h2>
         <p className="mt-2 mb-8 text-ink-soft">
           A URL do cardápio sai do nome. Se o caminho já existir, o sistema acrescenta um número
-          (bar-do-tiao-2).
+          (seu-estabelecimento-2).
         </p>
         <VenueSettings />
       </div>

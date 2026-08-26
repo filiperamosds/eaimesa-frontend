@@ -16,7 +16,7 @@
 | Owner | Cookie `eaimesa_owner` | Cardápio; resto conforme o plano | Sim |
 | Guest | Cookie `eaimesa_guest` | Mesa + comanda + pedidos (Auto atendimento) | Sim |
 | Staff | Cookie `eaimesa_owner` (`role: staff`; `member.role` `staff`, `cashier` ou `panel`) | Garçom/caixa: mesas, claims, fila; close só se caixa, dono, ou `staffCanCloseTabs`. Painel: só fila filtrada por categoria | Sim |
-| Platform | Cookie `eaimesa_platform` | Tenants, catálogo, dashboard, logs, eventos de integração | Sim (senha; 2FA depois) |
+| Platform | Cookie `eaimesa_platform` | Tenants, catálogo, equipe de operadores, dashboard, logs, eventos de integração | Sim (senha; 2FA depois) |
 
 ## Ameaças SaaS
 
@@ -34,6 +34,7 @@
 | PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React |
 | Eventos de integração | Body em `integration_events`; `meta.headers` **sem** token/Authorization/Cookie; listagem `/admin/integracoes` só cookie platform |
 | Secret na URL | Cookie httpOnly após login |
+| Cadastro público de operador | Não existe rota pública. Só `POST /v1/platform/users` com cookie `eaimesa_platform` (`/admin/equipe`) |
 | Estender trial/vigência no console | Cookie `eaimesa_platform`; 404 se o id não existe; **não** cobra no Asaas |
 
 ## Headers e cookies
@@ -51,6 +52,7 @@
 |------|--------|
 | Login / register | 10/min/IP |
 | Login do console (`/v1/platform/auth/login`) | 10/min/IP |
+| Cadastrar operador (`/v1/platform/users`) | 10/min/IP |
 | Redeem claim | 20/min/IP |
 | PIN join | 5 falhas / 15 min / IP+venue |
 | Pedido guest | 20/min/IP |
@@ -87,6 +89,6 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Confiar em `venueId` enviado pelo client no CRUD
 - Enviar PAN/CVV para a API fora do checkout, persistir PAN ou logar cartão
 - Tratar `?checkout=ok` como pagamento confirmado
-- Expor `/admin/logs` ou `/admin/integracoes` sem cookie `eaimesa_platform`
+- Expor `/admin/logs`, `/admin/equipe` ou `/admin/integracoes` sem cookie `eaimesa_platform`
 - Impressora do estabelecimento exposta na internet (fase 2: agente outbound)
 - Commitar senha FTP, `.env` de staging ou `out/`

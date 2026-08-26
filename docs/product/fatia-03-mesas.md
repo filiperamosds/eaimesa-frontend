@@ -8,7 +8,7 @@ O salão vira entidade. O dono cadastra as mesas do estabelecimento (até 15 no 
 - API `GET/POST /v1/owner/tables` e `PATCH/DELETE /v1/owner/tables/{id}`
 - Limite de **15 mesas ativas** por venue (plano atual)
 - Pedido de balcão: mesa + comanda em `/garcom`; `table_label` continua snapshot no pedido
-- Seed: Balcão + Mesa 1–10 no Bar do Tião
+- Seed local: **Seu Estabelecimento** (plano Cardápio) — sem mesas pré-cadastradas; o dono cria no painel
 - **QR fixo da mesa** (painel): aponta para o cardápio público `/{slug}`; exportável (PNG). Pode colar na mesa.
 
 O cardápio público `/{slug}` **não muda de contrato** — só leitura, sem pedir.

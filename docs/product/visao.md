@@ -10,8 +10,8 @@ Plataforma **SaaS multi-tenant**: cada estabelecimento paga aluguel mensal; o co
 
 | Peça | Função |
 |------|--------|
-| **Slug da casa** (`/bar-do-tiao`) | URL pública configurável. Cardápio. **Não autoriza pedir.** |
-| **Claim do garçom** (`/bar-do-tiao/c/{token}`) | Secret de uso único, TTL curto. Abre a **mesa** (PIN do grupo). |
+| **Slug da casa** (`/seu-estabelecimento`) | URL pública configurável. Cardápio. **Não autoriza pedir.** |
+| **Claim do garçom** (`/{slug}/c/{token}`) | Secret de uso único, TTL curto. Abre a **mesa** (PIN do grupo). |
 | **PIN da mesa** | Outros aparelhos entram na ocupação (`/{slug}/entrar`). |
 | **Comanda pessoal** | Nome + telefone; várias por mesa. |
 | **Cookie guest** (`eaimesa_guest`) | Sessão httpOnly após redeem/PIN; liga à comanda depois do cadastro. |
@@ -31,7 +31,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Garçom / caixa** | `/garcom` | Staff (`member.role` staff ou cashier) | Só Auto atendimento | — |
 | **Painel (KDS)** | `/painel/pedidos` | Staff (`member.role` panel) | Só Auto atendimento; categorias no cadastro | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
-| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, estabelecimentos, planos, logs, integrações | SSO/2FA |
+| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, estabelecimentos, equipe, planos, logs, integrações | SSO/2FA |
 
 ## Personas
 
@@ -40,11 +40,11 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 - **Caixa** — mesma tela `/garcom`; sempre pode fechar comanda e mesa.
 - **Painel** — login no monitor da cozinha ou do bar; só o Kanban das categorias que o dono marcou.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
-- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê estabelecimentos, vendas da assinatura, catálogo, logs da API e webhooks. Não atende o salão nem edita o cardápio de um estabelecimento.
+- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê estabelecimentos, vendas da assinatura, catálogo, equipe de operadores, logs da API e webhooks. Não atende o salão nem edita o cardápio de um estabelecimento.
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 16 — eventos de integração](fatia-16-integration-events.md).
+Implementação **agora**: [fatia 17 — equipe de operadores](fatia-17-platform-equipe.md).
 
 ### MVP (quando as fatias somarem)
 
@@ -75,7 +75,7 @@ Implementação **agora**: [fatia 16 — eventos de integração](fatia-16-integ
 
 - Marca: **EaiMesa**
 - Domínio alvo: `eaimesa.com.br`
-- Path do cardápio: `/{slug}` (ex. `/bar-do-tiao`) — [ADR-004](../decisions/ADR-004-slug-publico.md)
+- Path do cardápio: `/{slug}` (ex. `/seu-estabelecimento`) — [ADR-004](../decisions/ADR-004-slug-publico.md)
 - Path de claim: `/{slug}/c/{claimToken}` (redirect após redeem)
 - Path de PIN join: `/{slug}/entrar`
 - `venue.public_id` opaco existe no banco; **não** é a URL do cardápio na fatia 1

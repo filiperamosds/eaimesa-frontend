@@ -11,3 +11,4 @@ export * from "./uuid";
 export * from "./plans";
 export * from "./platform-logs";
 export * from "./platform-integration-events";
+export * from "./platform-users";

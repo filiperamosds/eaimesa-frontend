@@ -37,7 +37,7 @@ Não existem `apps/guest` nem `apps/staff`.
 ## Multi-tenant
 
 - Toda entidade operacional tem `venue_id`.
-- URL pública do cardápio: `venue.slug` (`bar-do-tiao`).
+- URL pública do cardápio: `venue.slug` (`seu-estabelecimento`).
 - `venue.public_id` é opaco e estável (uso interno / claims futuros).
 - Sessão do dono carrega `account_id` + `venue_id` + `role=owner` — nunca confiar no body para tenancy.
 - Staff JWT carrega `venue_id` + `role` (`owner` | `staff`). Perfil caixa/garçom/painel: `member.role`. Painel ainda leva `categoryIds`.
@@ -69,7 +69,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/garcom` | Mesas do garçom |
 | `/garcom/pedidos` | Kanban do garçom |
 | `/admin/login`, `/admin` | Console da plataforma (operador) |
-| `/admin/bares`, `/admin/planos`, `/admin/logs`, `/admin/integracoes` | Tenants, catálogo, logs Laravel e webhooks |
+| `/admin/bares`, `/admin/equipe`, `/admin/planos`, `/admin/logs`, `/admin/integracoes` | Tenants, operadores SaaS, catálogo, logs Laravel e webhooks |
 
 ## Integrações
 

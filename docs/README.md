@@ -1,6 +1,6 @@
 # Documentação EaiMesa
 
-Índice. Fatia atual: **Eventos de integração (console)**; fatias 1–16 no repo.
+Índice. Fatia atual: **Equipe de operadores SaaS**; fatias 1–17 no repo.
 
 1. [Fatia 1 — Cardápio](product/fatia-01-cardapio.md)
 1b. [Fatia 2 — Pedidos](product/fatia-02-pedidos.md) — Kanban / KDS no painel
@@ -18,14 +18,15 @@
 1n. [Fatia 14 — Painel Kanban](product/fatia-14-kanban-painel.md) — perfil Painel, categorias por monitor
 1o. [Fatia 15 — Chamar garçom](product/fatia-15-chamar-garcom-cardapio.md) — QR `?mesa=` + presença + fila (plano Cardápio)
 1p. [Fatia 16 — Eventos de integração](product/fatia-16-integration-events.md) — `/admin/integracoes`, webhooks Asaas
+1q. [Fatia 17 — Equipe de operadores](product/fatia-17-platform-equipe.md) — `/admin/equipe`, `GET/POST /v1/platform/users`
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
 4. [Pricing](product/pricing.md) — Cardápio e Auto atendimento
 5. [Arquitetura](architecture/overview.md) — dois repos (Laravel + Next), um front
 6. [Sessão claim + PIN](architecture/sessao-claim-pin.md) — claim, PIN join, cookie guest
 7. [Segurança](security/modelo.md) — tenancy, cookies, ameaças
-8. [Modelo de dados](data/schema.md) — entidades fatia 1–16 + planejadas
-9. [API](api/endpoints.md) — REST fatia 1–16 + contrato futuro
+8. [Modelo de dados](data/schema.md) — entidades fatia 1–17 + planejadas
+9. [API](api/endpoints.md) — REST fatia 1–17 + contrato futuro
 9b. [Backend — caixa / close](api/backend-caixa-close.md) — o que o Laravel precisa alterar (`staffCanCloseTabs`, `cashier`)
 9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId`, PIN no staff, `POST .../tabs`
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila

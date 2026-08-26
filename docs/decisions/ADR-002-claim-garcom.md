@@ -9,7 +9,7 @@ QR fixo por mesa permite pedido remoto (foto, stories). CPF do consumidor adicio
 
 ## Decisão
 
-- Código da casa (`/{slug}`, ex. `/bar-do-tiao`) é **público** e **não autoriza pedir**
+- Código da casa (`/{slug}`, ex. `/seu-estabelecimento`) é **público** e **não autoriza pedir**
 - QR **fixo na mesa** aponta para esse cardápio (exportado no painel; adesivo ok)
 - Staff gera **TableClaim** com TTL 2–5 min, uso único — **único** QR que abre comanda
 - Após redeem: cookie guest + PIN para outros aparelhos

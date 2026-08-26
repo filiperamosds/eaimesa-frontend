@@ -78,8 +78,8 @@ Body — só campos que mudam; **ao menos um**:
 
 ```json
 {
-  "name": "Bar do Tião",
-  "slug": "bar-do-tiao",
+  "name": "Seu Estabelecimento",
+  "slug": "seu-estabelecimento",
   "staffCanCloseTabs": false
 }
 ```

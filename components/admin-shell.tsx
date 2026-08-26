@@ -9,6 +9,7 @@ import { Logo } from "./site-chrome";
 const LINKS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/bares", label: "Estabelecimentos" },
+  { href: "/admin/equipe", label: "Equipe" },
   { href: "/admin/planos", label: "Planos" },
   { href: "/admin/logs", label: "Logs" },
   { href: "/admin/integracoes", label: "Integrações" },

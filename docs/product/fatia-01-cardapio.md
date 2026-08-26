@@ -8,7 +8,7 @@ Primeira entrega cobrável em pedaço: o estabelecimento entra, publica um card�
 - Cadastro e login do **estabelecimento** (`/cadastro`, `/login`). Cadastro: nome do estabelecimento, nome e CPF do responsável, e-mail, senha, plano. `/login` chama `GET /v1/auth/me`: sessão válida pula o form (dono → painel, staff → `/garcom`).
 - Painel do dono: dados do estabelecimento + CRUD de categorias e itens (`/painel`)
 - Cardápio público gerado pela URL configurada: `https://eaimesa.com.br/{slug}`  
-  Exemplo: `/bar-do-tiao`
+  Exemplo: `/seu-estabelecimento`
 - API REST correspondente (auth cookie + catálogo + menu público)
 
 ## Não inclui (fatias seguintes)
@@ -36,9 +36,9 @@ Um único frontend (repo **eaimesa-frontend**) concentra marketing, autenticaç�
 
 ## Slug
 
-- O front gera o slug a partir do **nome** (`Bar do Tião` → `bar-do-tiao`). Campo URL fica desabilitado no cadastro e em Configurações → Estabelecimento.
-- Se o caminho já existir (ou for palavra reservada), acrescenta `-2`, `-3`… (`bar-do-tiao-2`). Checagem: `GET /v1/public/venues/{slug}`.
-- Formato: kebab-case, 3–48 caracteres (`bar-do-tiao`).
+- O front gera o slug a partir do **nome** (`Seu Estabelecimento` → `seu-estabelecimento`). Campo URL fica desabilitado no cadastro e em Configurações → Estabelecimento.
+- Se o caminho já existir (ou for palavra reservada), acrescenta `-2`, `-3`… (`seu-estabelecimento-2`). Checagem: `GET /v1/public/venues/{slug}`.
+- Formato: kebab-case, 3–48 caracteres (`seu-estabelecimento`).
 - Palavras reservadas (`login`, `painel`, `cadastro`, …) não podem ser o slug final.
 - `public_id` opaco continua no banco (estável se o slug mudar); a URL pública da fatia 1 é o **slug**.
 - QR do cardápio (apontando para `/{slug}`) mora no **painel** autenticado e pode ser **exportado** (PNG) para mesa, porta, Instagram. Não autoriza pedir. Comanda só com QR do garçom (claim).
@@ -49,7 +49,8 @@ Ver [ADR-004](../decisions/ADR-004-slug-publico.md).
 
 | Campo | Valor |
 |-------|--------|
-| Slug | `bar-do-tiao` |
-| Nome | Bar do Tião |
-| E-mail | `dono@bardotiao.local` |
-| Senha | ver `docs/ops/dev-setup.md` (somente local) |
+| Slug | `seu-estabelecimento` |
+| Nome | Seu Estabelecimento |
+| Plano | Cardápio |
+| E-mail | `dono@seuestabelecimento.com` |
+| Senha | `Teste@123` (somente local) |

@@ -9,8 +9,8 @@ A visão inicial usava `venue_public_id` opaco na URL (`/d1de031d33`). Para o ca
 
 ## Decisão
 
-- URL pública do cardápio: `/{slug}` (ex. `/bar-do-tiao`)
-- `slug` é único, **gerado a partir do nome** (`Bar do Tião` → `bar-do-tiao`; ocupado → `bar-do-tiao-2`), kebab-case `[a-z0-9]+(-[a-z0-9]+)*`, 3–48 chars. A UI não deixa editar.
+- URL pública do cardápio: `/{slug}` (ex. `/seu-estabelecimento`)
+- `slug` é único, **gerado a partir do nome** (`Seu Estabelecimento` → `seu-estabelecimento`; ocupado → `seu-estabelecimento-2`), kebab-case `[a-z0-9]+(-[a-z0-9]+)*`, 3–48 chars. A UI não deixa editar.
 - `public_id` opaco **permanece** na tabela `venues` como identificador estável (claims/QR futuros podem usá-lo se o slug mudar)
 - Sem domínio customizado no MVP (`bar.com.br` próprio continua fora de escopo)
 
@@ -19,8 +19,8 @@ A visão inicial usava `venue_public_id` opaco na URL (`/d1de031d33`). Para o ca
 | Opção | Por que não agora |
 |-------|-------------------|
 | Só `public_id` opaco | Ruim para marketing do bar |
-| Subdomínio `bar-do-tiao.eaimesa.com.br` | TLS/wildcard e cookie mais caros |
-| `/c/bar-do-tiao` prefixado | Usuário pediu path na raiz |
+| Subdomínio `seu-estabelecimento.eaimesa.com.br` | TLS/wildcard e cookie mais caros |
+| `/c/seu-estabelecimento` prefixado | Usuário pediu path na raiz |
 
 ## Consequências
 

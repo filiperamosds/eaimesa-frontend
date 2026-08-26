@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–13)
+## Implementado (fatias 1–17)
 
 ### Saúde
 
@@ -40,8 +40,8 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 {
   "email": "dono@bar.com",
   "password": "mínimo 8 chars",
-  "venueName": "Bar do Tião",
-  "slug": "bar-do-tiao",
+  "venueName": "Seu Estabelecimento",
+  "slug": "seu-estabelecimento",
   "plan": "auto_atendimento",
   "representative": {
     "name": "Maria Silva",
@@ -50,7 +50,7 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 }
 ```
 
-O front **não deixa editar** o slug: gera a partir de `venueName` (`Bar do Tião` → `bar-do-tiao`). Se o caminho já existir (ou for reservado), usa `-2`, `-3`… (`bar-do-tiao-2`). Confere com `GET /v1/public/venues/{slug}` (404 = livre). `representative.name` + `representative.cpfCnpj` (CPF, 11 dígitos) entram em `venue.representative`; e-mail, telefone, CEP e número continuam em Configurações → Responsável. Laravel persiste o par no register.
+O front **não deixa editar** o slug: gera a partir de `venueName` (`Seu Estabelecimento` → `seu-estabelecimento`). Se o caminho já existir (ou for reservado), usa `-2`, `-3`… (`seu-estabelecimento-2`). Confere com `GET /v1/public/venues/{slug}` (404 = livre). `representative.name` + `representative.cpfCnpj` (CPF, 11 dígitos) entram em `venue.representative`; e-mail, telefone, CEP e número continuam em Configurações → Responsável. Laravel persiste o par no register.
 
 #### POST /v1/auth/login (body)
 
@@ -280,7 +280,7 @@ Resposta do claim:
   "claimId": "uuid",
   "tableId": "uuid",
   "tableLabel": "Mesa 4",
-  "claimUrl": "http://mac-filipe.local:3000/bar-do-tiao/c/{token}",
+  "claimUrl": "http://mac-filipe.local:3000/seu-estabelecimento/c/{token}",
   "expiresAt": "2026-…",
   "expiresInSeconds": 180,
   "pinDisplay": "4821"
@@ -301,9 +301,9 @@ Resposta:
 {
   "pinDisplay": "4821",
   "tableLabel": "Mesa 4",
-  "slug": "bar-do-tiao",
+  "slug": "seu-estabelecimento",
   "needsProfile": true,
-  "redirectPath": "/bar-do-tiao/bem-vindo"
+  "redirectPath": "/seu-estabelecimento/bem-vindo"
 }
 ```
 
@@ -322,7 +322,7 @@ Cookie guest: `eaimesa_guest`. Join não exige cookie. Abrir comanda exige cooki
 #### POST /v1/guest/tabs/join (body)
 
 ```json
-{ "slug": "bar-do-tiao", "pin": "4821" }
+{ "slug": "seu-estabelecimento", "pin": "4821" }
 ```
 
 PIN casa com **TableSession** `open`. Resposta: `tableLabel`, `slug`, `needsProfile`, `redirectPath` (`/{slug}/comanda`).
@@ -416,6 +416,8 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | POST | `/v1/platform/auth/login` | — | Set-Cookie platform |
 | POST | `/v1/platform/auth/logout` | — | Clear-Cookie |
 | GET | `/v1/platform/auth/me` | Platform | Operador atual |
+| GET | `/v1/platform/users` | Platform | Lista operadores SaaS |
+| POST | `/v1/platform/users` | Platform | Cadastra operador (`email`, `password` min 8, `name`; `active?`) |
 | GET | `/v1/platform/dashboard` | Platform | KPIs + checkouts recentes |
 | GET | `/v1/platform/venues` | Platform | Lista tenants (`q`, `plan`, `status`) |
 | PATCH | `/v1/platform/venues/{id}` | Platform | Ajuste admin de `trialEndsAt` / `currentPeriodEndsAt` / `subscriptionStatus` |
@@ -430,6 +432,25 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | GET | `/v1/platform/integration-events` | Platform | Lista webhooks/eventos; query `integration`, `event`, `status`, `q`, `limit` (1–100, default 50) — sem `payload`/`meta` |
 | GET | `/v1/platform/integration-events/{id}` | Platform | Detalhe com `payload` + `meta` |
 
+#### GET /v1/platform/users · POST /v1/platform/users
+
+Cookie `eaimesa_platform`. Sem rota pública de cadastro — só quem já está no `/admin`. Rate limit do POST: 10/min/IP. Front: `/admin/equipe`. Ver [fatia 17](../product/fatia-17-platform-equipe.md).
+
+`GET` → `{ "users": [{ "id", "email", "name", "active", "createdAt" }] }`.
+
+`POST` body:
+
+```json
+{
+  "email": "colega@eaimesa.com",
+  "password": "mínimo 8 chars",
+  "name": "Colega Ops",
+  "active": true
+}
+```
+
+Resposta 201: o mesmo shape de um item. E-mail único → 409 `EMAIL_TAKEN`. Body inválido → 400 `VALIDATION_ERROR`. Sem cookie → 401.
+
 `GET /v1/platform/venues` query `q`, `plan`, `status`. Resposta:
 
 ```json
@@ -437,12 +458,12 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
   "venues": [
     {
       "id": "uuid",
-      "name": "Bar do Tião",
-      "slug": "bar-do-tiao",
-      "plan": "auto_atendimento",
-      "planName": "Auto atendimento",
+      "name": "Seu Estabelecimento",
+      "slug": "seu-estabelecimento",
+      "plan": "cardapio",
+      "planName": "Cardápio",
       "subscriptionStatus": "trial",
-      "acceptsOrders": true,
+      "acceptsOrders": false,
       "trialEndsAt": "2026-08-29T23:59:59.000Z",
       "currentPeriodEndsAt": null,
       "createdAt": "2026-08-22T12:00:00.000Z",
