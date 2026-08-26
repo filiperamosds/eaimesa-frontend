@@ -4,12 +4,12 @@ Núcleo de confiança do produto. Três peças **separadas**.
 
 ## 1. Código da casa (`slug`)
 
-- Ex.: `bar-do-tiao` (configurável). `public_id` opaco existe no banco mas **não** é a URL do cardápio.
+- Ex.: `seu-estabelecimento` (configurável). `public_id` opaco existe no banco mas **não** é a URL do cardápio.
 - Público (Instagram, QR **fixo na mesa**, QR na porta).
 - `GET /v1/public/venues/{slug}` → cardápio (somente leitura se sem sessão).
 - **Nunca** autoriza `POST /guest/orders`.
 - QR fixo da mesa = URL `/{slug}` (mesmo cardápio em todas as mesas). Gerado e exportado no painel; adesivo pode mostrar o rótulo da mesa ao lado do código.
-- Export estático: bares novos usam o HTML de `__venue`. Enquanto o cliente lê o path real, as telas públicas mostram **Carregando…** — não 404. “Cardápio não encontrado” só com slug inválido de verdade.
+- Export estático: estabelecimentos novos usam o HTML de `__venue`. Enquanto o cliente lê o path real, as telas públicas mostram **Carregando…** — não 404. “Cardápio não encontrado” só com slug inválido de verdade.
 
 ## 2. Claim (TableClaim)
 
@@ -29,7 +29,7 @@ Gerado pelo staff autenticado para uma mesa. **Este** é o QR que abre a comanda
 
 | Tipo | Onde | Export |
 |------|------|--------|
-| **Cardápio (fixo)** | Configurações → Mesas (`/painel/configuracoes/mesas`); QR geral também em Meu bar | PNG; URL `/{slug}` (geral) ou `/{slug}?mesa={menuCode}` (por mesa — [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)) |
+| **Cardápio (fixo)** | Configurações → Mesas (`/painel/configuracoes/mesas`); QR geral também em Estabelecimento | PNG; URL `/{slug}` (geral) ou `/{slug}?mesa={menuCode}` (por mesa — [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)) |
 | **Claim (comanda)** | `/painel/*` ao abrir mesa | PNG pontual; TTL + uso único |
 
 O cardápio público e a landing **não** geram claim. Modo comanda **só** após escanear o QR do garçom.

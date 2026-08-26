@@ -18,6 +18,7 @@ export type BillingGateway = {
   checkoutMode: CheckoutMode;
   methods: PaymentMethod[];
   requiresPayer: boolean;
+  requiresCreditCard?: boolean;
   available: boolean;
 };
 

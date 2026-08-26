@@ -35,9 +35,9 @@ Site: http://localhost:3000
 | App | URL |
 |-----|-----|
 | Web | http://localhost:3000 |
-| Cardápio seed | http://localhost:3000/bar-do-tiao |
+| Cardápio seed | http://localhost:3000/seu-estabelecimento |
 | Pedidos (Kanban) | http://localhost:3000/painel/pedidos |
-| Meu bar | http://localhost:3000/painel/configuracoes/bar |
+| Estabelecimento | http://localhost:3000/painel/configuracoes/bar |
 | Mesas | http://localhost:3000/painel/configuracoes/mesas |
 | Chamada | http://localhost:3000/painel/configuracoes/chamada |
 | Chamados | http://localhost:3000/painel/chamados |
@@ -45,10 +45,12 @@ Site: http://localhost:3000
 | Responsável | http://localhost:3000/painel/configuracoes/responsavel |
 | Pagamento | http://localhost:3000/painel/pagamento |
 | Garçom | http://localhost:3000/garcom |
-| PIN join | http://localhost:3000/bar-do-tiao/entrar |
+| PIN join | http://localhost:3000/seu-estabelecimento/entrar (redirect no plano Cardápio) |
 | Console | http://localhost:3000/admin |
+| Equipe (console) | http://localhost:3000/admin/equipe |
+| Integrações | http://localhost:3000/admin/integracoes |
 
-Login demo abre direto o Kanban. Garçom demo: `garcom@bardotiao.local` / `demo1234`. Operador: `ops@eaimesa.local` / `demo1234`.
+Login demo (plano Cardápio) abre o painel do estabelecimento. Dono: `dono@seuestabelecimento.com` / `Teste@123`. Operador: `ops@eaimesa.local` / `Teste@123`. Sem garçom demo no seed.
 
 Não há segundo front na porta 3001.
 
@@ -69,8 +71,8 @@ O Next já escuta em `0.0.0.0:3000`. Firewall: permitir Node/Terminal.
 
 | URL | Uso |
 |-----|-----|
-| `http://mac-filipe.local:3000/bar-do-tiao` | Cardápio público |
-| `http://mac-filipe.local:3000/bar-do-tiao/entrar` | PIN join |
+| `http://mac-filipe.local:3000/seu-estabelecimento` | Cardápio público |
+| `http://mac-filipe.local:3000/seu-estabelecimento/entrar` | PIN join (redirect no seed Cardápio) |
 | `http://mac-filipe.local:3000/garcom` | App garçom |
 
 `http://mac-filipe.local` e o IP da LAN **não** são contexto seguro: `crypto.randomUUID` some no Chrome/Safari. O carrinho gera o `Idempotency-Key` com fallback.
@@ -130,7 +132,7 @@ No GitHub: **Settings → Secrets and variables → Actions**.
 | `NEXT_PUBLIC_API_URL` | `develop` | API Laravel de staging (ex. `https://apidev.eaimesa.com`) |
 | `NEXT_PUBLIC_APP_URL_PRD` | `main` | Origem do front de produção (ex. `https://eaimesa.com`) |
 | `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
-| `STATIC_SLUGS` | ambos | Opcional. Default do código: `bar-do-tiao,cafe-da-lina` |
+| `STATIC_SLUGS` | ambos | Opcional. Default do código: `seu-estabelecimento` |
 
 O job faz sync incremental. Antes do upload, `scripts/ftp-prepare.py` recria as pastas do `out/` e apaga `.ftp-deploy-sync-state.json` se o wipe anterior deixou o servidor inconsistente (FTP 550 em `__venue/bem-vindo/`). As pastas DEV e PRD têm que ser **diferentes**. Hashes antigos em `_next/` podem sobrar; o HTML novo aponta só para os arquivos do último build.
 

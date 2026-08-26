@@ -37,7 +37,7 @@ Não existem `apps/guest` nem `apps/staff`.
 ## Multi-tenant
 
 - Toda entidade operacional tem `venue_id`.
-- URL pública do cardápio: `venue.slug` (`bar-do-tiao`).
+- URL pública do cardápio: `venue.slug` (`seu-estabelecimento`).
 - `venue.public_id` é opaco e estável (uso interno / claims futuros).
 - Sessão do dono carrega `account_id` + `venue_id` + `role=owner` — nunca confiar no body para tenancy.
 - Staff JWT carrega `venue_id` + `role` (`owner` | `staff`). Perfil caixa/garçom/painel: `member.role`. Painel ainda leva `categoryIds`.
@@ -58,7 +58,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel/configuracoes/chamada` | Ligar/desligar “Chamar garçom” + TTL (ADR-026) |
 | `/painel/configuracoes/equipe` | Staff / caixa / painel |
 | `/painel/configuracoes/responsavel` | Responsável / pagador Asaas ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)) |
-| `/painel/pagamento` | Checkout (cartão ou PIX). `/painel/bar/plano` redireciona para cá |
+| `/painel/pagamento` | Checkout (cartão, PIX, cartões salvos, upgrade/downgrade). `/painel/bar/plano` redireciona para cá |
 | `/painel/chamados` | Fila “chamar garçom” (plano Cardápio / ADR-026) |
 | `/painel/cardapio`, `/painel/bar/*`, `/painel/equipe` | Redirects legados |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |
@@ -69,7 +69,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/garcom` | Mesas do garçom |
 | `/garcom/pedidos` | Kanban do garçom |
 | `/admin/login`, `/admin` | Console da plataforma (operador) |
-| `/admin/bares`, `/admin/planos`, `/admin/logs` | Tenants, catálogo e logs Laravel |
+| `/admin/bares`, `/admin/equipe`, `/admin/planos`, `/admin/logs`, `/admin/integracoes` | Tenants, operadores SaaS, catálogo, logs Laravel e webhooks |
 
 ## Integrações
 

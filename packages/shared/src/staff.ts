@@ -20,7 +20,7 @@ export function isPanelMember(session: {
   return session.role === "staff" && session.member?.role === "panel";
 }
 
-/** Dono e caixa sempre; garçom só se o bar permitir. Painel (KDS) nunca encerra. Campo ausente = true (legado). */
+/** Dono e caixa sempre; garçom só se o estabelecimento permitir. Painel (KDS) nunca encerra. Campo ausente = true (legado). */
 export function sessionCanCloseTabs(session: {
   role: string;
   member?: { role?: string | null } | null;

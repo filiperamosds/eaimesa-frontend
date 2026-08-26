@@ -6,7 +6,7 @@ Monitor na parede da cozinha ou do bar: só a fila, só os itens daquela estaç�
 
 - Perfil **Painel** na equipe (`member.role = panel`)
 - Cadastro: o dono marca **uma ou mais categorias** do cardápio para aquele usuário
-- Login → `/painel/pedidos` (Kanban cheio de tela). Sem mesas, cardápio, Meu bar
+- Login → `/painel/pedidos` (Kanban cheio de tela). Sem mesas, cardápio, Estabelecimento
 - Pedido com item da categoria chega nesse Kanban; o outro monitor não vê esse item
 - `GET /v1/staff/orders` filtrado; itens com `categoryId`
 - UI kiosk: Sair. Sem “Mesas e comandas”
@@ -20,7 +20,7 @@ Monitor na parede da cozinha ou do bar: só a fila, só os itens daquela estaç�
 
 ## Fluxo
 
-1. Dono cadastra “Cozinha” (perfil Painel + categorias de comida) e “Bar” (bebidas) em **Meu bar → Equipe**.
+1. Dono cadastra “Cozinha” (perfil Painel + categorias de comida) e “Bar” (bebidas) em **Configurações → Equipe**.
 2. Tablet da cozinha entra com o login da Cozinha → só o Kanban da comida.
 3. Guest ou garçom lança um pedido misto (porção + cerveja): cozinha vê a porção; bar vê a cerveja.
 4. Cada estação avança o status do **pedido** (ciclo compartilhado).

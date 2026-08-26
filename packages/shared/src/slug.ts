@@ -34,3 +34,23 @@ export function normalizeSlug(raw: string): string {
 export function isReservedSlug(slug: string): boolean {
   return (RESERVED_SLUGS as readonly string[]).includes(slug);
 }
+
+/** "Seu Estabelecimento" → "seu-estabelecimento". Pode ficar curto demais até o nome ter 3 caracteres úteis. */
+export function slugifyFromName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, SLUG_MAX);
+}
+
+/** `seu-estabelecimento` + 2 → `seu-estabelecimento-2`. */
+export function withSlugSuffix(base: string, n: number): string {
+  if (n <= 1) return base.slice(0, SLUG_MAX);
+  const suffix = `-${n}`;
+  const maxHead = Math.max(1, SLUG_MAX - suffix.length);
+  const head = base.slice(0, maxHead).replace(/-+$/g, "") || "casa";
+  return `${head}${suffix}`.slice(0, SLUG_MAX);
+}

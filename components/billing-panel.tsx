@@ -5,14 +5,20 @@ import {
   CHECKOUT_POLL_TIMEOUT_MS,
   ERROR_CODES,
   formatBrlFromCents,
+  formatSavedCardLabel,
+  isPaidPeriodOpen,
   isRepresentativeComplete,
   PAID_PERIOD_DAYS,
   PLAN_FUTURE,
   planRank,
+  upgradeQuoteLine,
   type CheckoutMode,
   type CheckoutCreditCard,
   type CheckoutPayer,
   type PaymentMethod,
+  type SavedCard,
+  type ScheduledDowngrade,
+  type UpgradeQuote,
 } from "@eaimesa/shared";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,6 +29,7 @@ import type { BillingGateway, PendingCheckout } from "../lib/load-billing-plans"
 import type { Session, Venue } from "../lib/types";
 import { PaymentForm } from "./payment-form";
 import { PlanPrice, planCtaPrice } from "./plan-price";
+import { SavedCardsPanel } from "./saved-cards-panel";
 
 type BillingPlanRow = {
   id: string;
@@ -40,10 +47,15 @@ type BillingMe = {
   entitlement: { ok: boolean; message?: string };
   canUpgrade: boolean;
   canDowngrade: boolean;
+  canScheduleDowngrade?: boolean;
+  scheduledDowngrade?: ScheduledDowngrade | null;
+  upgradeQuotes?: UpgradeQuote[];
   plans: BillingPlanRow[];
   gateway?: BillingGateway;
   pendingCheckout?: PendingCheckout | null;
   paidPeriodDays?: number;
+  savedCard?: { id?: string; last4: string; brand?: string | null } | null;
+  savedCards?: SavedCard[];
 };
 
 type CheckoutResult = {
@@ -53,13 +65,16 @@ type CheckoutResult = {
   plan: string;
   planName: string;
   amountCents: number;
+  creditCents?: number;
+  recurringAmountCents?: number;
   subscriptionStatus: string;
   currentPeriodEndsAt?: string | null;
   checkoutUrl?: string | null;
+  savedCards?: SavedCard[];
   message: string;
 };
 
-type NoticeKind = "waiting" | "confirmed" | "cancel" | "expired";
+type NoticeKind = "waiting" | "confirmed" | "cancel" | "expired" | "info";
 
 const FALLBACK_GATEWAY: BillingGateway = {
   provider: "stub",
@@ -76,11 +91,14 @@ function resolveGateway(data: BillingMe | null): BillingGateway {
   const methods = (Array.isArray(raw) ? raw : []).filter(
     (m): m is PaymentMethod => m === "card" || m === "pix",
   );
+  const mode: CheckoutMode =
+    g.checkoutMode === "hosted" || g.checkoutMode === "inline" ? g.checkoutMode : "immediate";
   return {
     provider: g.provider || FALLBACK_GATEWAY.provider,
-    checkoutMode: g.checkoutMode === "hosted" ? "hosted" : "immediate",
+    checkoutMode: mode,
     methods: methods.length ? methods : FALLBACK_GATEWAY.methods,
     requiresPayer: Boolean(g.requiresPayer),
+    requiresCreditCard: Boolean(g.requiresCreditCard),
     available: g.available !== false,
   };
 }
@@ -90,9 +108,24 @@ function checkoutErrorMessage(err: unknown): string {
     if (err.code === ERROR_CODES.PAYER_REQUIRED) {
       return "Cadastre o responsável em Configurações ou informe o pagador no checkout.";
     }
+    if (err.code === ERROR_CODES.ALREADY_SUBSCRIBED) {
+      return "Este plano já está ativo. Troque de plano ou gerencie o cartão.";
+    }
+    if (err.code === ERROR_CODES.PLAN_DOWNGRADE_LOCKED) {
+      return "Não dá para descer de plano no meio da vigência. Você pode agendar o downgrade para o fim do período pago.";
+    }
+    if (err.code === ERROR_CODES.CREDIT_CARD_REQUIRED || err.code === ERROR_CODES.CARD_REQUIRED) {
+      return "Informe os dados do cartão ou use um cartão salvo.";
+    }
     return err.message;
   }
   return "Não foi possível concluir o pagamento.";
+}
+
+function formatAt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("pt-BR");
 }
 
 function stripCheckoutQuery() {
@@ -102,6 +135,10 @@ function stripCheckoutQuery() {
   url.searchParams.delete("checkout");
   const next = `${url.pathname}${url.search}${url.hash}`;
   window.history.replaceState({}, "", next);
+}
+
+function quoteFor(data: BillingMe, planId: string): UpgradeQuote | undefined {
+  return (data.upgradeQuotes ?? []).find((q) => q.plan === planId);
 }
 
 export function BillingPanel() {
@@ -114,6 +151,7 @@ export function BillingPanel() {
   const [pending, setPending] = useState(false);
   const [polling, setPolling] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
+  const [lockedDowngradePlan, setLockedDowngradePlan] = useState<string | null>(null);
   const pollAbort = useRef(false);
 
   async function load(): Promise<BillingMe> {
@@ -180,12 +218,21 @@ export function BillingPanel() {
         const wanted = params.get("plano") ?? params.get("plan");
         const fromQuery = wanted && me.plans.some((p) => p.id === wanted) ? wanted : null;
         const onPagamento = path.includes("/pagamento");
+        const paidOpen = isPaidPeriodOpen(me.venue);
+        const queryIsCurrent = fromQuery === me.venue.plan && paidOpen;
         const openId =
-          fromQuery ??
-          (onPagamento
-            ? (me.plans.some((p) => p.id === me.venue.plan) ? me.venue.plan : (me.plans[0]?.id ?? null))
-            : null);
+          fromQuery && !queryIsCurrent
+            ? fromQuery
+            : onPagamento && !paidOpen
+              ? (me.plans.some((p) => p.id === me.venue.plan) ? me.venue.plan : (me.plans[0]?.id ?? null))
+              : null;
         if (openId) setCheckoutPlan(openId);
+        if (queryIsCurrent) {
+          setNotice({
+            kind: "info",
+            text: "Este plano já está ativo. Gerencie o cartão ou escolha outro plano.",
+          });
+        }
 
         const flag = params.get("checkout");
         stripCheckoutQuery();
@@ -224,7 +271,48 @@ export function BillingPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path]);
 
-  async function pay(plan: string, method: PaymentMethod, payer?: CheckoutPayer, creditCard?: CheckoutCreditCard) {
+  function scrollToCards() {
+    setCheckoutPlan(null);
+    document.getElementById("cartoes")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function scheduleDowngrade(plan: string) {
+    setError(null);
+    setSuccess(null);
+    setNotice(null);
+    setPending(true);
+    try {
+      const result = await api<{
+        ok?: boolean;
+        scheduledPlanName?: string;
+        scheduledPlanAt?: string;
+        message?: string;
+      }>("/v1/billing/schedule-downgrade", {
+        method: "POST",
+        body: JSON.stringify({ plan }),
+      });
+      setCheckoutPlan(null);
+      setLockedDowngradePlan(null);
+      setNotice({
+        kind: "info",
+        text:
+          result.message ??
+          `Downgrade agendado${result.scheduledPlanAt ? ` para ${formatAt(result.scheduledPlanAt)}` : ""}.`,
+      });
+      await load();
+    } catch (err) {
+      setError(checkoutErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function pay(
+    plan: string,
+    method: PaymentMethod,
+    payer?: CheckoutPayer,
+    creditCard?: CheckoutCreditCard,
+  ) {
     const gateway = resolveGateway(data);
     if (!gateway.available) {
       setError("Pagamento indisponível no momento.");
@@ -233,6 +321,7 @@ export function BillingPanel() {
     setError(null);
     setSuccess(null);
     setNotice(null);
+    setLockedDowngradePlan(null);
     setPending(true);
     try {
       const body: {
@@ -259,6 +348,17 @@ export function BillingPanel() {
       }
       setError(result.message || "Não foi possível iniciar o pagamento.");
     } catch (err) {
+      if (err instanceof ApiError && err.code === ERROR_CODES.ALREADY_SUBSCRIBED) {
+        setCheckoutPlan(null);
+        setError(checkoutErrorMessage(err));
+        return;
+      }
+      if (err instanceof ApiError && err.code === ERROR_CODES.PLAN_DOWNGRADE_LOCKED) {
+        setCheckoutPlan(null);
+        setLockedDowngradePlan(plan);
+        setError(checkoutErrorMessage(err));
+        return;
+      }
       setError(checkoutErrorMessage(err));
     } finally {
       setPending(false);
@@ -276,13 +376,31 @@ export function BillingPanel() {
   const cols = data.plans.length >= 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2";
   const hosted = gateway.checkoutMode === "hosted";
   const checkoutMode: CheckoutMode = gateway.checkoutMode;
+  const asaas = gateway.provider === "asaas" || hosted || checkoutMode === "inline";
   const payDisabled = pending || polling || !gateway.available;
   const paidDays = data.paidPeriodDays ?? PAID_PERIOD_DAYS;
   const stacked = stackedPeriodCopy(data.venue, paidDays);
+  const paidOpen = isPaidPeriodOpen(data.venue);
+  const savedCards = data.savedCards?.length
+    ? data.savedCards
+    : data.savedCard?.last4
+      ? [
+          {
+            id: data.savedCard.id ?? "legacy",
+            last4: data.savedCard.last4,
+            brand: data.savedCard.brand,
+            isDefault: true,
+          },
+        ]
+      : [];
+  const defaultCard = savedCards.find((c) => c.isDefault) ?? savedCards[0] ?? null;
+  const selectedQuote = selected ? quoteFor(data, selected.id) : undefined;
+  const chargeCents = selectedQuote?.amountCents ?? selected?.effectivePriceCents ?? selected?.priceCents ?? 0;
+  const representativeOk = isRepresentativeComplete(data.venue.representative);
   const noticeClass =
     notice?.kind === "confirmed"
       ? "border-sage/40 bg-sage/10"
-      : notice?.kind === "waiting"
+      : notice?.kind === "waiting" || notice?.kind === "info"
         ? "border-line bg-paper-2/60"
         : "border-chili/30 bg-chili/5";
 
@@ -294,16 +412,32 @@ export function BillingPanel() {
         <p className="mt-2 text-sm text-ink-soft">
           Status: {data.venue.subscriptionStatus}
           {data.venue.subscriptionStatus === "trial" && data.venue.trialEndsAt
-            ? ` · trial até ${new Date(data.venue.trialEndsAt).toLocaleDateString("pt-BR")}`
+            ? ` · trial até ${formatAt(data.venue.trialEndsAt)}`
             : null}
           {data.venue.currentPeriodEndsAt
-            ? ` · vigência até ${new Date(data.venue.currentPeriodEndsAt).toLocaleDateString("pt-BR")}`
+            ? ` · vigência até ${formatAt(data.venue.currentPeriodEndsAt)}`
             : null}
         </p>
+        {defaultCard ? (
+          <p className="mt-2 text-sm text-ink-soft">Cartão: {formatSavedCardLabel(defaultCard)}</p>
+        ) : null}
         {!data.entitlement.ok ? (
           <p className="mt-3 text-sm text-chili">{data.entitlement.message}</p>
         ) : null}
       </div>
+
+      {data.scheduledDowngrade?.at ? (
+        <div className="rounded-2xl border border-amber/40 bg-amber/10 p-5">
+          <p className="text-sm font-medium">
+            Muda em {formatAt(data.scheduledDowngrade.at)}
+          </p>
+          <p className="mt-1 text-sm text-ink-soft">
+            No fim da vigência o plano passa para{" "}
+            {data.scheduledDowngrade.planName ?? data.scheduledDowngrade.plan}. Até lá o plano atual
+            continua.
+          </p>
+        </div>
+      ) : null}
 
       {!gateway.available ? (
         <p className="rounded-2xl border border-chili/30 bg-chili/5 p-4 text-sm text-chili">
@@ -322,7 +456,8 @@ export function BillingPanel() {
         <div className="rounded-2xl border border-line bg-paper-2/60 p-5">
           <p className="text-sm font-medium">Há um pagamento em andamento.</p>
           <p className="mt-1 text-sm text-ink-soft">
-            Continue na página do provedor. O plano só fica ativo depois da confirmação.
+            Continue na página do provedor. O plano só fica ativo depois da confirmação. PIX exige um
+            novo pagamento a cada renovação.
           </p>
           <button
             type="button"
@@ -338,9 +473,12 @@ export function BillingPanel() {
         <div className="rounded-2xl border border-sage/40 bg-sage/10 p-5">
           <p className="text-sm font-medium text-sage">Pagamento aprovado</p>
           <p className="mt-1 text-sm">
-            {success.planName} · {formatBrlFromCents(success.amountCents)}
+            {success.planName} · hoje {formatBrlFromCents(success.amountCents)}
+            {success.creditCents ? ` (crédito ${formatBrlFromCents(success.creditCents)})` : null}
+            {success.recurringAmountCents
+              ? ` · depois ${formatBrlFromCents(success.recurringAmountCents)}/mês`
+              : null}
             {success.method ? ` · ${success.method === "pix" ? "PIX" : "cartão"}` : null}
-            {success.provider ? ` · ${success.provider}` : null}
           </p>
           <p className="mt-1 text-sm text-ink-soft">{success.message}</p>
         </div>
@@ -348,13 +486,42 @@ export function BillingPanel() {
 
       {error ? <p className="text-sm text-chili">{error}</p> : null}
 
+      {lockedDowngradePlan ? (
+        <div className="rounded-2xl border border-line bg-paper-2/60 p-5">
+          <p className="text-sm font-medium">Agendar downgrade</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            O plano mais barato começa no fim da vigência atual
+            {data.venue.currentPeriodEndsAt ? ` (${formatAt(data.venue.currentPeriodEndsAt)})` : ""}.
+            Até lá nada muda no acesso.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-primary !py-2 text-sm"
+              disabled={payDisabled}
+              onClick={() => void scheduleDowngrade(lockedDowngradePlan)}
+            >
+              Agendar downgrade
+            </button>
+            <button
+              type="button"
+              className="btn-ghost text-sm"
+              disabled={pending}
+              onClick={() => setLockedDowngradePlan(null)}
+            >
+              Agora não
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {selected ? (
-        gateway.provider === "asaas" && !isRepresentativeComplete(data.venue.representative) ? (
+        gateway.provider === "asaas" && !representativeOk ? (
           <div className="rounded-2xl border border-chili/30 bg-chili/5 p-5">
             <p className="text-sm font-medium text-chili">Cadastre o responsável</p>
             <p className="mt-1 text-sm text-ink-soft">
-              Para cartão/PIX no Asaas é preciso nome, CPF/CNPJ, e-mail, telefone, CEP e número.
-              Sem isso o checkout falha com PAYER_REQUIRED.
+              Para cartão no Asaas é preciso nome, CPF/CNPJ, e-mail, telefone, CEP e número. Sem isso
+              o checkout falha com PAYER_REQUIRED.
             </p>
             <Link
               href="/painel/configuracoes/responsavel"
@@ -370,12 +537,29 @@ export function BillingPanel() {
               Voltar aos planos
             </button>
           </div>
+        ) : paidOpen && selected.id === current ? (
+          <div className="rounded-2xl border border-line bg-paper-2/60 p-5">
+            <p className="text-sm font-medium">Este plano já está ativo</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              Não é possível pagar de novo o mesmo SKU. Troque de plano ou gerencie o cartão da
+              assinatura.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className="btn-primary !py-2 text-sm" onClick={scrollToCards}>
+                Gerenciar cartão
+              </button>
+              <button type="button" className="btn-ghost text-sm" onClick={() => setCheckoutPlan(null)}>
+                Trocar plano
+              </button>
+            </div>
+          </div>
         ) : (
           <PaymentForm
             planName={selected.name}
-            amountCents={selected.effectivePriceCents ?? selected.priceCents}
+            amountCents={chargeCents}
             listPriceCents={selected.priceCents}
             promoPriceCents={selected.promoPriceCents}
+            upgradeQuote={selectedQuote ?? null}
             pending={pending}
             checkoutMode={checkoutMode}
             requiresPayer={gateway.requiresPayer}
@@ -384,6 +568,7 @@ export function BillingPanel() {
             initialPayer={data.venue.representative ?? null}
             provider={gateway.provider}
             coverageNote={stacked.text}
+            savedCards={savedCards}
             onCancel={() => {
               if (!pending) setCheckoutPlan(null);
             }}
@@ -399,8 +584,13 @@ export function BillingPanel() {
             const upgrade = !isCurrent && rank > currentRank;
             const downgrade = !isCurrent && rank < currentRank;
             const lateral = !isCurrent && rank === currentRank;
-            const locked = downgrade && !data.canDowngrade;
-            const enabled = isCurrent || upgrade || lateral || (downgrade && data.canDowngrade);
+            const already = isCurrent && paidOpen;
+            const schedule = downgrade && paidOpen;
+            const quote = quoteFor(data, p.id);
+            const enabled =
+              !already &&
+              (isCurrent || upgrade || lateral || (downgrade && !paidOpen) || schedule) &&
+              !payDisabled;
             return (
               <div key={p.id} className="surface p-5">
                 <p className="font-serif text-xl">{p.name}</p>
@@ -412,42 +602,78 @@ export function BillingPanel() {
                     className="text-lg"
                   />
                 </p>
+                {quote?.isUpgrade ? (
+                  <p className="mt-1 text-sm text-ink-soft">{upgradeQuoteLine(quote)}</p>
+                ) : null}
                 <p className="mt-2 text-sm text-ink-soft">{p.blurb}</p>
                 <ul className="mt-3 space-y-1 text-sm text-ink-soft">
                   {p.features.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-                <button
-                  type="button"
-                  disabled={!enabled || payDisabled}
-                  onClick={() => {
-                    setSuccess(null);
-                    setError(null);
-                    setCheckoutPlan(p.id);
-                  }}
-                  className="btn-primary mt-4 !py-2 text-sm disabled:opacity-50"
-                >
-                  {isCurrent
-                    ? `Pagar ${planCtaPrice(p)}`
-                    : upgrade
-                      ? `Subir · ${planCtaPrice(p)}`
-                      : lateral
-                        ? `Trocar · ${planCtaPrice(p)}`
-                        : locked
-                          ? "Disponível no fim da vigência"
-                          : `Descer · ${planCtaPrice(p)}`}
-                </button>
+                {already ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button" disabled className="btn-primary !py-2 text-sm disabled:opacity-50">
+                      Plano atual
+                    </button>
+                    <button type="button" className="btn-ghost text-sm" onClick={scrollToCards}>
+                      Gerenciar cartão
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!enabled}
+                    onClick={() => {
+                      setSuccess(null);
+                      setError(null);
+                      setLockedDowngradePlan(null);
+                      if (schedule) {
+                        const when = data.venue.currentPeriodEndsAt
+                          ? formatAt(data.venue.currentPeriodEndsAt)
+                          : "o fim da vigência";
+                        if (!confirm(`Agendar ${p.name} para ${when}? Até lá o plano atual continua.`)) {
+                          return;
+                        }
+                        void scheduleDowngrade(p.id);
+                        return;
+                      }
+                      setCheckoutPlan(p.id);
+                    }}
+                    className="btn-primary mt-4 !py-2 text-sm disabled:opacity-50"
+                  >
+                    {isCurrent
+                      ? `Pagar ${planCtaPrice(p)}`
+                      : upgrade
+                        ? `Subir · ${quote ? upgradeQuoteLine(quote) : planCtaPrice(p)}`
+                        : lateral
+                          ? `Trocar · ${planCtaPrice(p)}`
+                          : schedule
+                            ? "Agendar downgrade"
+                            : `Descer · ${planCtaPrice(p)}`}
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       )}
+
+      <SavedCardsPanel
+        cards={savedCards}
+        asaas={asaas}
+        representativeOk={representativeOk}
+        disabled={payDisabled}
+        onReload={async () => {
+          await load();
+        }}
+      />
+
       <p className="text-xs text-ink-soft">
         {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb}{" "}
-        {hosted
-          ? "Cartão é digitado neste painel e enviado ao Asaas. Guardamos só o token (não o número). PIX continua na página do provedor."
-          : "O POST de cartão leva plano, meio e os dados do cartão. O stub não cobra de verdade."}
+        {asaas
+          ? "Cartão é informado neste painel e enviado ao provedor. Guardamos só o token e os últimos 4 dígitos. PIX continua na página do provedor e pede um novo pagamento a cada mês."
+          : "Pagamento simulado — sem cobrança real."}
       </p>
     </section>
   );

@@ -21,8 +21,12 @@ export const CHECKOUT_STUB_DELAY_MS = 2000;
 export const PAYMENT_METHODS = ["card", "pix"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const CHECKOUT_MODES = ["immediate", "hosted"] as const;
+/** `inline` = cartão no painel (Asaas). `hosted` = PIX na página do provedor. */
+export const CHECKOUT_MODES = ["immediate", "hosted", "inline"] as const;
 export type CheckoutMode = (typeof CHECKOUT_MODES)[number];
+
+/** Máximo de cartões tokenizados por venue (API). */
+export const SAVED_CARDS_MAX = 5;
 
 export const CHECKOUT_RETURN = ["ok", "cancel", "expired"] as const;
 export type CheckoutReturn = (typeof CHECKOUT_RETURN)[number];
@@ -42,7 +46,7 @@ export const PLANS: Record<
     priceCents: 4900,
     blurb: "Cardápio público com a sua URL. Sem pedido no celular.",
     features: [
-      "URL pública /seu-bar",
+      "URL pública do cardápio",
       "Categorias, itens e foto",
       "Mesas e QR por mesa (até 15)",
       "1 estabelecimento",
@@ -77,7 +81,7 @@ export type PlanCatalogItem = {
 export const PLAN_FUTURE = {
   id: PLAN_FUTURE_ID,
   name: "Equipamento na mesa",
-  blurb: "Hardware/tablet na mesa. Fora desta fatia — em breve.",
+  blurb: "Hardware/tablet na mesa. Em breve.",
 };
 
 export const PLAN_KIND_LABEL: Record<PlanKind, string> = {

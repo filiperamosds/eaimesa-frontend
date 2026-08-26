@@ -19,10 +19,10 @@ export function ConfigBarPanels() {
   return (
     <div className="space-y-12">
       <div>
-        <h2 className="font-serif text-2xl">Meu bar</h2>
+        <h2 className="font-serif text-2xl">Meu estabelecimento</h2>
         <p className="mt-2 mb-8 text-ink-soft">
-          O slug vira a rota pública. Exemplo: /bar-do-tiao. Palavras do produto (login, painel) não
-          podem ser usadas.
+          A URL do cardápio sai do nome. Se o caminho já existir, o sistema acrescenta um número
+          (seu-estabelecimento-2).
         </p>
         <VenueSettings />
       </div>

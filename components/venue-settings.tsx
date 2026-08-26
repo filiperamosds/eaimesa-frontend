@@ -1,26 +1,28 @@
 "use client";
 
-import { planAllowsService } from "@eaimesa/shared";
+import { ERROR_CODES, planAllowsService, slugifyFromName, withSlugSuffix } from "@eaimesa/shared";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { useMenuSlugFromName } from "../lib/menu-slug";
 import type { Venue } from "../lib/types";
 import { MenuQrModal } from "./menu-qr-modal";
 
 export function VenueSettings() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const derivedSlug = useMenuSlugFromName(name, venue?.slug ?? null);
+  const [nameTouched, setNameTouched] = useState(false);
+  const slug = venue && !nameTouched ? venue.slug : derivedSlug;
 
   useEffect(() => {
     api<Venue>("/v1/owner/venue").then((v) => {
       setVenue(v);
       setName(v.name);
-      setSlug(v.slug);
     });
   }, []);
 
@@ -30,12 +32,26 @@ export function VenueSettings() {
     setMsg(null);
     setPending(true);
     try {
-      const v = await api<Venue>("/v1/owner/venue", {
-        method: "PATCH",
-        body: JSON.stringify({ name, slug }),
-      });
+      let nextSlug = slug;
+      let v: Venue | null = null;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        try {
+          v = await api<Venue>("/v1/owner/venue", {
+            method: "PATCH",
+            body: JSON.stringify({ name, slug: nextSlug }),
+          });
+          break;
+        } catch (err) {
+          const taken = err instanceof ApiError && err.code === ERROR_CODES.SLUG_TAKEN;
+          if (!taken || attempt === 7) throw err;
+          nextSlug = withSlugSuffix(slugifyFromName(name), attempt + 2);
+        }
+      }
+      if (!v) throw new Error("Não foi possível salvar.");
       setVenue(v);
-      setMsg("Salvo. A URL pública do cardápio mudou se você alterou o slug.");
+      setName(v.name);
+      setNameTouched(false);
+      setMsg("Salvo.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível salvar.");
     } finally {
@@ -54,22 +70,18 @@ export function VenueSettings() {
           <span className="mb-1 block font-medium">Nome</span>
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameTouched(true);
+            }}
             className="field"
             required
           />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-medium">Slug (URL)</span>
-          <input
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            className="field"
-            required
-          />
-          <p className="mt-1 text-xs text-ink-soft">
-            Cardápio em /{slug} · id interno {venue.publicId}
-          </p>
+          <span className="mb-1 block font-medium">URL do cardápio</span>
+          <input value={slug} className="field" disabled readOnly />
+          <p className="mt-1 text-xs text-ink-soft">Cardápio em /{slug}</p>
         </label>
         {error ? <p className="text-sm text-chili">{error}</p> : null}
         {msg ? <p className="text-sm text-sage">{msg}</p> : null}
@@ -89,7 +101,7 @@ export function VenueSettings() {
           .{" "}
           {service
             ? "QR fixo abre o cardápio; comanda continua com o QR do garçom."
-            : "No Cardápio o QR da mesa leva ?mesa= para presença e chamada."}{" "}
+            : "No Cardápio o QR da mesa identifica o lugar para a chamada."}{" "}
           QR geral (porta / Instagram):{" "}
           <span className="font-medium text-ink">/{venue.slug}</span>.
         </p>

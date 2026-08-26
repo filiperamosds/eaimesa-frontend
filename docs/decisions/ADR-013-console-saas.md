@@ -13,7 +13,7 @@ O spec de segurança pedia SSO + 2FA. Ainda não há IdP.
 
 - Um único Next (repo **eaimesa-frontend**): rotas `/admin/*`.
 - Papel `platform` com cookie **`eaimesa_platform`** e JWT próprio (`PLATFORM_JWT_SECRET`). Nunca o mesmo cookie/JWT do dono ou do guest.
-- Auth desta fatia: e-mail + senha em `platform_users` (seed local). SSO/2FA depois.
+- Auth desta fatia: e-mail + senha em `platform_users` (seed local). SSO/2FA depois. Operadores extras só com cookie platform (`POST /v1/platform/users` em `/admin/equipe`) — sem cadastro público.
 - Catálogo de planos no Postgres (`plan_catalog` + `platform_settings`). `GET /v1/billing/plans` deixa de ser constante só no código.
 - Checkouts stub geram `billing_events` para o dashboard.
 

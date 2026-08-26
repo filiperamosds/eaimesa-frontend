@@ -15,13 +15,13 @@ export default async function HomePage() {
         <section className="relative overflow-hidden">
           <div className="mx-auto grid max-w-6xl gap-14 px-5 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
             <div>
-              <p className="eyebrow">SaaS para bares</p>
+              <p className="eyebrow">SaaS para estabelecimentos</p>
               <h1 className="mt-4 font-serif text-4xl leading-[1.08] tracking-tight text-ink sm:text-6xl">
                 O cardápio no celular.
-                <span className="block text-chili">A fila, na tela do bar.</span>
+                <span className="block text-chili">A fila, na tela do estabelecimento.</span>
               </h1>
               <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
-                Uma URL sua — tipo <span className="font-medium text-ink">/bar-do-tiao</span>. Sem app
+                Uma URL sua — tipo <span className="font-medium text-ink">/seu-estabelecimento</span>. Sem app
                 para instalar, sem tablet sujo na mesa. Pedido pelo QR do garçom entra depois; o link
                 público nunca abre comanda sozinho.
               </p>
@@ -55,9 +55,9 @@ export default async function HomePage() {
               <div className="surface overflow-hidden p-1">
                 <div className="rounded-[1.15rem] bg-night px-5 pb-6 pt-4 text-white">
                   <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-white/45">
-                    eaimesa.com.br/bar-do-tiao
+                    eaimesa.com.br/seu-estabelecimento
                   </p>
-                  <h2 className="mt-3 font-serif text-3xl">Bar do Tião</h2>
+                  <h2 className="mt-3 font-serif text-3xl">Seu Estabelecimento</h2>
                   <div className="mt-5 space-y-3">
                     {[
                       ["Calabresa acebolada", "R$ 32,90"],
@@ -84,8 +84,8 @@ export default async function HomePage() {
             {[
               {
                 n: "01",
-                t: "Cadastre o bar",
-                d: "E-mail, senha e um slug. Em minutos você tem /seu-bar no ar.",
+                t: "Cadastre o estabelecimento",
+                d: "E-mail, senha e a URL do cardápio. Em minutos você está no ar.",
               },
               {
                 n: "02",
@@ -109,7 +109,7 @@ export default async function HomePage() {
 
         <section className="mx-auto max-w-6xl px-5 py-20">
           <p className="eyebrow">Planos</p>
-          <h2 className="mt-3 font-serif text-4xl">Escolha o que o bar precisa</h2>
+          <h2 className="mt-3 font-serif text-4xl">Escolha o que o estabelecimento precisa</h2>
           <p className="mt-3 max-w-xl text-ink-soft">
             Dois tipos de produto — Cardápio ou Auto atendimento — e quantos SKUs o operador
             cadastrar. Trial de {catalog.trialDays} dias. A cobrança (cartão ou PIX) aparece no

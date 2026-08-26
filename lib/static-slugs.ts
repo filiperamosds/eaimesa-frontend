@@ -1,8 +1,8 @@
 export const FALLBACK_STATIC_SLUG = "__venue";
 
-/** Slugs pré-gerados no `pnpm build`. Novos bares caem no HTML de `__venue` via `.htaccess`. */
+/** Slugs pré-gerados no `pnpm build`. Novos estabelecimentos caem no HTML de `__venue` via `.htaccess`. */
 export function venueStaticParams(): { slug: string }[] {
-  const fromEnv = (process.env.STATIC_SLUGS ?? "bar-do-tiao,cafe-da-lina")
+  const fromEnv = (process.env.STATIC_SLUGS ?? "seu-estabelecimento")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);

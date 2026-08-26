@@ -15,11 +15,11 @@ Login do dono.
 - `id`, `owner_account_id` → Account
 - `name`, `slug` UNIQUE, `public_id` UNIQUE
 - `plan`: id do catálogo (`cardapio`, `auto_atendimento` ou SKU criado no console). Sem CHECK nos dois ids seed.
-- `planKind` na API: `cardapio` | `auto_atendimento` (o que o bar pode fazer)
+- `planKind` na API: `cardapio` | `auto_atendimento` (o que o estabelecimento pode fazer)
 - `subscription_status`: `trial` | `active` | `past_due` | `suspended`
 - `accepts_orders`: true só no Auto atendimento com assinatura válida
 - `staff_can_close_tabs` (default true): se false, garçom não fecha comanda/mesa (caixa e dono sim)
-- `representative` (JSON/API camelCase): responsável / pagador Asaas — `name`, `cpfCnpj`, `email`, `phone`, `postalCode`, `addressNumber` ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)). `null` se nunca cadastrou.
+- `representative` (JSON/API camelCase): responsável / pagador Asaas — `name`, `cpfCnpj`, `email`, `phone`, `postalCode`, `addressNumber` ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)). No cadastro entram só `name` + `cpfCnpj`; o restante pode faltar até Configurações → Responsável.
 - `trial_ends_at`, `current_period_ends_at` (vigência paga)
 - Sem tabela de períodos: um pagamento soma `paid_period_days` (default 30) no **fim da cobertura atual** — `max(agora, trial_ends_at, current_period_ends_at)` — ver [ADR-019](../decisions/ADR-019-vigencia-empilhada.md).
 - Console (`PATCH /v1/platform/venues/{id}`): operador pode adiantar/estender essas datas. Sem `subscriptionStatus` no body, a API recalcula o status (exceto `suspended`). Não sincroniza o gateway.
@@ -124,6 +124,7 @@ Como na fatia 4; `table_session_id` preenchido no redeem. **Não** cria a tab pe
 Operador EaiMesa. Tabela **separada** de `accounts`.
 
 - `id`, `email` UNIQUE, `password_hash`, `name`, `active`, `created_at`
+- Seed: um bootstrap (`ops@eaimesa.local`). Novos operadores: `POST /v1/platform/users` (cookie platform). Sem cadastro público.
 
 ### PlatformSettings
 
@@ -158,10 +159,39 @@ Não guardar CPF/CNPJ nem PAN. O front envia pagador + cartão no POST de checko
 - `venue_id` UNIQUE
 - `provider`
 - `customer_id`, `subscription_id`, `checkout_id` — ids do Asaas
-- `credit_card_token` (cifrado), `card_last4`, `card_brand` — cofre Asaas; nunca PAN/CVV
+- `credit_card_token` (cifrado), `card_last4`, `card_brand` — espelho do método **default**; nunca PAN/CVV
+- `scheduled_plan`, `scheduled_plan_at` — downgrade agendado ([ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md))
 - `pending_plan`, `pending_method`, `pending_amount_cents`, `pending_event_id`, `checkout_url`
 
 Pendente some quando o webhook confirma.
+
+### VenuePaymentMethod
+
+N cartões tokenizados por venue (máx. 5). [ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md).
+
+- `venue_id`, `provider`
+- `credit_card_token` cifrado, `card_last4`, `card_brand` nullable
+- `is_default` — o que a subscription Asaas usa; ao marcar default o front mostra “assinatura atualizada”
+
+Front: `GET /v1/billing/me` → `savedCards` / `savedCard`; CRUD em `/v1/billing/cards`.
+
+### IntegrationEvent (fatia 16)
+
+Auditoria genérica de integrações (webhooks inbound primeiro). [ADR-027](../decisions/ADR-027-integration-events.md).
+
+- `id` UUID
+- `integration` — ex. `asaas`
+- `kind` — `webhook` (outros no futuro)
+- `direction` — `inbound` | `outbound`
+- `event` nullable — nome bruto do provedor (`PAYMENT_RECEIVED`, …)
+- `external_id` nullable — id do evento/cobrança no provedor
+- `status` — `received` | `processed` | `ignored` | `failed`
+- `payload` JSON — body do webhook (sem PAN/CVV; Asaas não envia)
+- `meta` JSON nullable — `{ ip, headers }` com headers **sanitizados** (sem `asaas-access-token`, `authorization`, `cookie`)
+- `error_message` nullable
+- `created_at`
+
+Lista no console (`GET /v1/platform/integration-events`) **não** devolve `payload`/`meta`. Front: `/admin/integracoes`.
 
 ## Entidades — planejadas
 
@@ -190,6 +220,10 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 - `billing_events(venue_id, created_at DESC)`
 - `billing_events(provider, provider_ref)` UNIQUE (NULLs repetíveis)
 - `venue_billing(venue_id)` UNIQUE
+- `integration_events(integration, created_at DESC)`
+- `integration_events(integration, event, created_at DESC)`
+- `integration_events(external_id)`
+- `integration_events(status, created_at DESC)`
 
 ## Regras de negócio
 
@@ -200,12 +234,13 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 5. Pedido público pelo slug **exige** comanda pessoal `open` (fatia 7). Slug sozinho não autoriza.
 6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo. Com `tabId`, a mesa vem da comanda `open` e o pedido grava `tab_id`.
 7. PIN join casa o PIN com uma **TableSession** `open`.
-8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no bar, 409 `TAB_ALREADY_OPEN`.
+8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no estabelecimento, 409 `TAB_ALREADY_OPEN`.
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`. Os dois (e o guest) podem existir juntos no browser.
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
-13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado).
+13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado) e em `venue_payment_methods` (até 5).
+14. Webhook autenticado grava `integration_events` (body + meta sanitizado); token nunca entra em `meta`.
 
 ## Planejado — fatia 15 (chamar garçom)
 
@@ -238,6 +273,7 @@ erDiagram
   PlatformUser
   PlatformSettings
   PlanCatalog
+  IntegrationEvent
 ```
 
 ## Postgres RLS (recomendado fase 1.5)

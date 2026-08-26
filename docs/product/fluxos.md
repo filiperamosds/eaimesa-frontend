@@ -11,19 +11,19 @@ sequenceDiagram
   participant API as API
   participant C as Cliente
 
-  D->>W: /cadastro (e-mail, senha, nome, slug)
+  D->>W: /cadastro (nome do estabelecimento, responsável, e-mail, senha)
   W->>API: POST /v1/auth/register
   API-->>W: Set-Cookie eaimesa_owner
   D->>W: /painel — Kanban de pedidos (abas: Pedidos, Mesas, Configurações)
   W->>API: GET /v1/owner/orders
   D->>W: /painel/configuracoes/cardapio — categorias e itens
   W->>API: CRUD /v1/owner/catalog/**
-  C->>W: GET /bar-do-tiao
-  W->>API: GET /v1/public/venues/bar-do-tiao
+  C->>W: GET /seu-estabelecimento
+  W->>API: GET /v1/public/venues/seu-estabelecimento
   API-->>C: Cardápio (somente leitura)
 ```
 
-1. Dono cria conta + venue (nome + slug único).
+1. Dono cria conta + venue (nome; slug gerado a partir do nome).
 2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor) em **Configurações → Cardápio**.
 3. Comparte `https://eaimesa.com.br/{slug}` (QR fixo na mesa, Instagram, balcão) — **só cardápio**.
 4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: **Configurações → Mesas**.
@@ -66,11 +66,11 @@ sequenceDiagram
 3. Pedido de balcão: mesa ocupada em `/garcom`, na comanda da pessoa.
 4. QR/claim do **garçom** (abre comanda): garçom em `/garcom` ou dono autenticado — fatia 4.
 
-## 1. Onboarding do bar (B2B)
+## 1. Onboarding do estabelecimento (B2B)
 
-1. Dono cria conta (e-mail + senha).
-2. Cadastra venue: nome e **slug** (`bar-do-tiao`). CNPJ, CPF responsável e OTP entram em fatia posterior.
-3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem pagador. O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
+1. Dono cria conta (e-mail + senha + nome e CPF do responsável).
+2. Cadastra venue: **nome**; o slug sai do nome (`seu-estabelecimento`, ou `seu-estabelecimento-2` se já existir). URL do cardápio não é editável.
+3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem cartão (nome e CPF do responsável já entram no cadastro). O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
 6. Divulga `/{slug}` — **não** o claim.
@@ -196,18 +196,20 @@ sequenceDiagram
 1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias) e vai para o produto. Pagamento **não** abre no cadastro. Nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) — ou com status `past_due` — o painel mostra banner para `/painel/pagamento`. Quem quiser pagar antes usa **Configurações → Pagamento**. Responsável em `/painel/configuracoes/responsavel`; no checkout Asaas o front omite `payer` se inalterado.
 2. Stub (`immediate`): (~2s) aprova e grava `active`. `currentPeriodEndsAt` = `max(agora, trial_ends_at, current_period_ends_at) + paidPeriodDays`. Front envia o cartão no POST; o stub ignora.
 3. Asaas cartão: form no painel envia `creditCard`; Laravel cobra e guarda token. PIX: redirect hosted. `?checkout=ok` não confirma.
-4. Subir `kind` Cardápio → Auto atendimento: sempre. Troca lateral (mesmo kind): sempre. Descer: só depois do fim da vigência **paga**.
+4. Subir `kind` Cardápio → Auto atendimento: sempre, com **prorrata** (`upgradeQuotes`). Troca lateral (mesmo kind): sempre. Descer no meio da vigência **paga**: agendar (`schedule-downgrade`); imediato só depois do fim (ou no trial). Plano `active` no mesmo SKU: sem novo checkout.
 5. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em equipe, pedidos, claim, PIN e comanda. **Mesas** (`/v1/owner/tables`) são liberadas para QR. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.
 
 ## 5c. Fatia 11 — console SaaS
 
 Detalhe em [fatia-11-console-saas.md](fatia-11-console-saas.md).
 
-1. Operador entra em `/admin/login` (cookie `eaimesa_platform`). Sessão válida pula o form. Independente do cookie do bar (`eaimesa_owner`).
-2. Dashboard: bares, MRR estimado, checkouts (stub e Asaas). Status/plano em português (Em trial, Ativo, Cardápio…).
+1. Operador entra em `/admin/login` (cookie `eaimesa_platform`). Sessão válida pula o form. Independente do cookie do estabelecimento (`eaimesa_owner`).
+2. Dashboard: estabelecimentos, MRR estimado, checkouts (stub e Asaas). Status/plano em português (Em trial, Ativo, Cardápio…).
 3. `/admin/bares`: lista com data de expiração; suspender / reativar; ajustar trial/vigência (`PATCH /v1/platform/venues/{id}` — admin; não mexe no Asaas).
 4. `/admin/planos`: criar SKU, preço, promo; `GET /v1/billing/plans` alimenta landing, cadastro e checkout (de/por se houver promo).
 5. `/admin/logs`: tail de `storage/logs` ([fatia 13](fatia-13-log-viewer.md)).
+6. `/admin/integracoes`: webhooks Asaas ([fatia 16](fatia-16-integration-events.md)).
+7. `/admin/equipe`: lista e cadastra operadores (`GET/POST /v1/platform/users`) — [fatia 17](fatia-17-platform-equipe.md). Sem tela pública de cadastro admin.
 
 ## 6. Venue suspenso (billing)
 

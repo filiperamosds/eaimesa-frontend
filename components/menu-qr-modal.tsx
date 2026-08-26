@@ -118,7 +118,7 @@ export function MenuQrModal({
       <div className="surface w-full max-w-md p-5">
         <p className="eyebrow">QR fixo</p>
         <h2 id="menu-qr-title" className="mt-2 font-serif text-2xl">
-          {tableLabel ? tableLabel : "Cardápio do bar"}
+          {tableLabel ? tableLabel : "Cardápio do estabelecimento"}
         </h2>
         <p className="mt-2 text-sm text-ink-soft">
           {servicePlan ? (
@@ -128,8 +128,7 @@ export function MenuQrModal({
             </>
           ) : mesaCode ? (
             <>
-              URL desta mesa: o QR inclui <span className="font-mono text-ink">?mesa=</span> só na
-              1ª abertura; depois o app guarda no aparelho e limpa a barra de endereço.
+              QR desta mesa: o celular identifica o lugar para chamar o garçom, se estiver ligado.
             </>
           ) : (
             <>QR geral do cardápio (porta / Instagram). Sem identificação de mesa.</>

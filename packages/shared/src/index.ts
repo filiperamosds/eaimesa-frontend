@@ -9,4 +9,7 @@ export * from "./phone";
 export * from "./payer";
 export * from "./uuid";
 export * from "./plans";
+export * from "./billing";
 export * from "./platform-logs";
+export * from "./platform-integration-events";
+export * from "./platform-users";

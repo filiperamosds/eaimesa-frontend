@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–13)
+## Implementado (fatias 1–17)
 
 ### Saúde
 
@@ -40,11 +40,17 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 {
   "email": "dono@bar.com",
   "password": "mínimo 8 chars",
-  "venueName": "Bar do Tião",
-  "slug": "bar-do-tiao",
-  "plan": "auto_atendimento"
+  "venueName": "Seu Estabelecimento",
+  "slug": "seu-estabelecimento",
+  "plan": "auto_atendimento",
+  "representative": {
+    "name": "Maria Silva",
+    "cpfCnpj": "12345678909"
+  }
 }
 ```
+
+O front **não deixa editar** o slug: gera a partir de `venueName` (`Seu Estabelecimento` → `seu-estabelecimento`). Se o caminho já existir (ou for reservado), usa `-2`, `-3`… (`seu-estabelecimento-2`). Confere com `GET /v1/public/venues/{slug}` (404 = livre). `representative.name` + `representative.cpfCnpj` (CPF, 11 dígitos) entram em `venue.representative`; e-mail, telefone, CEP e número continuam em Configurações → Responsável. Laravel persiste o par no register.
 
 #### POST /v1/auth/login (body)
 
@@ -63,31 +69,68 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 
 Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
 
-### Billing (fatias 10 e 12)
+### Billing (fatias 10 e 12 + ADR-028)
 
-Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas ([ADR-020](../decisions/ADR-020-cartao-no-painel.md)). **PIX** usa checkout hospedado. Confirmação PIX só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
+Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas ([ADR-020](../decisions/ADR-020-cartao-no-painel.md), [ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md)). **PIX** usa checkout hospedado. Confirmação PIX só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
 
 `GET /v1/billing/plans` e `GET /v1/billing/me` incluem:
 
 ```json
 {
   "gateway": {
-    "provider": "stub",
-    "checkoutMode": "immediate",
+    "provider": "asaas",
+    "checkoutMode": "inline",
     "methods": ["card", "pix"],
-    "requiresPayer": false,
+    "requiresPayer": true,
+    "requiresCreditCard": true,
     "available": true
   }
 }
 ```
 
-No Asaas: `checkoutMode: hosted` (PIX), `requiresPayer: true`. Cartão: captura no painel + token em `venue_billing`. `/me` ainda traz `pendingCheckout` (`url`, `plan`, `method`, `amountCents`) se a sessão PIX hosted estiver aberta.
+Stub: `checkoutMode: immediate`, `requiresPayer` / `requiresCreditCard` false. Asaas: `inline` (cartão no painel); PIX continua hosted. `/me` traz `pendingCheckout`, `savedCard` / `savedCards`, `upgradeQuotes` (prorrata), `canScheduleDowngrade`, `scheduledDowngrade`.
+
+`GET /v1/billing/me` (recorte):
+
+```json
+{
+  "venue": {},
+  "entitlement": { "ok": true },
+  "canUpgrade": true,
+  "canDowngrade": true,
+  "canScheduleDowngrade": true,
+  "scheduledDowngrade": { "plan": "cardapio", "planName": "Cardápio", "at": "2026-09-25T00:00:00.000Z" },
+  "upgradeQuotes": [
+    {
+      "plan": "auto_atendimento",
+      "planName": "Auto atendimento",
+      "listPriceCents": 14900,
+      "creditCents": 2400,
+      "amountCents": 12500,
+      "recurringAmountCents": 14900,
+      "isUpgrade": true
+    }
+  ],
+  "plans": [],
+  "gateway": {},
+  "pendingCheckout": null,
+  "savedCard": { "id": "uuid", "last4": "4156", "brand": "MASTERCARD" },
+  "savedCards": [{ "id": "uuid", "last4": "4156", "brand": "MASTERCARD", "isDefault": true }]
+}
+```
+
+UI do cartão: `**** {last4}` (e brand se houver). Upgrade: “hoje R$ amount (crédito R$ credit) · depois R$ recurring/mês”.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | GET | `/v1/billing/plans` | — | Catálogo + `gateway` + `stubDelayMs` |
-| GET | `/v1/billing/me` | Owner | Plano atual, `canUpgrade` / `canDowngrade`, `gateway`, `pendingCheckout` |
-| POST | `/v1/billing/checkout` | Owner | Inicia cobrança. Stub → `success`. Cartão Asaas → `success` + token. PIX Asaas → `pending` + `checkoutUrl` |
+| GET | `/v1/billing/me` | Owner | Plano, quotes, cartões, `scheduledDowngrade`, `gateway`, `pendingCheckout` |
+| POST | `/v1/billing/checkout` | Owner | Body `{ plan, method, payer?, creditCard? }`. Stub → `success`. Cartão Asaas → `success` + token. PIX → `pending` + `checkoutUrl`. Mesmo plano ativo → 409 `ALREADY_SUBSCRIBED`. Downgrade no meio da vigência → 409 `PLAN_DOWNGRADE_LOCKED` |
+| POST | `/v1/billing/schedule-downgrade` | Owner | `{ "plan": "cardapio" }` — agenda no fim da vigência |
+| GET | `/v1/billing/cards` | Owner | Lista cartões salvos (máx. 5) |
+| POST | `/v1/billing/cards` | Owner | `{ creditCard: { holderName, number, expiryMonth, expiryYear, ccv } }` |
+| POST | `/v1/billing/cards/{id}/default` | Owner | Marca padrão e sincroniza a subscription Asaas |
+| DELETE | `/v1/billing/cards/{id}` | Owner | Remove cartão |
 | POST | `/v1/webhooks/asaas` | Header `asaas-access-token` | Eventos Asaas. Sem cookie. |
 
 #### POST /v1/billing/checkout (body)
@@ -114,13 +157,13 @@ No Asaas: `checkoutMode: hosted` (PIX), `requiresPayer: true`. Cartão: captura 
 }
 ```
 
-`method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer`. No cartão Asaas: `creditCard` obrigatório (`CARD_REQUIRED`); CEP e número do endereço no pagador. CPF/CNPJ e PAN **não** são persistidos. O Asaas devolve `creditCardToken`; gravamos token cifrado + last4 + bandeira.
+`method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer` (ou usa o responsável salvo). No cartão Asaas: `creditCard` **ou** cartão já salvo (`CREDIT_CARD_REQUIRED` / `CARD_REQUIRED` se faltar os dois). CEP e número no pagador quando envia PAN novo. CPF/CNPJ e PAN **não** são persistidos. Token cifrado + last4 + bandeira. Cartão salvo: omitir `creditCard`.
 
-PIX: body sem `creditCard`; resposta `status: pending`, `checkoutUrl`. Cartão Asaas: `status: success` se a cobrança autorizar. Stub: `status: success`, ignora o cartão, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
+PIX: body sem `creditCard`; resposta `status: pending`, `checkoutUrl`. Cartão Asaas: `status: success` se autorizar, com `amountCents` / `creditCents` / `recurringAmountCents` / `savedCards`. Stub: `status: success`, ignora o cartão, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
 
 Callbacks de navegação do PIX (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
 
-Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`. Sem cartão no Asaas → 400 `CARD_REQUIRED`.
+Plano `active` + mesmo SKU + vigência aberta → 409 `ALREADY_SUBSCRIBED` (front esconde o checkout desse plano; CTA “Gerenciar cartão”). Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED` (front oferece agendar). Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`. Sem cartão (e sem token) → 400 `CREDIT_CARD_REQUIRED`.
 
 ### Owner — venue e catálogo
 
@@ -274,7 +317,7 @@ Resposta do claim:
   "claimId": "uuid",
   "tableId": "uuid",
   "tableLabel": "Mesa 4",
-  "claimUrl": "http://mac-filipe.local:3000/bar-do-tiao/c/{token}",
+  "claimUrl": "http://mac-filipe.local:3000/seu-estabelecimento/c/{token}",
   "expiresAt": "2026-…",
   "expiresInSeconds": 180,
   "pinDisplay": "4821"
@@ -295,9 +338,9 @@ Resposta:
 {
   "pinDisplay": "4821",
   "tableLabel": "Mesa 4",
-  "slug": "bar-do-tiao",
+  "slug": "seu-estabelecimento",
   "needsProfile": true,
-  "redirectPath": "/bar-do-tiao/bem-vindo"
+  "redirectPath": "/seu-estabelecimento/bem-vindo"
 }
 ```
 
@@ -310,13 +353,13 @@ Cookie guest: `eaimesa_guest`. Join não exige cookie. Abrir comanda exige cooki
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/guest/tabs/join` | — | `{ slug, pin }` → sessão na mesa |
-| POST | `/v1/guest/tabs` | Cookie guest | `{ name, phone }` → cria comanda. 409 `TAB_ALREADY_OPEN` se o número já tem comanda `open` no bar (mesma mesa ou outra) |
+| POST | `/v1/guest/tabs` | Cookie guest | `{ name, phone }` → cria comanda. 409 `TAB_ALREADY_OPEN` se o número já tem comanda `open` no estabelecimento (mesma mesa ou outra) |
 | GET | `/v1/guest/tab` | Cookie guest | Mesa + comanda + `pinDisplay` (PIN da mesa, para quem já entrou) |
 
 #### POST /v1/guest/tabs/join (body)
 
 ```json
-{ "slug": "bar-do-tiao", "pin": "4821" }
+{ "slug": "seu-estabelecimento", "pin": "4821" }
 ```
 
 PIN casa com **TableSession** `open`. Resposta: `tableLabel`, `slug`, `needsProfile`, `redirectPath` (`/{slug}/comanda`).
@@ -410,6 +453,8 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | POST | `/v1/platform/auth/login` | — | Set-Cookie platform |
 | POST | `/v1/platform/auth/logout` | — | Clear-Cookie |
 | GET | `/v1/platform/auth/me` | Platform | Operador atual |
+| GET | `/v1/platform/users` | Platform | Lista operadores SaaS |
+| POST | `/v1/platform/users` | Platform | Cadastra operador (`email`, `password` min 8, `name`; `active?`) |
 | GET | `/v1/platform/dashboard` | Platform | KPIs + checkouts recentes |
 | GET | `/v1/platform/venues` | Platform | Lista tenants (`q`, `plan`, `status`) |
 | PATCH | `/v1/platform/venues/{id}` | Platform | Ajuste admin de `trialEndsAt` / `currentPeriodEndsAt` / `subscriptionStatus` |
@@ -421,6 +466,27 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | PATCH | `/v1/platform/settings` | Platform | `trialDays`, `paidPeriodDays` |
 | GET | `/v1/platform/logs` | Platform | Lista `*.log` em `storage/logs` (`name`, `sizeBytes`, `modifiedAt`) |
 | GET | `/v1/platform/logs/{name}` | Platform | Tail + entries Monolog; query `lines` (1–2000, default 200), `level`, `q` |
+| GET | `/v1/platform/integration-events` | Platform | Lista webhooks/eventos; query `integration`, `event`, `status`, `q`, `limit` (1–100, default 50) — sem `payload`/`meta` |
+| GET | `/v1/platform/integration-events/{id}` | Platform | Detalhe com `payload` + `meta` |
+
+#### GET /v1/platform/users · POST /v1/platform/users
+
+Cookie `eaimesa_platform`. Sem rota pública de cadastro — só quem já está no `/admin`. Rate limit do POST: 10/min/IP. Front: `/admin/equipe`. Ver [fatia 17](../product/fatia-17-platform-equipe.md).
+
+`GET` → `{ "users": [{ "id", "email", "name", "active", "createdAt" }] }`.
+
+`POST` body:
+
+```json
+{
+  "email": "colega@eaimesa.com",
+  "password": "mínimo 8 chars",
+  "name": "Colega Ops",
+  "active": true
+}
+```
+
+Resposta 201: o mesmo shape de um item. E-mail único → 409 `EMAIL_TAKEN`. Body inválido → 400 `VALIDATION_ERROR`. Sem cookie → 401.
 
 `GET /v1/platform/venues` query `q`, `plan`, `status`. Resposta:
 
@@ -429,12 +495,12 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
   "venues": [
     {
       "id": "uuid",
-      "name": "Bar do Tião",
-      "slug": "bar-do-tiao",
-      "plan": "auto_atendimento",
-      "planName": "Auto atendimento",
+      "name": "Seu Estabelecimento",
+      "slug": "seu-estabelecimento",
+      "plan": "cardapio",
+      "planName": "Cardápio",
       "subscriptionStatus": "trial",
-      "acceptsOrders": true,
+      "acceptsOrders": false,
       "trialEndsAt": "2026-08-29T23:59:59.000Z",
       "currentPeriodEndsAt": null,
       "createdAt": "2026-08-22T12:00:00.000Z",
@@ -460,15 +526,17 @@ Cookie `eaimesa_platform`. Body camelCase; enviar **só** os campos que mudam (a
 
 Resposta: o mesmo shape de um item de `venues[]`.
 
-Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futura; senão `trial` se o trial for futuro; senão `past_due`. **Não** recalcula se o bar já está `suspended` ou se o operador envia `subscriptionStatus`. Não sincroniza cobrança no Asaas — ajuste só no cadastro do bar. Front não envia `subscriptionStatus` ao salvar datas (deixa o recálculo com a API).
+Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futura; senão `trial` se o trial for futuro; senão `past_due`. **Não** recalcula se o estabelecimento já está `suspended` ou se o operador envia `subscriptionStatus`. Não sincroniza cobrança no Asaas — ajuste só no cadastro do estabelecimento. Front não envia `subscriptionStatus` ao salvar datas (deixa o recálculo com a API).
 
 `GET /v1/platform/logs/{name}`: só basename `*.log` sob `storage/logs` (sem path traversal). Resposta: `content` (texto do tail), `entries[]` (`timestamp`, `env`, `level`, `message`, `raw`), `truncated`. `level`/`q` filtram `entries`. Front: `/admin/logs`. Ver [fatia 13](../product/fatia-13-log-viewer.md).
+
+`GET /v1/platform/integration-events`: cookie `eaimesa_platform`. Itens com `id`, `integration`, `kind`, `direction`, `event`, `externalId`, `status`, `errorMessage`, `createdAt`. Lista **não** inclui `payload`/`meta`. Detalhe (`GET .../{id}`): o mesmo + `payload` (body JSON) + `meta` (`ip`, `headers` sanitizados). Id inexistente → 404 `NOT_FOUND`. Front: `/admin/integracoes`. Ver [fatia 16](../product/fatia-16-integration-events.md) e [ADR-027](../decisions/ADR-027-integration-events.md).
 
 `GET /v1/billing/plans` (público) lê `plan_catalog` + settings. Promo preenchida entra como `promoPriceCents` / `effectivePriceCents`. Checkout grava `billing_events` (stub `success`; Asaas `pending` até o webhook).
 
 ### Webhooks
 
-- `POST /v1/webhooks/asaas` — assinatura B2B. Auth: header `asaas-access-token` (`ASAAS_WEBHOOK_TOKEN`). Redirect `?checkout=ok` **não** confirma. Ver [fatia 12](../product/fatia-12-pagamento-asaas.md).
+- `POST /v1/webhooks/asaas` — assinatura B2B. Auth: header `asaas-access-token` (`ASAAS_WEBHOOK_TOKEN`). Após auth, grava o body em `integration_events` (`integration=asaas`). Redirect `?checkout=ok` **não** confirma. Ver [fatia 12](../product/fatia-12-pagamento-asaas.md) e [fatia 16](../product/fatia-16-integration-events.md).
 
 ## Códigos de erro (amostra)
 
@@ -490,8 +558,11 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `PLAN_FEATURE` | 403 |
 | `PLAN_NOT_LISTED` | 400 |
 | `PLAN_DOWNGRADE_LOCKED` | 409 |
+| `ALREADY_SUBSCRIBED` | 409 |
 | `BILLING_INACTIVE` | 403 |
 | `PAYER_REQUIRED` | 400 |
+| `CARD_REQUIRED` | 400 |
+| `CREDIT_CARD_REQUIRED` | 400 |
 | `PAYMENT_UNAVAILABLE` | 503 |
 | `PAYMENT_GATEWAY_ERROR` | 502 |
 | `CLAIM_EXPIRED` | 410 |
@@ -510,5 +581,6 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `FORBIDDEN_CROSS_VENUE` | 403 |
 | `LOG_NOT_FOUND` | 404 |
 | `LOG_READ_ERROR` | 500 |
+| `NOT_FOUND` | 404 |
 
 OpenAPI: gerar a partir de `routes/api.php` quando o contrato da fatia 1 estabilizar.

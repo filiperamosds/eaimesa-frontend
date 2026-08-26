@@ -23,7 +23,7 @@ function normalizeTable(raw: VenueTable & Record<string, unknown>): VenueTable {
 function tablesErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.code === ERROR_CODES.PLAN_FEATURE) {
-      return "O servidor ainda bloqueia mesas neste plano (PLAN_FEATURE). No Laravel, libere GET/POST /v1/owner/tables para kind=cardapio — ver docs/api/backend-waiter-call.md.";
+      return "Este plano ainda não permite cadastrar mesas.";
     }
     return err.message;
   }
@@ -87,21 +87,19 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           <>
             <p className="font-medium text-ink">QR fixo = cardápio. QR do garçom = comanda.</p>
             <p className="mt-1">
-              Exporte o QR de cada mesa (com <span className="font-mono">?mesa=</span>) para chamar
-              garçom pelo cardápio, se ligado em{" "}
+              Exporte o QR de cada mesa para o cliente chamar o garçom pelo cardápio, se estiver
+              ligado em{" "}
               <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
                 Chamada
               </Link>
-              . Comanda continua com o QR em <strong className="font-medium text-ink">/garcom</strong>.
+              . A comanda continua com o QR do garçom.
             </p>
           </>
         ) : (
           <>
             <p className="font-medium text-ink">Mesas do salão + QR por mesa</p>
             <p className="mt-1">
-              O botão só aparece depois de escanear o QR da mesa (código fica no aparelho, não na URL
-              compartilhada). Sem <span className="font-mono">menuCode</span> no servidor, o QR não
-              identifica a mesa. Ligue a feature em{" "}
+              O botão de chamar só aparece depois de escanear o QR da mesa. Ligue a chamada em{" "}
               <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
                 Chamada
               </Link>
@@ -268,11 +266,9 @@ function TableCard({
       ) : (
         <p className="font-serif text-xl">{table.label}</p>
       )}
-      {table.menuCode ? (
-        <p className="mt-1 font-mono text-[11px] text-ink-soft">mesa={table.menuCode}</p>
-      ) : (
+      {table.menuCode ? null : (
         <p className="mt-1 text-[11px] text-chili">
-          Sem menuCode — QR sem ?mesa= (chamar garçom não funciona até o Laravel gerar o código).
+          Este QR ainda não identifica a mesa. Exporte de novo depois de salvar.
         </p>
       )}
       <div className="mt-4 flex flex-wrap gap-3 text-sm">

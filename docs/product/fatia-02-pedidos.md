@@ -1,6 +1,6 @@
 # Fatia 2 — Pedidos (Kanban / KDS)
 
-Fila do bar na tela. O dono (depois o garçom) vê os pedidos em colunas de status. **Ainda sem claim, PIN ou pedido pelo cliente no `/{slug}`.**
+Fila do estabelecimento na tela. O dono (depois o garçom) vê os pedidos em colunas de status. **Ainda sem claim, PIN ou pedido pelo cliente no `/{slug}`.**
 
 ## Inclui
 
@@ -9,7 +9,7 @@ Fila do bar na tela. O dono (depois o garçom) vê os pedidos em colunas de stat
 - Pedido de **balcão** na comanda da mesa (`/garcom`; preço snapshot no servidor)
 - Mudança de status: `pending` → `accepted` → `preparing` → `delivered` (e `cancelled`)
 - API `GET/POST /v1/owner/orders` e `PATCH /v1/owner/orders/{id}`
-- Seed com pedidos demo no Bar do Tião
+- Seed local: **Seu Estabelecimento** (plano Cardápio) — sem pedidos demo
 
 O cardápio público `/{slug}` **não** tem pedidos — só o painel autenticado.
 

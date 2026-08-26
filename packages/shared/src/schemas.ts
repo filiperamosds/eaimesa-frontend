@@ -19,16 +19,29 @@ export const slugSchema = z
     message: `Slug deve ter entre ${SLUG_MIN} e ${SLUG_MAX} caracteres.`,
   })
   .refine((s) => SLUG_REGEX.test(s), {
-    message: "Use só letras minúsculas, números e hífen (ex. bar-do-tiao).",
+    message: "Use só letras minúsculas, números e hífen (ex. seu-estabelecimento).",
   })
   .refine((s) => !isReservedSlug(s), {
-    message: "Este caminho é reservado pelo produto. Escolha outro slug.",
+    message: "Este caminho é reservado. Altere o nome do estabelecimento.",
   });
+
+/** Nome + CPF no cadastro. Telefone, e-mail, CEP e número entram depois em Configurações → Responsável. */
+export const registerRepresentativeSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome do responsável (3 a 80 caracteres).")
+    .max(80),
+  cpfCnpj: z
+    .string()
+    .transform(normalizeCpfCnpj)
+    .refine((d) => d.length === 11, { message: "Informe um CPF válido." }),
+});
 
 export const registerSchema = z.object({
   email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
   password: z.string().min(8, "Senha: mínimo 8 caracteres."),
-  venueName: z.string().trim().min(2, "Nome do bar: mínimo 2 caracteres.").max(80),
+  venueName: z.string().trim().min(2, "Nome do estabelecimento: mínimo 2 caracteres.").max(80),
   slug: slugSchema,
   plan: z
     .string()
@@ -36,6 +49,7 @@ export const registerSchema = z.object({
     .min(PLAN_ID_MIN, "Escolha um plano.")
     .max(PLAN_ID_MAX)
     .regex(PLAN_ID_REGEX, "Plano inválido."),
+  representative: registerRepresentativeSchema,
 });
 
 export const payerSchema = z.object({
@@ -75,7 +89,7 @@ export const payerSchema = z.object({
 
 export type CheckoutPayer = z.infer<typeof payerSchema>;
 
-/** Responsável do bar (ADR-025) — mesmo shape camelCase do pagador, campos obrigatórios no form. */
+/** Responsável do estabelecimento (ADR-025) — mesmo shape camelCase do pagador, campos obrigatórios no form. */
 export const representativeSchema = z.object({
   name: z
     .string()
@@ -144,6 +158,17 @@ export const checkoutSchema = z.object({
   payer: payerSchema.optional(),
   creditCard: creditCardSchema.optional(),
 });
+
+export const scheduleDowngradeSchema = z.object({
+  plan: z
+    .string()
+    .trim()
+    .min(PLAN_ID_MIN, "Escolha um plano.")
+    .max(PLAN_ID_MAX)
+    .regex(PLAN_ID_REGEX, "Plano inválido."),
+});
+
+export type ScheduleDowngradeInput = z.infer<typeof scheduleDowngradeSchema>;
 
 export const loginSchema = z.object({
   email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),

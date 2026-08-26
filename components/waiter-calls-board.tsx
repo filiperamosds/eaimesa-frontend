@@ -36,7 +36,7 @@ export function WaiterCallsBoard() {
       setError(
         err instanceof ApiError
           ? err.message
-          : "Não foi possível carregar os chamados. Confira se o Laravel expõe /v1/owner/waiter-calls.",
+          : "Não foi possível carregar os chamados.",
       );
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export function WaiterCallsBoard() {
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <p className="text-sm text-ink-soft">
-          Atualiza a cada {POLL_MS / 1000}s. Ligue a feature em{" "}
+          Ligue a chamada em{" "}
           <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
             Chamada
           </Link>
