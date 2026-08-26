@@ -124,6 +124,7 @@ Como na fatia 4; `table_session_id` preenchido no redeem. **Não** cria a tab pe
 Operador EaiMesa. Tabela **separada** de `accounts`.
 
 - `id`, `email` UNIQUE, `password_hash`, `name`, `active`, `created_at`
+- Seed: um bootstrap (`ops@eaimesa.local`). Novos operadores: `POST /v1/platform/users` (cookie platform). Sem cadastro público.
 
 ### PlatformSettings
 

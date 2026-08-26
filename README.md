@@ -34,11 +34,11 @@ No painel Hostinger, desative página de erro 404 personalizada (a do skate) se 
 
 No `.env` de produção: `NEXT_PUBLIC_API_URL` = URL pública da API; no Laravel, `APP_URL` = origem deste front (CORS/cookies).
 
-- Cardápio demo (Auto atendimento): http://localhost:3000/bar-do-tiao
-- Cardápio demo (só Cardápio): http://localhost:3000/cafe-da-lina
+- Cardápio demo: http://localhost:3000/seu-estabelecimento
 - Pedidos: http://localhost:3000/painel/pedidos
 - Console SaaS: http://localhost:3000/admin
+- Equipe do console: http://localhost:3000/admin/equipe
 
-Login demo: `dono@bardotiao.local` / `demo1234` · `garcom@bardotiao.local` / `demo1234` · `ops@eaimesa.local` / `demo1234`
+Login demo: `dono@seuestabelecimento.com` / `Teste@123` · operador `ops@eaimesa.local` / `Teste@123`
 
 Índice: [`docs/`](docs/README.md). Setup: [`docs/ops/dev-setup.md`](docs/ops/dev-setup.md).

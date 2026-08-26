@@ -18,8 +18,8 @@ sequenceDiagram
   W->>API: GET /v1/owner/orders
   D->>W: /painel/configuracoes/cardapio — categorias e itens
   W->>API: CRUD /v1/owner/catalog/**
-  C->>W: GET /bar-do-tiao
-  W->>API: GET /v1/public/venues/bar-do-tiao
+  C->>W: GET /seu-estabelecimento
+  W->>API: GET /v1/public/venues/seu-estabelecimento
   API-->>C: Cardápio (somente leitura)
 ```
 
@@ -69,7 +69,7 @@ sequenceDiagram
 ## 1. Onboarding do estabelecimento (B2B)
 
 1. Dono cria conta (e-mail + senha + nome e CPF do responsável).
-2. Cadastra venue: **nome**; o slug sai do nome (`bar-do-tiao`, ou `bar-do-tiao-2` se já existir). URL do cardápio não é editável.
+2. Cadastra venue: **nome**; o slug sai do nome (`seu-estabelecimento`, ou `seu-estabelecimento-2` se já existir). URL do cardápio não é editável.
 3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem cartão (nome e CPF do responsável já entram no cadastro). O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
@@ -209,6 +209,7 @@ Detalhe em [fatia-11-console-saas.md](fatia-11-console-saas.md).
 4. `/admin/planos`: criar SKU, preço, promo; `GET /v1/billing/plans` alimenta landing, cadastro e checkout (de/por se houver promo).
 5. `/admin/logs`: tail de `storage/logs` ([fatia 13](fatia-13-log-viewer.md)).
 6. `/admin/integracoes`: webhooks Asaas ([fatia 16](fatia-16-integration-events.md)).
+7. `/admin/equipe`: lista e cadastra operadores (`GET/POST /v1/platform/users`) — [fatia 17](fatia-17-platform-equipe.md). Sem tela pública de cadastro admin.
 
 ## 6. Venue suspenso (billing)
 

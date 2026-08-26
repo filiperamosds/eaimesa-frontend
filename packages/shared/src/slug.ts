@@ -35,7 +35,7 @@ export function isReservedSlug(slug: string): boolean {
   return (RESERVED_SLUGS as readonly string[]).includes(slug);
 }
 
-/** "Bar do Tião" → "bar-do-tiao". Pode ficar curto demais até o nome ter 3 caracteres úteis. */
+/** "Seu Estabelecimento" → "seu-estabelecimento". Pode ficar curto demais até o nome ter 3 caracteres úteis. */
 export function slugifyFromName(name: string): string {
   return name
     .normalize("NFD")
@@ -46,7 +46,7 @@ export function slugifyFromName(name: string): string {
     .slice(0, SLUG_MAX);
 }
 
-/** `bar-do-tiao` + 2 → `bar-do-tiao-2`. */
+/** `seu-estabelecimento` + 2 → `seu-estabelecimento-2`. */
 export function withSlugSuffix(base: string, n: number): string {
   if (n <= 1) return base.slice(0, SLUG_MAX);
   const suffix = `-${n}`;

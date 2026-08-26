@@ -4,8 +4,8 @@ import type { BillingPlan } from "../lib/load-billing-plans";
 import { PlanPrice, planCtaPrice } from "./plan-price";
 
 const DEMOS: Record<string, { href: string; label: string }> = {
-  cardapio: { href: "/cafe-da-lina", label: "Ver demo Café da Lina" },
-  auto_atendimento: { href: "/bar-do-tiao", label: "Ver demo Bar do Tião" },
+  cardapio: { href: "/seu-estabelecimento", label: "Ver demo Seu Estabelecimento" },
+  auto_atendimento: { href: "/seu-estabelecimento", label: "Ver cardápio demo" },
 };
 
 export function PlanMarketingCards({

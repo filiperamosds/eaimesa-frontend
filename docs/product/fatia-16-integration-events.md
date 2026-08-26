@@ -6,7 +6,7 @@ No backend Laravel este contrato está documentado como fatia 14 + [ADR-027](../
 
 ## Inclui
 
-- `/admin/integracoes` no console (nav **Integrações**, junto de Dashboard / Estabelecimentos / Planos / Logs)
+- `/admin/integracoes` no console (nav **Integrações**, junto de Dashboard / Estabelecimentos / Equipe / Planos / Logs)
 - `GET /v1/platform/integration-events` — lista (`integration`, `event`, `status`, `q`, `limit`) **sem** `payload` / `meta`
 - `GET /v1/platform/integration-events/{id}` — detalhe com `payload` + `meta`
 - Cookie `eaimesa_platform` (mesmo layout/proteção das outras `/admin/*`)

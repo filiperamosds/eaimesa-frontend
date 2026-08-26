@@ -18,7 +18,7 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 - Gates na API e no painel: Cardápio acessa **mesas** (QR); não acessa equipe, garçom, pedido, Kanban
 - `/{slug}` no plano Cardápio: só leitura — sem “Entrar para pedir”, faixa de PIN ou carrinho
 - `/{slug}/entrar`, `/comanda`, `/bem-vindo` e claim redirecionam ao cardápio se o plano não tem pedido
-- Seed: Bar do Tião (Auto atendimento) + Café da Lina (Cardápio)
+- Seed: **Seu Estabelecimento** (plano Cardápio, slug `seu-estabelecimento`). Sem segundo venue de Auto atendimento.
 
 ## Não inclui
 

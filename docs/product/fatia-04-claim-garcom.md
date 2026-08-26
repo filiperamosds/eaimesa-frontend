@@ -11,7 +11,7 @@ O garçom abre a comanda na mesa. O dono cadastra usuários de **garçom** no pa
 - Redeem `POST /v1/public/venues/{slug}/c/{token}/redeem` → tab + PIN + cookie `eaimesa_guest`
 - Página `/{slug}/c/{token}` no front (redeem) e `/{slug}/bem-vindo` (PIN grande)
 - Limite: **5 membros ativos** por venue (garçom + caixa + painel)
-- Seed: `garcom@bardotiao.local` / senha demo
+- Seed local: sem garçom demo (plano Cardápio). Equipe do salão entra no Auto atendimento, no painel.
 
 ## Dois QRs (recapitulando)
 

@@ -161,14 +161,14 @@ export function RegisterForm() {
         label="Nome do estabelecimento"
         value={venueName}
         onChange={setVenueName}
-        placeholder="Bar do Tião"
+        placeholder="Seu Estabelecimento"
       />
       <div>
         <Field
           label="URL do cardápio"
           value={slug}
           onChange={() => undefined}
-          placeholder="bar-do-tiao"
+          placeholder="seu-estabelecimento"
           disabled
         />
         <p className="mt-1 text-xs text-ink-soft">eaimesa.com.br/{slug || "sua-casa"}</p>

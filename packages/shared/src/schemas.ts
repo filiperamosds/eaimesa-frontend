@@ -19,7 +19,7 @@ export const slugSchema = z
     message: `Slug deve ter entre ${SLUG_MIN} e ${SLUG_MAX} caracteres.`,
   })
   .refine((s) => SLUG_REGEX.test(s), {
-    message: "Use só letras minúsculas, números e hífen (ex. bar-do-tiao).",
+    message: "Use só letras minúsculas, números e hífen (ex. seu-estabelecimento).",
   })
   .refine((s) => !isReservedSlug(s), {
     message: "Este caminho é reservado. Altere o nome do estabelecimento.",

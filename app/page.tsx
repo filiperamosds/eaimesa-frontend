@@ -21,7 +21,7 @@ export default async function HomePage() {
                 <span className="block text-chili">A fila, na tela do estabelecimento.</span>
               </h1>
               <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
-                Uma URL sua — tipo <span className="font-medium text-ink">/bar-do-tiao</span>. Sem app
+                Uma URL sua — tipo <span className="font-medium text-ink">/seu-estabelecimento</span>. Sem app
                 para instalar, sem tablet sujo na mesa. Pedido pelo QR do garçom entra depois; o link
                 público nunca abre comanda sozinho.
               </p>
@@ -55,9 +55,9 @@ export default async function HomePage() {
               <div className="surface overflow-hidden p-1">
                 <div className="rounded-[1.15rem] bg-night px-5 pb-6 pt-4 text-white">
                   <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-white/45">
-                    eaimesa.com.br/bar-do-tiao
+                    eaimesa.com.br/seu-estabelecimento
                   </p>
-                  <h2 className="mt-3 font-serif text-3xl">Bar do Tião</h2>
+                  <h2 className="mt-3 font-serif text-3xl">Seu Estabelecimento</h2>
                   <div className="mt-5 space-y-3">
                     {[
                       ["Calabresa acebolada", "R$ 32,90"],

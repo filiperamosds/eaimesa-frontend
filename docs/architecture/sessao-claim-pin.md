@@ -4,7 +4,7 @@ Núcleo de confiança do produto. Três peças **separadas**.
 
 ## 1. Código da casa (`slug`)
 
-- Ex.: `bar-do-tiao` (configurável). `public_id` opaco existe no banco mas **não** é a URL do cardápio.
+- Ex.: `seu-estabelecimento` (configurável). `public_id` opaco existe no banco mas **não** é a URL do cardápio.
 - Público (Instagram, QR **fixo na mesa**, QR na porta).
 - `GET /v1/public/venues/{slug}` → cardápio (somente leitura se sem sessão).
 - **Nunca** autoriza `POST /guest/orders`.

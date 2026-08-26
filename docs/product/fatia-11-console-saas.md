@@ -11,7 +11,7 @@ Login da **plataforma**, não do dono do estabelecimento. O operador vê vendas 
 - `GET /v1/billing/plans` lê o **banco** (landing, cadastro e checkout usam isso). Com promo: `promoPriceCents` + `effectivePriceCents`
 - `POST /v1/platform/plans` cria plano (id = slug do nome; `kind` = o que o estabelecimento pode fazer)
 - Checkout cobra o preço **efetivo** (promo se preenchida e menor que o cheio) e grava `billing_events` (stub `success`; Asaas `pending` até o webhook)
-- Seed: `ops@eaimesa.local` / `demo1234`
+- Seed: `ops@eaimesa.local` / `Teste@123`. Operadores extras: `/admin/equipe` ([fatia 17](fatia-17-platform-equipe.md))
 
 ## Não inclui
 
@@ -33,6 +33,7 @@ Mesmo `eaimesa-frontend`. Rotas `/admin/*` (slug `admin` já é reservado).
 | `/admin/login` | Operador deslogado |
 | `/admin` | Dashboard |
 | `/admin/bares` | Tenants |
+| `/admin/equipe` | Operadores SaaS ([fatia 17](fatia-17-platform-equipe.md)) |
 | `/admin/planos` | Catálogo |
 | `/admin/logs` | Logs Laravel ([fatia 13](fatia-13-log-viewer.md)) |
 | `/admin/integracoes` | Webhooks / eventos de integração ([fatia 16](fatia-16-integration-events.md)) |
@@ -45,5 +46,6 @@ Mesmo `eaimesa-frontend`. Rotas `/admin/*` (slug `admin` já é reservado).
 4. Operador cria um plano ou preenche promo → landing/`/preco`/cadastro/checkout mostram **de R$ X por R$ Y** quando a promo está preenchida.
 5. Suspender um estabelecimento → `subscription_status=suspended`; cardápio público continua leitura.
 6. Ajustar expiração no modal: `trialEndsAt` e/ou `currentPeriodEndsAt` em ISO8601 UTC. Sem `subscriptionStatus` no body a API recalcula (`active` / `trial` / `past_due`). Estabelecimento `suspended` permanece bloqueado. **Não** altera cobrança no Asaas.
+7. Cadastrar colega em `/admin/equipe` (`POST /v1/platform/users`). Sem tela pública de cadastro admin.
 
 Ver [ADR-013](../decisions/ADR-013-console-saas.md) e [ADR-014](../decisions/ADR-014-plan-kind-promo.md).
