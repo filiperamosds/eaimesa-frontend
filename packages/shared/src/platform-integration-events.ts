@@ -44,7 +44,7 @@ export const integrationEventListSchema = z.object({
 });
 
 export const integrationEventDetailSchema = integrationEventListItemSchema.extend({
-  payload: z.unknown(),
+  payload: z.union([z.record(z.unknown()), z.array(z.unknown())]),
   meta: integrationEventMetaSchema.nullable(),
 });
 

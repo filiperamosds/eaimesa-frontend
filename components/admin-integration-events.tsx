@@ -109,7 +109,7 @@ function EventDetailDrawer({
   }, [eventId, router]);
 
   const jsonForCopy = prettyJson({
-    payload: detail?.payload ?? null,
+    payload: detail?.payload ?? {},
     meta: {
       ip: detail?.meta?.ip ?? null,
       headers: detail?.meta?.headers ?? {},
