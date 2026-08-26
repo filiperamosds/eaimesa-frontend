@@ -45,6 +45,7 @@ export const ERROR_CODES = {
   FORBIDDEN: "FORBIDDEN",
   LOG_NOT_FOUND: "LOG_NOT_FOUND",
   LOG_READ_ERROR: "LOG_READ_ERROR",
+  NOT_FOUND: "NOT_FOUND",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
