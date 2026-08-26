@@ -159,6 +159,17 @@ export const checkoutSchema = z.object({
   creditCard: creditCardSchema.optional(),
 });
 
+export const scheduleDowngradeSchema = z.object({
+  plan: z
+    .string()
+    .trim()
+    .min(PLAN_ID_MIN, "Escolha um plano.")
+    .max(PLAN_ID_MAX)
+    .regex(PLAN_ID_REGEX, "Plano inválido."),
+});
+
+export type ScheduleDowngradeInput = z.infer<typeof scheduleDowngradeSchema>;
+
 export const loginSchema = z.object({
   email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
   password: z.string().min(1, "Informe a senha."),

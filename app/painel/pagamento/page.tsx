@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { TRIAL_ENDING_SOON_DAYS } from "@eaimesa/shared";
 import Link from "next/link";
 import { BillingPanel } from "../../../components/billing-panel";
 import { ConfiguracoesNav } from "../../../components/configuracoes-nav";
@@ -19,15 +18,15 @@ export default function PagamentoPage() {
       <div className="min-w-0 flex-1">
         <h2 className="font-serif text-2xl">Pagamento</h2>
         <p className="mt-2 mb-8 text-ink-soft">
-          Escolha o plano e o meio (cartão ou PIX). No trial o aviso aparece nos últimos{" "}
-          {TRIAL_ENDING_SOON_DAYS} dias. Cadastre o{" "}
+          Escolha o plano e o meio (cartão ou PIX). Upgrade mostra o valor com prorrata antes de
+          confirmar. Downgrade no meio da vigência é agendado para o fim do período. Cadastre o{" "}
           <Link
             href="/painel/configuracoes/responsavel"
             className="font-medium text-chili underline"
           >
             responsável
           </Link>{" "}
-          antes do checkout Asaas.
+          completo antes do cartão Asaas. PIX hosted: a renovação exige um novo pagamento.
         </p>
         <Suspense fallback={<p className="text-ink-soft">Carregando…</p>}>
           <BillingPanel />

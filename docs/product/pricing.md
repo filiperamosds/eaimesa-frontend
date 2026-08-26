@@ -2,7 +2,7 @@
 
 Mensalidade fixa; **sem comissão** sobre consumo. Trial e vigência (default **7** e **30** dias) vêm de `platform_settings`. Preço e copy da vitrine vêm de `plan_catalog` (editáveis em `/admin/planos`). O operador pode **criar SKUs** novos: cada um tem `kind` (`cardapio` | `auto_atendimento`) e, opcionalmente, `promo_price_cents`. Se a promo estiver preenchida e for menor que o preço cheio, landing, cadastro e checkout mostram **de R$ X por R$ Y** e a cobrança usa o valor da promo.
 
-Checkout: `GET /v1/billing/plans` → `gateway`. Stub (`immediate`) devolve sucesso após ~2s. Cartão Asaas é digitado no painel e enviado à API. PIX Asaas redireciona. Landing e cadastro **não** pedem pagador.
+Checkout: `GET /v1/billing/plans` → `gateway`. Stub (`immediate`) devolve sucesso após ~2s. Cartão Asaas é digitado no painel (ou reusa o salvo) e enviado à API. PIX Asaas redireciona; renovação PIX pede um novo pagamento. Landing e cadastro **não** pedem pagador.
 
 ## Planos vendáveis
 
@@ -30,9 +30,10 @@ Vigência paga: **30 dias** a partir do **fim da cobertura atual** (trial ou mê
 
 ## Troca de plano
 
-- **Subir** (`kind` Cardápio → Auto atendimento): a qualquer momento, via checkout.
+- **Subir** (`kind` Cardápio → Auto atendimento): a qualquer momento, via checkout. 1ª cobrança = preço efetivo **menos** crédito dos dias restantes (`upgradeQuotes`).
 - **Trocar** SKUs do mesmo `kind`: a qualquer momento.
-- **Descer** (Auto atendimento → Cardápio): só depois do fim da vigência **paga**. No trial, pode trocar.
+- **Descer** (Auto atendimento → Cardápio): no meio da vigência paga, **agendar** para o fim do período. No trial, pode trocar na hora.
+- **Mesmo plano `active`**: não re-cobrar; gerenciar cartão.
 
 ## Early adopters / anual
 

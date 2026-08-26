@@ -69,31 +69,68 @@ O front **não deixa editar** o slug: gera a partir de `venueName` (`Seu Estabel
 
 Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
 
-### Billing (fatias 10 e 12)
+### Billing (fatias 10 e 12 + ADR-028)
 
-Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas ([ADR-020](../decisions/ADR-020-cartao-no-painel.md)). **PIX** usa checkout hospedado. Confirmação PIX só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
+Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas`. **Cartão** é digitado no painel e o Laravel encaminha ao Asaas ([ADR-020](../decisions/ADR-020-cartao-no-painel.md), [ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md)). **PIX** usa checkout hospedado. Confirmação PIX só no webhook. Landing, `/preco` e `/cadastro` não pedem pagador.
 
 `GET /v1/billing/plans` e `GET /v1/billing/me` incluem:
 
 ```json
 {
   "gateway": {
-    "provider": "stub",
-    "checkoutMode": "immediate",
+    "provider": "asaas",
+    "checkoutMode": "inline",
     "methods": ["card", "pix"],
-    "requiresPayer": false,
+    "requiresPayer": true,
+    "requiresCreditCard": true,
     "available": true
   }
 }
 ```
 
-No Asaas: `checkoutMode: hosted` (PIX), `requiresPayer: true`. Cartão: captura no painel + token em `venue_billing`. `/me` ainda traz `pendingCheckout` (`url`, `plan`, `method`, `amountCents`) se a sessão PIX hosted estiver aberta.
+Stub: `checkoutMode: immediate`, `requiresPayer` / `requiresCreditCard` false. Asaas: `inline` (cartão no painel); PIX continua hosted. `/me` traz `pendingCheckout`, `savedCard` / `savedCards`, `upgradeQuotes` (prorrata), `canScheduleDowngrade`, `scheduledDowngrade`.
+
+`GET /v1/billing/me` (recorte):
+
+```json
+{
+  "venue": {},
+  "entitlement": { "ok": true },
+  "canUpgrade": true,
+  "canDowngrade": true,
+  "canScheduleDowngrade": true,
+  "scheduledDowngrade": { "plan": "cardapio", "planName": "Cardápio", "at": "2026-09-25T00:00:00.000Z" },
+  "upgradeQuotes": [
+    {
+      "plan": "auto_atendimento",
+      "planName": "Auto atendimento",
+      "listPriceCents": 14900,
+      "creditCents": 2400,
+      "amountCents": 12500,
+      "recurringAmountCents": 14900,
+      "isUpgrade": true
+    }
+  ],
+  "plans": [],
+  "gateway": {},
+  "pendingCheckout": null,
+  "savedCard": { "id": "uuid", "last4": "4156", "brand": "MASTERCARD" },
+  "savedCards": [{ "id": "uuid", "last4": "4156", "brand": "MASTERCARD", "isDefault": true }]
+}
+```
+
+UI do cartão: `**** {last4}` (e brand se houver). Upgrade: “hoje R$ amount (crédito R$ credit) · depois R$ recurring/mês”.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | GET | `/v1/billing/plans` | — | Catálogo + `gateway` + `stubDelayMs` |
-| GET | `/v1/billing/me` | Owner | Plano atual, `canUpgrade` / `canDowngrade`, `gateway`, `pendingCheckout` |
-| POST | `/v1/billing/checkout` | Owner | Inicia cobrança. Stub → `success`. Cartão Asaas → `success` + token. PIX Asaas → `pending` + `checkoutUrl` |
+| GET | `/v1/billing/me` | Owner | Plano, quotes, cartões, `scheduledDowngrade`, `gateway`, `pendingCheckout` |
+| POST | `/v1/billing/checkout` | Owner | Body `{ plan, method, payer?, creditCard? }`. Stub → `success`. Cartão Asaas → `success` + token. PIX → `pending` + `checkoutUrl`. Mesmo plano ativo → 409 `ALREADY_SUBSCRIBED`. Downgrade no meio da vigência → 409 `PLAN_DOWNGRADE_LOCKED` |
+| POST | `/v1/billing/schedule-downgrade` | Owner | `{ "plan": "cardapio" }` — agenda no fim da vigência |
+| GET | `/v1/billing/cards` | Owner | Lista cartões salvos (máx. 5) |
+| POST | `/v1/billing/cards` | Owner | `{ creditCard: { holderName, number, expiryMonth, expiryYear, ccv } }` |
+| POST | `/v1/billing/cards/{id}/default` | Owner | Marca padrão e sincroniza a subscription Asaas |
+| DELETE | `/v1/billing/cards/{id}` | Owner | Remove cartão |
 | POST | `/v1/webhooks/asaas` | Header `asaas-access-token` | Eventos Asaas. Sem cookie. |
 
 #### POST /v1/billing/checkout (body)
@@ -120,13 +157,13 @@ No Asaas: `checkoutMode: hosted` (PIX), `requiresPayer: true`. Cartão: captura 
 }
 ```
 
-`method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer`. No cartão Asaas: `creditCard` obrigatório (`CARD_REQUIRED`); CEP e número do endereço no pagador. CPF/CNPJ e PAN **não** são persistidos. O Asaas devolve `creditCardToken`; gravamos token cifrado + last4 + bandeira.
+`method`: `card` | `pix` (default `card`). `payer` obrigatório se `gateway.requiresPayer` (ou usa o responsável salvo). No cartão Asaas: `creditCard` **ou** cartão já salvo (`CREDIT_CARD_REQUIRED` / `CARD_REQUIRED` se faltar os dois). CEP e número no pagador quando envia PAN novo. CPF/CNPJ e PAN **não** são persistidos. Token cifrado + last4 + bandeira. Cartão salvo: omitir `creditCard`.
 
-PIX: body sem `creditCard`; resposta `status: pending`, `checkoutUrl`. Cartão Asaas: `status: success` se a cobrança autorizar. Stub: `status: success`, ignora o cartão, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
+PIX: body sem `creditCard`; resposta `status: pending`, `checkoutUrl`. Cartão Asaas: `status: success` se autorizar, com `amountCents` / `creditCents` / `recurringAmountCents` / `savedCards`. Stub: `status: success`, ignora o cartão, `currentPeriodEndsAt` = fim da cobertura atual + `paidPeriodDays` ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md)).
 
 Callbacks de navegação do PIX (não confirmam pagamento): `/painel/pagamento?checkout=ok|cancel|expired`.
 
-Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED`. Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`. Sem cartão no Asaas → 400 `CARD_REQUIRED`.
+Plano `active` + mesmo SKU + vigência aberta → 409 `ALREADY_SUBSCRIBED` (front esconde o checkout desse plano; CTA “Gerenciar cartão”). Downgrade com vigência paga em aberto → 409 `PLAN_DOWNGRADE_LOCKED` (front oferece agendar). Recurso de Auto atendimento no plano Cardápio → 403 `PLAN_FEATURE`. Trial/vigência vencidos → 403 `BILLING_INACTIVE`. Sem chave Asaas → 503 `PAYMENT_UNAVAILABLE`. Falha HTTP no provedor → 502 `PAYMENT_GATEWAY_ERROR`. Sem pagador no Asaas → 400 `PAYER_REQUIRED`. Sem cartão (e sem token) → 400 `CREDIT_CARD_REQUIRED`.
 
 ### Owner — venue e catálogo
 
@@ -521,8 +558,11 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `PLAN_FEATURE` | 403 |
 | `PLAN_NOT_LISTED` | 400 |
 | `PLAN_DOWNGRADE_LOCKED` | 409 |
+| `ALREADY_SUBSCRIBED` | 409 |
 | `BILLING_INACTIVE` | 403 |
 | `PAYER_REQUIRED` | 400 |
+| `CARD_REQUIRED` | 400 |
+| `CREDIT_CARD_REQUIRED` | 400 |
 | `PAYMENT_UNAVAILABLE` | 503 |
 | `PAYMENT_GATEWAY_ERROR` | 502 |
 | `CLAIM_EXPIRED` | 410 |
