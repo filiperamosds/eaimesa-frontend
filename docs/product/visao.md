@@ -31,7 +31,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Garçom / caixa** | `/garcom` | Staff (`member.role` staff ou cashier) | Só Auto atendimento | — |
 | **Painel (KDS)** | `/painel/pedidos` | Staff (`member.role` panel) | Só Auto atendimento; categorias no cadastro | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
-| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, estabelecimentos, planos, logs | SSO/2FA |
+| **Platform** | `/admin` | Operador EaiMesa | Console: vendas, estabelecimentos, planos, logs, integrações | SSO/2FA |
 
 ## Personas
 
@@ -40,11 +40,11 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 - **Caixa** — mesma tela `/garcom`; sempre pode fechar comanda e mesa.
 - **Painel** — login no monitor da cozinha ou do bar; só o Kanban das categorias que o dono marcou.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
-- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê estabelecimentos, vendas da assinatura, catálogo e logs da API. Não atende o salão nem edita o cardápio de um estabelecimento.
+- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê estabelecimentos, vendas da assinatura, catálogo, logs da API e webhooks. Não atende o salão nem edita o cardápio de um estabelecimento.
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 13 — log viewer](fatia-13-log-viewer.md).
+Implementação **agora**: [fatia 16 — eventos de integração](fatia-16-integration-events.md).
 
 ### MVP (quando as fatias somarem)
 

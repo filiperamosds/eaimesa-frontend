@@ -53,3 +53,5 @@ sequenceDiagram
   API-->>W: status success
   A->>API: webhook PAYMENT_RECEIVED
 ```
+
+O operador consulta o body do webhook em `/admin/integracoes` ([fatia 16](fatia-16-integration-events.md)).

@@ -47,6 +47,7 @@ Site: http://localhost:3000
 | Garçom | http://localhost:3000/garcom |
 | PIN join | http://localhost:3000/bar-do-tiao/entrar |
 | Console | http://localhost:3000/admin |
+| Integrações | http://localhost:3000/admin/integracoes |
 
 Login demo abre direto o Kanban. Garçom demo: `garcom@bardotiao.local` / `demo1234`. Operador: `ops@eaimesa.local` / `demo1234`.
 

@@ -163,6 +163,24 @@ Não guardar CPF/CNPJ nem PAN. O front envia pagador + cartão no POST de checko
 
 Pendente some quando o webhook confirma.
 
+### IntegrationEvent (fatia 16)
+
+Auditoria genérica de integrações (webhooks inbound primeiro). [ADR-027](../decisions/ADR-027-integration-events.md).
+
+- `id` UUID
+- `integration` — ex. `asaas`
+- `kind` — `webhook` (outros no futuro)
+- `direction` — `inbound` | `outbound`
+- `event` nullable — nome bruto do provedor (`PAYMENT_RECEIVED`, …)
+- `external_id` nullable — id do evento/cobrança no provedor
+- `status` — `received` | `processed` | `ignored` | `failed`
+- `payload` JSON — body do webhook (sem PAN/CVV; Asaas não envia)
+- `meta` JSON nullable — `{ ip, headers }` com headers **sanitizados** (sem `asaas-access-token`, `authorization`, `cookie`)
+- `error_message` nullable
+- `created_at`
+
+Lista no console (`GET /v1/platform/integration-events`) **não** devolve `payload`/`meta`. Front: `/admin/integracoes`.
+
 ## Entidades — planejadas
 
 - **AuditLog** — `venue_id`, `actor_type`, `actor_id`, `action`, `metadata_json`
@@ -190,6 +208,10 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 - `billing_events(venue_id, created_at DESC)`
 - `billing_events(provider, provider_ref)` UNIQUE (NULLs repetíveis)
 - `venue_billing(venue_id)` UNIQUE
+- `integration_events(integration, created_at DESC)`
+- `integration_events(integration, event, created_at DESC)`
+- `integration_events(external_id)`
+- `integration_events(status, created_at DESC)`
 
 ## Regras de negócio
 
@@ -206,6 +228,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`. Os dois (e o guest) podem existir juntos no browser.
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
 13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado).
+14. Webhook autenticado grava `integration_events` (body + meta sanitizado); token nunca entra em `meta`.
 
 ## Planejado — fatia 15 (chamar garçom)
 
@@ -238,6 +261,7 @@ erDiagram
   PlatformUser
   PlatformSettings
   PlanCatalog
+  IntegrationEvent
 ```
 
 ## Postgres RLS (recomendado fase 1.5)
