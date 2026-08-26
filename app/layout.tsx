@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s · EaiMesa",
   },
   description:
-    "SaaS para bares e restaurantes: publique o cardápio numa URL sua. Sem app para o cliente, sem tablet sujo na mesa.",
+    "Cardápio no celular para bares e restaurantes: um link só seu. Sem app para o cliente, sem tablet sujo na mesa.",
   icons: {
     icon: [
       { url: "/logo.svg", type: "image/svg+xml" },

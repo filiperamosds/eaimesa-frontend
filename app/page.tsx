@@ -21,9 +21,9 @@ export default async function HomePage() {
                 <span className="block text-chili">A fila, na tela do estabelecimento.</span>
               </h1>
               <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
-                Uma URL sua — tipo <span className="font-medium text-ink">/seu-estabelecimento</span>. Sem app
-                para instalar, sem tablet sujo na mesa. Pedido pelo QR do garçom entra depois; o link
-                público nunca abre comanda sozinho.
+                Seu cardápio num link só seu, fácil de mandar no WhatsApp ou colar no QR da mesa. Sem
+                app para instalar, sem tablet sujo. Pedir na mesa entra depois — o link sozinho não
+                abre conta.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 {listed.map((plan, i) => (
