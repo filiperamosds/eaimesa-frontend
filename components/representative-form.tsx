@@ -4,6 +4,8 @@ import {
   formatCepInput,
   formatCpfCnpjInput,
   formatPhoneInput,
+  isRepresentativePersisted,
+  pickRepresentative,
   representativeSchema,
 } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
@@ -25,16 +27,16 @@ export function RepresentativeForm({ defaultEmail = "" }: { defaultEmail?: strin
   useEffect(() => {
     api<Venue>("/v1/owner/venue")
       .then((v) => {
-        const r = v.representative;
+        const r = pickRepresentative(v.representative);
         if (r) {
-          setName(r.name ?? "");
-          setCpfCnpj(formatCpfCnpjInput(r.cpfCnpj ?? ""));
+          setName(r.name);
+          setCpfCnpj(formatCpfCnpjInput(r.cpfCnpj));
           setEmail(r.email || defaultEmail);
           setPhone(formatPhoneInput(r.phone ?? ""));
           setPostalCode(formatCepInput(r.postalCode ?? ""));
-          setAddressNumber(r.addressNumber ?? "");
+          setAddressNumber(r.addressNumber);
         } else if (defaultEmail) {
-          setEmail(defaultEmail);
+          setEmail((cur) => cur || defaultEmail);
         }
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Falha ao carregar."))
@@ -63,15 +65,19 @@ export function RepresentativeForm({ defaultEmail = "" }: { defaultEmail?: strin
         method: "PATCH",
         body: JSON.stringify({ representative: parsed.data }),
       });
-      const r = v.representative;
-      if (r) {
-        setName(r.name ?? "");
-        setCpfCnpj(formatCpfCnpjInput(r.cpfCnpj ?? ""));
-        setEmail(r.email ?? defaultEmail);
-        setPhone(formatPhoneInput(r.phone ?? ""));
-        setPostalCode(formatCepInput(r.postalCode ?? ""));
-        setAddressNumber(r.addressNumber ?? "");
+      const r = pickRepresentative(v.representative);
+      if (!isRepresentativePersisted(r)) {
+        setError(
+          "O servidor não confirmou nome e CPF. Salve de novo; se persistir, a API não gravou o responsável.",
+        );
+        return;
       }
+      setName(r.name);
+      setCpfCnpj(formatCpfCnpjInput(r.cpfCnpj));
+      setEmail(r.email || defaultEmail);
+      setPhone(formatPhoneInput(r.phone ?? ""));
+      setPostalCode(formatCepInput(r.postalCode ?? ""));
+      setAddressNumber(r.addressNumber);
       setMsg("Responsável salvo. O checkout de pagamento usa estes dados.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível salvar.");
@@ -118,6 +124,9 @@ export function RepresentativeForm({ defaultEmail = "" }: { defaultEmail?: strin
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+        <p className="mt-1 text-xs text-ink-soft">
+          Começa com o e-mail da conta. Nome e CPF deveriam vir do cadastro da empresa.
+        </p>
       </label>
       <label className="block text-sm">
         <span className="mb-1 block font-medium">Telefone</span>

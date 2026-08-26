@@ -1,15 +1,15 @@
 /** CPF (11) ou CNPJ (14) — só dígitos, sem persistir no front além do POST. */
-export function normalizeCpfCnpj(raw: string): string {
-  return raw.replace(/\D/g, "").slice(0, 14);
+export function normalizeCpfCnpj(raw: string | null | undefined): string {
+  return String(raw ?? "").replace(/\D/g, "").slice(0, 14);
 }
 
-export function isCpfOrCnpj(raw: string): boolean {
+export function isCpfOrCnpj(raw: string | null | undefined): boolean {
   const d = normalizeCpfCnpj(raw);
   return d.length === 11 || d.length === 14;
 }
 
-export function normalizeCep(raw: string): string {
-  return raw.replace(/\D/g, "").slice(0, 8);
+export function normalizeCep(raw: string | null | undefined): string {
+  return String(raw ?? "").replace(/\D/g, "").slice(0, 8);
 }
 
 export function isCep(raw: string): boolean {
@@ -24,7 +24,7 @@ export function formatCepInput(raw: string): string {
 }
 
 /** Máscara de digitação: `000.000.000-00` ou `00.000.000/0000-00`. */
-export function formatCpfCnpjInput(raw: string): string {
+export function formatCpfCnpjInput(raw: string | null | undefined): string {
   const d = normalizeCpfCnpj(raw);
   if (d.length <= 11) {
     if (d.length <= 3) return d;
@@ -87,5 +87,34 @@ export function representativeFingerprint(rep: Partial<VenueRepresentative> | nu
     normalizeCep(rep.postalCode ?? ""),
     (rep.addressNumber ?? "").trim(),
   ].join("|");
+}
+
+function strField(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+/**
+ * Lê `venue.representative` da API (camelCase; aceita snake_case).
+ * E-mail sozinho não conta — o GET só considera responsável se houver nome e CPF.
+ */
+export function pickRepresentative(raw: unknown): VenueRepresentative | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const name = strField(o.name).trim();
+  const cpfCnpj = normalizeCpfCnpj(strField(o.cpfCnpj ?? o.cpf_cnpj));
+  const email = strField(o.email).trim();
+  const phone = strField(o.phone);
+  const postalCode = normalizeCep(strField(o.postalCode ?? o.postal_code));
+  const addressNumber = strField(o.addressNumber ?? o.address_number).trim();
+  if (name.length < 3 && !isCpfOrCnpj(cpfCnpj)) return null;
+  return { name, cpfCnpj, email, phone, postalCode, addressNumber };
+}
+
+/** Nome + CPF/CNPJ confirmados na resposta (o Laravel omite o objeto se faltar um dos dois). */
+export function isRepresentativePersisted(
+  rep: Partial<VenueRepresentative> | null | undefined,
+): rep is VenueRepresentative {
+  if (!rep) return false;
+  return (rep.name ?? "").trim().length >= 3 && isCpfOrCnpj(rep.cpfCnpj);
 }
 
