@@ -13,7 +13,7 @@
 1i. [Fatia 9 — Parcial do cliente](product/fatia-09-parcial-guest.md) — comanda no celular: itens, status, total
 1j. [Fatia 10 — Planos](product/fatia-10-planos.md) — Cardápio vs Auto atendimento, trial, checkout stub
 1k. [Fatia 11 — Console SaaS](product/fatia-11-console-saas.md) — login da plataforma, dashboard, estabelecimentos (expiração + suspender), catálogo (criar plano + promo)
-1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — cartão no painel + token; PIX hosted; stub local
+1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — cartão no painel + token; PIX hosted; prorrata/upgrade; cartões salvos ([ADR-028](decisions/ADR-028-assinatura-recorrente-planos.md))
 1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, tail Laravel
 1n. [Fatia 14 — Painel Kanban](product/fatia-14-kanban-painel.md) — perfil Painel, categorias por monitor
 1o. [Fatia 15 — Chamar garçom](product/fatia-15-chamar-garcom-cardapio.md) — QR `?mesa=` + presença + fila (plano Cardápio)
@@ -31,7 +31,7 @@
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
 9e. [Backend — chamar garçom](api/backend-waiter-call.md) — presença `?mesa=`, cookie, fila (ADR-026)
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**
+11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**
 
 ## Cursor
 

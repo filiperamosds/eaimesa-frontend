@@ -21,8 +21,12 @@ export const CHECKOUT_STUB_DELAY_MS = 2000;
 export const PAYMENT_METHODS = ["card", "pix"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const CHECKOUT_MODES = ["immediate", "hosted"] as const;
+/** `inline` = cartão no painel (Asaas). `hosted` = PIX na página do provedor. */
+export const CHECKOUT_MODES = ["immediate", "hosted", "inline"] as const;
 export type CheckoutMode = (typeof CHECKOUT_MODES)[number];
+
+/** Máximo de cartões tokenizados por venue (API). */
+export const SAVED_CARDS_MAX = 5;
 
 export const CHECKOUT_RETURN = ["ok", "cancel", "expired"] as const;
 export type CheckoutReturn = (typeof CHECKOUT_RETURN)[number];

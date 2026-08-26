@@ -1,21 +1,30 @@
 "use client";
 
 import {
-  creditCardSchema,
   formatBrlFromCents,
   formatCepInput,
   formatCpfCnpjInput,
   formatPhoneInput,
+  formatSavedCardLabel,
   hasPromoPrice,
   isRepresentativeComplete,
   payerSchema,
   representativeFingerprint,
+  upgradeQuoteLine,
   type CheckoutCreditCard,
   type CheckoutMode,
   type CheckoutPayer,
   type PaymentMethod,
+  type SavedCard,
+  type UpgradeQuote,
 } from "@eaimesa/shared";
 import { useState } from "react";
+import {
+  CreditCardFields,
+  EMPTY_CARD_DRAFT,
+  parseCreditCardDraft,
+  type CreditCardDraft,
+} from "./credit-card-fields";
 import { PlanPrice } from "./plan-price";
 
 type Props = {
@@ -23,6 +32,7 @@ type Props = {
   amountCents: number;
   listPriceCents?: number;
   promoPriceCents?: number | null;
+  upgradeQuote?: UpgradeQuote | null;
   pending: boolean;
   checkoutMode: CheckoutMode;
   requiresPayer: boolean;
@@ -32,38 +42,17 @@ type Props = {
   initialPayer?: CheckoutPayer | null;
   provider?: string;
   coverageNote?: string;
+  savedCards?: SavedCard[];
   onCancel: () => void;
   onPay: (method: PaymentMethod, payer?: CheckoutPayer, creditCard?: CheckoutCreditCard) => void;
 };
-
-function onlyDigits(value: string, max: number) {
-  return value.replace(/\D/g, "").slice(0, max);
-}
-
-function formatCard(raw: string) {
-  const digits = onlyDigits(raw, 16);
-  return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
-}
-
-function formatExpiry(raw: string) {
-  const digits = onlyDigits(raw, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-}
-
-function expiryParts(raw: string): { expiryMonth: string; expiryYear: string } | null {
-  const digits = onlyDigits(raw, 4);
-  if (digits.length !== 4) return null;
-  const month = digits.slice(0, 2);
-  const year = `20${digits.slice(2)}`;
-  return { expiryMonth: month, expiryYear: year };
-}
 
 export function PaymentForm({
   planName,
   amountCents,
   listPriceCents,
   promoPriceCents,
+  upgradeQuote = null,
   pending,
   checkoutMode,
   requiresPayer,
@@ -72,15 +61,16 @@ export function PaymentForm({
   initialPayer = null,
   provider,
   coverageNote,
+  savedCards = [],
   onCancel,
   onPay,
 }: Props) {
   const available = methods.length ? methods : (["card", "pix"] as PaymentMethod[]);
   const [method, setMethod] = useState<PaymentMethod>(available[0] ?? "card");
-  const [holder, setHolder] = useState("");
-  const [number, setNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
+  const defaultSaved =
+    savedCards.find((c) => c.isDefault) ?? savedCards[0] ?? null;
+  const [useSaved, setUseSaved] = useState(Boolean(defaultSaved));
+  const [draft, setDraft] = useState<CreditCardDraft>(EMPTY_CARD_DRAFT);
   const [payerName, setPayerName] = useState(initialPayer?.name ?? "");
   const [cpfCnpj, setCpfCnpj] = useState(
     initialPayer?.cpfCnpj ? formatCpfCnpjInput(initialPayer.cpfCnpj) : "",
@@ -96,11 +86,14 @@ export function PaymentForm({
   const [localError, setLocalError] = useState<string | null>(null);
   const amount = formatBrlFromCents(amountCents);
   const hosted = checkoutMode === "hosted";
-  const asaas = provider === "asaas" || hosted;
-  const captureCard = method === "card";
-  const needPayer = asaas && (requiresPayer || captureCard);
+  const liveGateway =
+    provider === "asaas" || hosted || checkoutMode === "inline";
+  const captureCard = method === "card" && (!useSaved || !defaultSaved);
+  const needPayer = liveGateway && (requiresPayer || method === "card");
   const providerLabel = provider === "asaas" ? "Asaas" : provider || "provedor";
   const baselineFp = representativeFingerprint(initialPayer);
+  const quoteLine =
+    upgradeQuote && upgradeQuote.isUpgrade ? upgradeQuoteLine(upgradeQuote) : null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -113,8 +106,8 @@ export function PaymentForm({
         cpfCnpj,
         email,
         phone,
-        postalCode: captureCard ? postalCode : initialPayer?.postalCode,
-        addressNumber: captureCard ? addressNumber : initialPayer?.addressNumber,
+        postalCode: method === "card" ? postalCode : initialPayer?.postalCode,
+        addressNumber: method === "card" ? addressNumber : initialPayer?.addressNumber,
       };
       const unchanged =
         isRepresentativeComplete(initialPayer) &&
@@ -135,22 +128,22 @@ export function PaymentForm({
           cpfCnpj: current.cpfCnpj,
           email: current.email,
           phone: current.phone,
-          postalCode: captureCard ? current.postalCode : undefined,
-          addressNumber: captureCard ? current.addressNumber : undefined,
+          postalCode: method === "card" ? current.postalCode : undefined,
+          addressNumber: method === "card" ? current.addressNumber : undefined,
         });
         if (!parsed.success) {
           setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do pagador.");
           return;
         }
-        if (captureCard && !parsed.data.phone) {
+        if (method === "card" && !parsed.data.phone) {
           setLocalError("Informe o telefone do titular.");
           return;
         }
-        if (captureCard && !parsed.data.postalCode) {
+        if (method === "card" && !parsed.data.postalCode) {
           setLocalError("Informe o CEP do titular.");
           return;
         }
-        if (captureCard && !parsed.data.addressNumber) {
+        if (method === "card" && !parsed.data.addressNumber) {
           setLocalError("Informe o número do endereço.");
           return;
         }
@@ -159,53 +152,61 @@ export function PaymentForm({
     }
 
     let card: CheckoutCreditCard | undefined;
-    if (captureCard) {
-      const parts = expiryParts(expiry);
-      if (!parts) {
-        setLocalError("Validade no formato MM/AA.");
+    if (method === "card" && captureCard) {
+      const parsed = parseCreditCardDraft(draft);
+      if (!parsed.ok) {
+        setLocalError(parsed.message);
         return;
       }
-      const parsed = creditCardSchema.safeParse({
-        holderName: holder,
-        number,
-        expiryMonth: parts.expiryMonth,
-        expiryYear: parts.expiryYear,
-        ccv: cvv,
-      });
-      if (!parsed.success) {
-        setLocalError(parsed.error.issues[0]?.message ?? "Revise os dados do cartão.");
-        return;
-      }
-      card = parsed.data;
+      card = parsed.card;
     }
 
     onPay(method, payer, card);
   }
+
+  const ctaAmount =
+    quoteLine && upgradeQuote
+      ? amountCents === 0
+        ? "Confirmar upgrade"
+        : `Pagar ${amount} hoje`
+      : method === "card"
+        ? `Pagar ${amount}`
+        : `Continuar para pagar ${amount}`;
 
   return (
     <form onSubmit={submit} className="surface space-y-5 p-5" aria-busy={pending}>
       <div>
         <p className="eyebrow">Pagar agora</p>
         <h3 className="mt-2 font-serif text-2xl">{planName}</h3>
+        {quoteLine ? (
+          <p className="mt-1 text-sm text-ink-soft">
+            Upgrade com prorrata: <span className="font-medium text-ink">{quoteLine}</span>.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-ink-soft">
+            Cobrança de{" "}
+            {hasPromoPrice({ priceCents: listPriceCents ?? amountCents, promoPriceCents }) ? (
+              <PlanPrice
+                priceCents={listPriceCents ?? amountCents}
+                promoPriceCents={promoPriceCents}
+                suffix=""
+                className="font-medium text-ink"
+              />
+            ) : (
+              <span className="font-medium text-ink">{amount}</span>
+            )}{" "}
+            (mensal).
+          </p>
+        )}
         <p className="mt-1 text-sm text-ink-soft">
-          Cobrança de{" "}
-          {hasPromoPrice({ priceCents: listPriceCents ?? amountCents, promoPriceCents }) ? (
-            <PlanPrice
-              priceCents={listPriceCents ?? amountCents}
-              promoPriceCents={promoPriceCents}
-              suffix=""
-              className="font-medium text-ink"
-            />
-          ) : (
-            <span className="font-medium text-ink">{amount}</span>
-          )}{" "}
-          (mensal).{" "}
-          {captureCard
-            ? asaas
-              ? `Você informa o cartão aqui. Os dados vão ao ${providerLabel} e não ficam guardados no EaiMesa.`
+          {method === "card"
+            ? liveGateway
+              ? captureCard
+                ? `Você informa o cartão aqui. Os dados vão ao ${providerLabel} e não ficam guardados no EaiMesa.`
+                : `Cobra no cartão ${formatSavedCardLabel(defaultSaved!)}. A renovação mensal usa o cartão padrão.`
               : "Pagamento simulado — sem cobrança real."
-            : asaas
-              ? `PIX na página segura do ${providerLabel}.`
+            : liveGateway
+              ? `PIX na página segura do ${providerLabel}. A renovação exige um novo pagamento PIX (QR ou link) a cada mês — não debita sozinho.`
               : "PIX simulado neste ambiente."}
         </p>
         {coverageNote ? <p className="mt-2 text-sm text-ink-soft">{coverageNote}</p> : null}
@@ -228,10 +229,10 @@ export function PaymentForm({
               <span className="block">{id === "pix" ? "PIX" : "Cartão"}</span>
               <span className="mt-0.5 block text-xs font-normal text-ink-soft">
                 {id === "pix"
-                  ? asaas
-                    ? "QR na próxima página"
+                  ? liveGateway
+                    ? "QR na próxima página · renovação manual"
                     : "Simulado neste ambiente"
-                  : asaas
+                  : liveGateway
                     ? `Enviado ao ${providerLabel}`
                     : "Simulado neste ambiente"}
               </span>
@@ -284,7 +285,7 @@ export function PaymentForm({
           </label>
           <label className="block text-sm">
             <span className="mb-1 block font-medium">
-              Telefone{captureCard ? "" : " (opcional)"}
+              Telefone{method === "card" ? "" : " (opcional)"}
             </span>
             <input
               className="field"
@@ -296,7 +297,7 @@ export function PaymentForm({
               onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
             />
           </label>
-          {captureCard ? (
+          {method === "card" ? (
             <>
               <label className="block text-sm">
                 <span className="mb-1 block font-medium">CEP do titular</span>
@@ -326,60 +327,43 @@ export function PaymentForm({
         </div>
       ) : null}
 
-      {captureCard ? (
-        <div className="space-y-3">
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium">Número do cartão</span>
-            <input
-              className="field font-mono tracking-wide"
-              inputMode="numeric"
-              autoComplete="cc-number"
-              placeholder="ACCT-000003"
-              value={number}
+      {method === "card" && defaultSaved ? (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Cartão</legend>
+          <div className="grid gap-2">
+            <button
+              type="button"
               disabled={pending}
-              onChange={(e) => setNumber(formatCard(e.target.value))}
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium">Nome no cartão</span>
-            <input
-              className="field"
-              autoComplete="cc-name"
-              placeholder="Como está impresso"
-              value={holder}
+              onClick={() => setUseSaved(true)}
+              aria-pressed={useSaved}
+              className={`rounded-2xl border px-3 py-3 text-left text-sm ${
+                useSaved ? "border-chili bg-chili/5 font-medium" : "border-line"
+              }`}
+            >
+              Usar {formatSavedCardLabel(defaultSaved)}
+            </button>
+            <button
+              type="button"
               disabled={pending}
-              onChange={(e) => setHolder(e.target.value)}
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span className="mb-1 block font-medium">Validade</span>
-              <input
-                className="field"
-                inputMode="numeric"
-                autoComplete="cc-exp"
-                placeholder="MM/AA"
-                value={expiry}
-                disabled={pending}
-                onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-medium">CVV</span>
-              <input
-                className="field"
-                inputMode="numeric"
-                autoComplete="cc-csc"
-                placeholder="•••"
-                value={cvv}
-                disabled={pending}
-                onChange={(e) => setCvv(onlyDigits(e.target.value, 4))}
-              />
-            </label>
+              onClick={() => setUseSaved(false)}
+              aria-pressed={!useSaved}
+              className={`rounded-2xl border px-3 py-3 text-left text-sm ${
+                !useSaved ? "border-chili bg-chili/5 font-medium" : "border-line"
+              }`}
+            >
+              Usar outro cartão
+            </button>
           </div>
-        </div>
-      ) : asaas ? (
-        <p className="text-sm text-ink-soft">Você confirma o PIX na página do {providerLabel}.</p>
+        </fieldset>
+      ) : null}
+
+      {method === "card" && captureCard ? (
+        <CreditCardFields draft={draft} pending={pending} onChange={setDraft} />
+      ) : method === "pix" && liveGateway ? (
+        <p className="text-sm text-ink-soft">
+          Você confirma o PIX na página do {providerLabel}. No mês seguinte será preciso pagar de
+          novo (novo QR). Cartão é a opção para renovar sozinho.
+        </p>
       ) : null}
 
       {localError ? <p className="text-sm text-chili">{localError}</p> : null}
@@ -387,12 +371,10 @@ export function PaymentForm({
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={pending} className="btn-primary">
           {pending
-            ? captureCard
+            ? method === "card"
               ? "Enviando pagamento…"
               : "Abrindo o pagamento…"
-            : captureCard
-              ? `Pagar ${amount}`
-              : `Continuar para pagar ${amount}`}
+            : ctaAmount}
         </button>
         <button type="button" disabled={pending} onClick={onCancel} className="btn-ghost">
           Cancelar

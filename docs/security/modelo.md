@@ -65,7 +65,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Cadastro B2B: e-mail, senha, nome do estabelecimento, **nome e CPF do responsável**. Telefone, CEP e número entram em Configurações → Responsável. CNPJ/CPF de **pagador** no checkout hosted se o responsável ainda não estiver completo. KYC extra entra em fatia posterior.
 - CPF do **consumidor** não coletar no MVP para pedir.
 - **Telefone + nome** na comanda pessoal (fatia 6): PII do estabelecimento (controlador). API staff devolve telefone **mascarado**. Não logar telefone.
-- PAN / CVV: só em trânsito HTTPS no `POST /v1/billing/checkout` (cartão) até o Asaas. Não persistir, não logar. Guardamos `credit_card_token` cifrado + last4. PIX continua na página hosted. [ADR-020](../decisions/ADR-020-cartao-no-painel.md).
+- PAN / CVV: só em trânsito HTTPS no `POST /v1/billing/checkout` e `POST /v1/billing/cards` até o Asaas. Não persistir, não logar. Guardamos token cifrado + last4 (+ brand). PIX continua na página hosted. [ADR-020](../decisions/ADR-020-cartao-no-painel.md), [ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md).
 
 ## Cadastro B2B (KYC — fatia posterior)
 

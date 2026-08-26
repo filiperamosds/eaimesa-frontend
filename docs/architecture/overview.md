@@ -58,7 +58,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel/configuracoes/chamada` | Ligar/desligar “Chamar garçom” + TTL (ADR-026) |
 | `/painel/configuracoes/equipe` | Staff / caixa / painel |
 | `/painel/configuracoes/responsavel` | Responsável / pagador Asaas ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)) |
-| `/painel/pagamento` | Checkout (cartão ou PIX). `/painel/bar/plano` redireciona para cá |
+| `/painel/pagamento` | Checkout (cartão, PIX, cartões salvos, upgrade/downgrade). `/painel/bar/plano` redireciona para cá |
 | `/painel/chamados` | Fila “chamar garçom” (plano Cardápio / ADR-026) |
 | `/painel/cardapio`, `/painel/bar/*`, `/painel/equipe` | Redirects legados |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |

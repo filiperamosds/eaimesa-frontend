@@ -158,10 +158,21 @@ Não guardar CPF/CNPJ nem PAN. O front envia pagador + cartão no POST de checko
 - `venue_id` UNIQUE
 - `provider`
 - `customer_id`, `subscription_id`, `checkout_id` — ids do Asaas
-- `credit_card_token` (cifrado), `card_last4`, `card_brand` — cofre Asaas; nunca PAN/CVV
+- `credit_card_token` (cifrado), `card_last4`, `card_brand` — espelho do método **default**; nunca PAN/CVV
+- `scheduled_plan`, `scheduled_plan_at` — downgrade agendado ([ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md))
 - `pending_plan`, `pending_method`, `pending_amount_cents`, `pending_event_id`, `checkout_url`
 
 Pendente some quando o webhook confirma.
+
+### VenuePaymentMethod
+
+N cartões tokenizados por venue (máx. 5). [ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md).
+
+- `venue_id`, `provider`
+- `credit_card_token` cifrado, `card_last4`, `card_brand` nullable
+- `is_default` — o que a subscription Asaas usa; ao marcar default o front mostra “assinatura atualizada”
+
+Front: `GET /v1/billing/me` → `savedCards` / `savedCard`; CRUD em `/v1/billing/cards`.
 
 ### IntegrationEvent (fatia 16)
 
@@ -227,7 +238,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`. Os dois (e o guest) podem existir juntos no browser.
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
-13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado).
+13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado) e em `venue_payment_methods` (até 5).
 14. Webhook autenticado grava `integration_events` (body + meta sanitizado); token nunca entra em `meta`.
 
 ## Planejado — fatia 15 (chamar garçom)
