@@ -1,3 +1,5 @@
+import type { VenueModules } from "@eaimesa/shared";
+
 export type Venue = {
   id: string;
   name: string;
@@ -13,6 +15,8 @@ export type Venue = {
   staffCanCloseTabs?: boolean;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
+  /** Fatia 16 — módulos efetivos do venue (ADR-029). */
+  modules?: VenueModules;
   representative?: {
     name: string;
     cpfCnpj: string;

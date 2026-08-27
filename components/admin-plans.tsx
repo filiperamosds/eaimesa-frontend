@@ -1,10 +1,12 @@
 "use client";
 
-import { formatBrlFromCents, PLAN_KIND_LABEL, type PlanKind } from "@eaimesa/shared";
+import { formatBrlFromCents, MODULE_GROUP_LABEL, type ModuleGroup, PLAN_KIND_LABEL, type PlanKind } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { MoneyField } from "./masked-fields";
 import { PlanPrice } from "./plan-price";
+
+type ModuleCatalogRow = { key: string; name: string; group: ModuleGroup; active: boolean };
 
 type PlanRow = {
   id: string;
@@ -52,6 +54,8 @@ export function AdminPlans() {
   const [create, setCreate] = useState<CreateDraft>(emptyCreate);
   const [trialDays, setTrialDays] = useState(7);
   const [paidPeriodDays, setPaidPeriodDays] = useState(30);
+  const [catalog, setCatalog] = useState<ModuleCatalogRow[]>([]);
+  const [planModules, setPlanModules] = useState<Record<string, string[]>>({});
 
   async function load() {
     const me = await api<PlansPayload>("/v1/platform/plans");
@@ -63,6 +67,42 @@ export function AdminPlans() {
         me.plans.map((p) => [p.id, { ...p, features: [...p.features], promoPriceCents: p.promoPriceCents ?? null }]),
       ),
     );
+    const mods = await api<{ modules: ModuleCatalogRow[] }>("/v1/platform/modules");
+    setCatalog(mods.modules.filter((m) => m.active));
+    const pairs = await Promise.all(
+      me.plans.map(async (p) => {
+        const r = await api<{ modules: string[] }>(`/v1/platform/plans/${p.id}/modules`);
+        return [p.id, r.modules] as const;
+      }),
+    );
+    setPlanModules(Object.fromEntries(pairs));
+  }
+
+  async function saveModules(planId: string) {
+    setPending(`modules:${planId}`);
+    setError(null);
+    setOk(null);
+    try {
+      const keys = planModules[planId] ?? [];
+      await api(`/v1/platform/plans/${planId}/modules`, {
+        method: "PUT",
+        body: JSON.stringify({ modules: keys }),
+      });
+      setOk("Módulos do plano atualizados. Os estabelecimentos desse plano já refletem a mudança.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível salvar os módulos.");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  function toggleModule(planId: string, key: string, on: boolean) {
+    setPlanModules((cur) => {
+      const set = new Set(cur[planId] ?? []);
+      if (on) set.add(key);
+      else set.delete(key);
+      return { ...cur, [planId]: [...set] };
+    });
   }
 
   useEffect(() => {
@@ -363,6 +403,38 @@ export function AdminPlans() {
               />
               Listado na vitrine (landing / cadastro)
             </label>
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-medium">Módulos do plano</p>
+              <p className="mt-1 text-xs text-white/45">
+                O que este plano libera. Estabelecimentos do plano refletem a mudança.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {catalog.map((m) => {
+                  const checked = (planModules[p.id] ?? []).includes(m.key);
+                  return (
+                    <label key={m.key} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => toggleModule(p.id, m.key, e.target.checked)}
+                      />
+                      <span>
+                        {m.name}
+                        <span className="ml-1 text-xs text-white/35">· {MODULE_GROUP_LABEL[m.group]}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                disabled={pending !== null}
+                onClick={() => void saveModules(p.id)}
+                className="btn-ghost mt-3 !py-1.5 text-sm text-white/80"
+              >
+                Salvar módulos
+              </button>
+            </div>
             <button
               type="button"
               disabled={pending !== null}
