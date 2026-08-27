@@ -1,6 +1,7 @@
 "use client";
 
 import { formatBrlFromCents, GUEST_ORDER_STATUS_LABEL } from "@eaimesa/shared";
+import { printThermalReceipt } from "../lib/print-thermal-receipt";
 import type { StaffTableTab } from "../lib/types";
 
 type Props = {
@@ -29,7 +30,7 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
   const cancelled = tab.orders.filter((o) => o.status === "cancelled");
 
   function print() {
-    window.print();
+    printThermalReceipt(venueName, tableLabel, tab);
   }
 
   return (
@@ -120,6 +121,9 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
             </div>
             <p className="mt-3 text-center text-[11px] text-ink-soft">
               Documento de conferência — não é cupom fiscal.
+            </p>
+            <p className="mt-2 text-center text-[11px] text-ink-soft print:hidden">
+              Na impressora: papel 80&nbsp;mm, sem cabeçalho nem rodapé. Não escolha A4.
             </p>
           </div>
         </div>
