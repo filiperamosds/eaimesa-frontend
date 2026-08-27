@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { RequireOpenCashSettings } from "../../../../components/require-open-cash-settings";
-import { ServiceFeeSettings } from "../../../../components/service-fee-settings";
+import { FinanceSettings } from "../../../../components/finance-settings";
 
 export const metadata = { title: "Financeiro" };
 
@@ -15,16 +14,7 @@ export default function ConfigFinanceiroPage() {
         </Link>
         .
       </p>
-      <div className="space-y-10">
-        <section>
-          <h3 className="mb-4 font-serif text-xl">Caixa</h3>
-          <RequireOpenCashSettings />
-        </section>
-        <section>
-          <h3 className="mb-4 font-serif text-xl">Taxa de serviço</h3>
-          <ServiceFeeSettings />
-        </section>
-      </div>
+      <FinanceSettings />
     </div>
   );
 }
