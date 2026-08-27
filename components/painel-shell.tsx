@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isPanelMember, planAllowsService, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
+import { isPanelMember, planAllowsService, shouldPromptSubscriptionPayment, venueHasModule } from "@eaimesa/shared";
 import { api } from "../lib/api";
 import { paymentPromptForVenue } from "../lib/billing-prompt";
 import type { Session } from "../lib/types";
@@ -11,9 +11,10 @@ import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
 
 const ALL_LINKS = [
-  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true, cardapioOnly: false },
-  { href: "/painel/chamados", label: "Chamados", icon: "◎", service: false, cardapioOnly: true },
-  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false, cardapioOnly: false },
+  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true, cardapioOnly: false, module: null },
+  { href: "/painel/financeiro", label: "Financeiro", icon: "$", service: true, cardapioOnly: false, module: "finance" },
+  { href: "/painel/chamados", label: "Chamados", icon: "◎", service: false, cardapioOnly: true, module: null },
+  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false, cardapioOnly: false, module: null },
 ] as const;
 
 /** Rotas só do Auto atendimento — Cardápio é redirecionado. */
@@ -85,6 +86,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
         const service = planAllowsService(me.venue.planKind ?? me.venue.plan);
         if (l.service && !service) return false;
         if (l.cardapioOnly && service) return false;
+        if (l.module === "finance" && !venueHasModule(me.venue, "finance", service)) return false;
         return true;
       });
 
