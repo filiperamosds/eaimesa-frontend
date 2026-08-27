@@ -1,6 +1,6 @@
 # Fatia 8 — Fila do garçom
 
-O dono já tem o Kanban em `/painel/pedidos`. O **garçom** precisa da mesma fila no celular: aceitar, preparar, entregar — sem entrar no painel do dono.
+O dono já tem o Kanban em `/painel/pedidos`. O **garçom** precisa da mesma fila no celular: preparar, entregar, ver cancelados — sem entrar no painel do dono.
 
 ## Inclui
 
@@ -23,7 +23,7 @@ Lançar itens **não** é nesta tela. O garçom abre a mesa em `/garcom`, entra 
 
 1. Login garçom → `/garcom` (mesas) ou **Pedidos**.
 2. Pedido do cardápio (guest) ou lançado na comanda cai em **Novos** (`pending`). Com a térmica ligada em Configurações → Estabelecimento, a via sai na POS80 sem a caixa do Chrome.
-3. Garçom Aceitar → Preparar → Entregar.
+3. Garçom Preparar → Entregar. Cancelados ficam na última coluna.
 4. Para incluir itens: **Mesas** → comanda aberta → dialog **Adicionar pedido** (categorias, depois itens).
 
 O Kanban do dono (`/v1/owner/orders`) continua. A regra de status é a mesma.

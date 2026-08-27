@@ -7,7 +7,7 @@ Fila do estabelecimento na tela. O dono (depois o garçom) vê os pedidos em col
 - Board Kanban em `/painel/pedidos` — **entrada padrão do painel** após o login (`/painel` redireciona para cá). Perfil **Painel** (cozinha/bar) usa a mesma rota, só com as categorias do cadastro ([fatia 14](fatia-14-kanban-painel.md)).
 - Abas visíveis no topo: Pedidos | Configurações (plano Cardápio: só Configurações). Mesas ficam em Configurações → Mesas.
 - Pedido de **balcão** na comanda da mesa (`/garcom`; preço snapshot no servidor)
-- Mudança de status: `pending` → `accepted` → `preparing` → `delivered` (e `cancelled`)
+- Mudança de status: `pending` → `preparing` → `delivered` (e `cancelled`; `accepted` legado cai em Preparando)
 - API `GET/POST /v1/owner/orders` e `PATCH /v1/owner/orders/{id}`
 - Seed local: **Seu Estabelecimento** (plano Cardápio) — sem pedidos demo
 
@@ -31,12 +31,12 @@ Ver [ADR-005](../decisions/ADR-005-kanban-pedidos.md).
 
 | Coluna | Status | Ação típica |
 |--------|--------|-------------|
-| Novos | `pending` | Aceitar |
-| Aceitos | `accepted` | Mandar preparar |
-| Preparando | `preparing` | Marcar entregue |
+| Novos | `pending` | Preparar |
+| Preparando | `preparing` (e `accepted` legado) | Marcar entregue |
 | Entregues | `delivered` | Arquivo do turno |
+| Cancelados | `cancelled` | Sem avanço |
 
-Cancelados saem do board (`cancelled`).
+Não há coluna Aceitos. `accepted` permanece no banco e na API; no board entra em Preparando.
 
 ## Card
 
