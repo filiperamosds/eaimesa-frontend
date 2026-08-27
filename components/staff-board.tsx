@@ -7,7 +7,12 @@ import type { ClaimResponse, Session, StaffTable } from "../lib/types";
 import { ClaimQrModal } from "./claim-qr-modal";
 import { StaffTableDialog } from "./staff-table-dialog";
 
-type TablesPayload = { tables: StaffTable[]; canCloseTabs?: boolean };
+type TablesPayload = {
+  tables: StaffTable[];
+  canCloseTabs?: boolean;
+  requireOpenCash?: boolean;
+  cashSessionOpen?: boolean;
+};
 
 function isOccupied(table: StaffTable) {
   return table.sessionOpen || table.openTabCount > 0;
@@ -17,6 +22,8 @@ export function StaffBoard() {
   const [me, setMe] = useState<Session | null>(null);
   const [tables, setTables] = useState<StaffTable[]>([]);
   const [canClose, setCanClose] = useState(true);
+  const [requireOpenCash, setRequireOpenCash] = useState(false);
+  const [cashSessionOpen, setCashSessionOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
@@ -27,6 +34,8 @@ export function StaffBoard() {
     const data = await api<TablesPayload>("/v1/staff/tables");
     setTables(data.tables);
     if (typeof data.canCloseTabs === "boolean") setCanClose(data.canCloseTabs);
+    if (typeof data.requireOpenCash === "boolean") setRequireOpenCash(data.requireOpenCash);
+    if (typeof data.cashSessionOpen === "boolean") setCashSessionOpen(data.cashSessionOpen);
     return data.tables;
   }, []);
 
@@ -38,6 +47,8 @@ export function StaffBoard() {
         setCanClose(
           typeof data.canCloseTabs === "boolean" ? data.canCloseTabs : sessionCanCloseTabs(session),
         );
+        setRequireOpenCash(data.requireOpenCash === true);
+        setCashSessionOpen(data.cashSessionOpen !== false);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Erro ao carregar."))
       .finally(() => setLoading(false));
@@ -51,7 +62,13 @@ export function StaffBoard() {
     return () => window.clearInterval(id);
   }, [me, refreshTables]);
 
+  const cashBlocked = requireOpenCash && !cashSessionOpen;
+
   async function openClaim(table: StaffTable) {
+    if (cashBlocked) {
+      setError("Abra o caixa para gerar o QR da mesa.");
+      return;
+    }
     setError(null);
     setClaiming(table.id);
     try {
@@ -93,6 +110,11 @@ export function StaffBoard() {
       <p className="text-sm text-ink-soft">
         {me.venue.name} · toque na mesa para ver PIN, comandas e lançar pedido
       </p>
+      {cashBlocked ? (
+        <p className="mt-3 rounded-2xl border border-chili/30 bg-chili/5 px-4 py-3 text-sm text-chili">
+          Caixa fechado. Abra o turno em Caixa para gerar QR e lançar pedidos.
+        </p>
+      ) : null}
       {error ? <p className="mt-4 text-sm text-chili">{error}</p> : null}
       {tables.length === 0 ? (
         <p className="mt-8 text-center text-ink-soft">Nenhuma mesa ativa. Peça ao dono para cadastrar.</p>
@@ -147,6 +169,7 @@ export function StaffBoard() {
           tableLabel={openTable.label}
           venueName={me.venue.name}
           canClose={canClose}
+          cashBlocked={cashBlocked}
           onClose={() => {
             setOpenTable(null);
             void refreshTables();

@@ -19,6 +19,7 @@ type Props = {
   tableLabel: string;
   venueName: string;
   canClose: boolean;
+  cashBlocked?: boolean;
   onClose: () => void;
   onGenerateQr: () => void;
   onChanged: () => void;
@@ -56,6 +57,7 @@ export function StaffTableDialog({
   tableLabel,
   venueName,
   canClose,
+  cashBlocked = false,
   onClose,
   onGenerateQr,
   onChanged,
@@ -154,6 +156,11 @@ export function StaffTableDialog({
           </p>
         )}
         {error ? <p className="mt-3 text-sm text-chili">{error}</p> : null}
+        {cashBlocked ? (
+          <p className="mt-3 rounded-2xl border border-chili/30 bg-chili/5 px-3 py-2 text-sm text-chili">
+            Caixa fechado. Abra o turno para gerar QR, abrir comanda ou lançar pedido.
+          </p>
+        ) : null}
         {loading ? (
           <p className="py-10 text-center text-ink-soft">Carregando…</p>
         ) : (
@@ -226,9 +233,9 @@ export function StaffTableDialog({
             ) : (
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || cashBlocked}
                 onClick={() => setOpeningTab(true)}
-                className="btn-secondary mt-4 w-full text-sm"
+                className="btn-secondary mt-4 w-full text-sm disabled:opacity-50"
               >
                 Abrir comanda
               </button>
@@ -294,9 +301,9 @@ export function StaffTableDialog({
                 {selected.status === "open" ? (
                   <button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || cashBlocked}
                     onClick={() => setAddingTab(selected)}
-                    className="btn-primary mt-4 w-full !py-2 text-sm"
+                    className="btn-primary mt-4 w-full !py-2 text-sm disabled:opacity-50"
                   >
                     Adicionar pedido
                   </button>
@@ -318,7 +325,13 @@ export function StaffTableDialog({
           </div>
         )}
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onGenerateQr} className="btn-secondary text-sm">
+          <button
+            type="button"
+            onClick={onGenerateQr}
+            disabled={cashBlocked}
+            className="btn-secondary text-sm disabled:opacity-50"
+            title={cashBlocked ? "Abra o caixa para gerar o QR" : undefined}
+          >
             Novo QR
           </button>
           {canClose ? (

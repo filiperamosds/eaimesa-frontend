@@ -267,8 +267,8 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs`, `pinDisplay` |
-| POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Abre sessão + PIN se a mesa ainda não tiver. Body de resposta inclui `pinDisplay` |
+| GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `requireOpenCash` + `cashSessionOpen` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs`, `pinDisplay` |
+| POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Sem caixa e `requireOpenCash` → 409 `CASH_SESSION_REQUIRED` |
 | GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
 | POST | `/v1/staff/tables/{tableId}/tabs` | Garçom abre comanda `{ name, phone }` (mesmo contrato do guest). Cria sessão/PIN se faltar |
 | POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
@@ -288,6 +288,8 @@ Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier
 
 O conferido no fechar caixa **já nasce preenchido** com o esperado. O caixa corrige se a gaveta/maquininha diferir.
 
+`PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
+
 ### Staff — fila (fatia 8)
 
 Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `member.role=panel`: `GET` devolve só pedidos/itens das `categoryIds` do membro; `POST` e catalog → 403 `PANEL_FORBIDDEN`. Itens incluem `categoryId`.
@@ -306,6 +308,8 @@ Resposta de `GET /v1/staff/tables` (recorte):
 ```json
 {
   "canCloseTabs": true,
+  "requireOpenCash": false,
+  "cashSessionOpen": true,
   "tables": [
     {
       "id": "uuid",
