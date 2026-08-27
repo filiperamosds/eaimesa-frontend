@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/admin/bares", label: "Estabelecimentos" },
   { href: "/admin/equipe", label: "Equipe" },
   { href: "/admin/planos", label: "Planos" },
+  { href: "/admin/modulos", label: "Módulos" },
   { href: "/admin/logs", label: "Logs" },
   { href: "/admin/integracoes", label: "Integrações" },
 ];
