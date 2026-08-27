@@ -274,6 +274,20 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 | POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
 | POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta). Mesma regra de close |
 
+### Staff — caixa por turno (financeiro)
+
+Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier`** — garçom → 403 `CASHIER_REQUIRED`.
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/staff/tabs/{tabId}/settlement` | Preview: subtotal, taxa, total devido |
+| POST | `/v1/staff/cash-sessions` | Abre caixa `{ openingFloatCents }`; resposta inclui `expectedByMethod` |
+| GET | `/v1/staff/cash-sessions/current` | Caixa aberto + `expectedByMethod` ao vivo (vendas do turno + fundo + movimentações). 404 se nenhum |
+| POST | `/v1/staff/cash-sessions/{id}/movements` | `{ type: sangria\|suprimento\|ajuste, amountCents, reason }` |
+| POST | `/v1/staff/cash-sessions/{id}/close` | `{ countedByMethod }` — formas omitidas = esperado |
+
+O conferido no fechar caixa **já nasce preenchido** com o esperado. O caixa corrige se a gaveta/maquininha diferir.
+
 ### Staff — fila (fatia 8)
 
 Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `member.role=panel`: `GET` devolve só pedidos/itens das `categoryIds` do membro; `POST` e catalog → 403 `PANEL_FORBIDDEN`. Itens incluem `categoryId`.
