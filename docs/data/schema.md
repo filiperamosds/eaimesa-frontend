@@ -89,6 +89,7 @@ Máximo **5 membros ativos** (garçom + caixa + painel) por venue no plano Auto 
 Ocupação da mesa + PIN do grupo.
 
 - `id`, `venue_id`, `table_id` → VenueTable
+- `waiter_member_id` nullable → VenueMember: quem abriu a ocupação (taxa de serviço no financeiro — [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md))
 - `pin_hash` (bcrypt) e `pin_display` (criptografado, para mostrar o PIN a quem já está na mesa)
 - `status`: `open` | `closed`
 - `closed_at`, timestamps

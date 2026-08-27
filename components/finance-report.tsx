@@ -15,8 +15,21 @@ const METHOD_LABEL: Record<string, string> = {
 
 type Summary = {
   range: { from: string; to: string };
-  kpis: { grossCents: number; settlements: number; avgTicketCents: number; items: number };
+  kpis: {
+    grossCents: number;
+    serviceFeeCents?: number;
+    settlements: number;
+    avgTicketCents: number;
+    items: number;
+  };
   byMethod?: { method: string; amountCents: number; count: number }[];
+  byWaiter?: {
+    waiterMemberId: string | null;
+    name: string;
+    serviceFeeCents: number;
+    salesCents: number;
+    tabs: number;
+  }[];
 };
 
 type TopItems = { items: { name: string; qty: number; revenueCents: number }[] };
@@ -33,6 +46,7 @@ export function FinanceReport() {
   const [from, setFrom] = useState(daysAgo(30));
   const [to, setTo] = useState(today());
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [waiters, setWaiters] = useState<Summary | null>(null);
   const [top, setTop] = useState<TopItems | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,11 +56,13 @@ export function FinanceReport() {
     setError(null);
     try {
       const qs = `from=${from}&to=${to}`;
-      const [s, t] = await Promise.all([
+      const [s, w, t] = await Promise.all([
         api<Summary>(`/v1/owner/finance/summary?groupBy=method&${qs}`),
+        api<Summary>(`/v1/owner/finance/summary?groupBy=waiter&${qs}`),
         api<TopItems>(`/v1/owner/finance/top-items?limit=10&${qs}`),
       ]);
       setSummary(s);
+      setWaiters(w);
       setTop(t);
     } catch (err) {
       setError(
@@ -73,7 +89,7 @@ export function FinanceReport() {
         <p className="eyebrow">Financeiro</p>
         <h1 className="mt-2 font-serif text-3xl">Faturamento</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          Recebimentos registrados no fechamento das comandas. Sem comissão sobre o consumo.
+          Recebimentos no fechamento e taxa de serviço de quem abriu a mesa.
         </p>
       </div>
 
@@ -98,8 +114,9 @@ export function FinanceReport() {
 
       {summary ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <Kpi label="Recebido" value={formatBrlFromCents(summary.kpis.grossCents)} />
+            <Kpi label="Taxa de serviço" value={formatBrlFromCents(summary.kpis.serviceFeeCents ?? 0)} />
             <Kpi label="Comandas" value={String(summary.kpis.settlements)} />
             <Kpi label="Ticket médio" value={formatBrlFromCents(summary.kpis.avgTicketCents)} />
             <Kpi label="Itens vendidos" value={String(summary.kpis.items)} />
@@ -121,6 +138,36 @@ export function FinanceReport() {
               </ul>
             ) : (
               <p className="mt-2 text-sm text-ink-soft">Nenhum recebimento no período.</p>
+            )}
+          </div>
+
+          <div className="surface p-5">
+            <p className="font-medium">Taxa de serviço por funcionário</p>
+            <p className="mt-1 text-xs text-ink-soft">
+              Quem abriu a mesa recebe a taxa daquelas comandas. Não rateia entre a equipe.
+            </p>
+            {waiters?.byWaiter && waiters.byWaiter.length > 0 ? (
+              <ul className="mt-3 divide-y divide-line">
+                {waiters.byWaiter.map((w) => (
+                  <li
+                    key={w.waiterMemberId ?? "none"}
+                    className="flex items-center justify-between gap-3 py-2 text-sm"
+                  >
+                    <span>
+                      <span className="font-medium">{w.name}</span>
+                      <span className="ml-2 text-xs text-ink-soft">
+                        {w.tabs} comanda{w.tabs === 1 ? "" : "s"} · consumo{" "}
+                        {formatBrlFromCents(w.salesCents)}
+                      </span>
+                    </span>
+                    <span className="tabular-nums font-medium text-chili">
+                      {formatBrlFromCents(w.serviceFeeCents)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-ink-soft">Nenhuma taxa no período.</p>
             )}
           </div>
 
