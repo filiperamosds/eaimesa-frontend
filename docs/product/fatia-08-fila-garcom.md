@@ -22,7 +22,7 @@ Lançar itens **não** é nesta tela. O garçom abre a mesa em `/garcom`, entra 
 ## Fluxo
 
 1. Login garçom → `/garcom` (mesas) ou **Pedidos**.
-2. Pedido do cardápio (guest) ou lançado na comanda cai em **Novos** (`pending`). Com **Imprimir novos na térmica** ligado, a via sai na POS80 sem a caixa do Chrome.
+2. Pedido do cardápio (guest) ou lançado na comanda cai em **Novos** (`pending`). Com a térmica ligada em Configurações → Estabelecimento, a via sai na POS80 sem a caixa do Chrome.
 3. Garçom Aceitar → Preparar → Entregar.
 4. Para incluir itens: **Mesas** → comanda aberta → dialog **Adicionar pedido** (categorias, depois itens).
 

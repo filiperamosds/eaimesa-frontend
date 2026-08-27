@@ -44,7 +44,7 @@ Cancelados saem do board (`cancelled`).
 - Tempo desde a criação
 - Itens (qty × nome) e total
 - Nota do pedido, se houver
-- **Imprimir** (ESC/POS USB) e, no topo, **Imprimir novos na térmica** (auto, sem diálogo do Chrome)
+- **Imprimir** (ESC/POS USB). Auto-print liga em Configurações → Estabelecimento.
 
 Toque no card expande os itens. Botões avançam o status (mais confiável no celular que arrastar).
 

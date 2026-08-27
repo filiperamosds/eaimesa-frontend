@@ -4,6 +4,7 @@ import { planAllowsService } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import type { Session } from "../lib/types";
+import { ThermalPrintSettings } from "./thermal-print-settings";
 import { VenueCloseSettings } from "./venue-close-settings";
 import { VenueSettings } from "./venue-settings";
 
@@ -26,6 +27,16 @@ export function ConfigBarPanels() {
         </p>
         <VenueSettings />
       </div>
+      {service ? (
+        <div>
+          <h2 className="font-serif text-2xl">Impressora térmica</h2>
+          <p className="mt-2 mb-8 max-w-2xl text-ink-soft">
+            Via dos pedidos novos no Kanban e cupom de conferência, neste Chrome, sem a caixa de
+            imprimir do sistema.
+          </p>
+          <ThermalPrintSettings />
+        </div>
+      ) : null}
       {service ? (
         <div>
           <h2 className="font-serif text-2xl">Encerramento no salão</h2>

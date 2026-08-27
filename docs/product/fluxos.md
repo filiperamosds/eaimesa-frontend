@@ -231,4 +231,4 @@ Na fatia 1, `suspended` ainda mostra o cardápio (read-only) com aviso, se o sta
 
 ## Impressora
 
-No Kanban (`/painel/pedidos`, `/garcom/pedidos`): **Imprimir novos na térmica** (Chrome USB, [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Pedido novo em `pending` gera via ESC/POS; falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
+No Kanban (`/painel/pedidos`, `/garcom/pedidos`): auto-print liga em **Configurações → Estabelecimento** (Chrome USB, [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Pedido novo em `pending` gera via ESC/POS; falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
