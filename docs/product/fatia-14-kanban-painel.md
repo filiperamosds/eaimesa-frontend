@@ -15,7 +15,7 @@ Monitor na parede da cozinha ou do bar: só a fila, só os itens daquela estaç�
 
 - Status por item (o pedido inteiro avança junto)
 - SSE / som
-- Impressora
+- Agente local de impressora (via USB no Kanban: [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md))
 - App `/kds` separado
 
 ## Fluxo

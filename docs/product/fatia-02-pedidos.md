@@ -19,7 +19,7 @@ O cardápio público `/{slug}` **não** tem pedidos — só o painel autenticado
 - Claim do garçom, PIN, cookie guest
 - Mesas como entidade (fatia 3)
 - SSE / som de novo pedido (poll curto no board)
-- Impressora térmica
+- Agente local de impressora (a via USB no Kanban está na [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md))
 
 ## Por que Kanban
 
@@ -44,6 +44,7 @@ Cancelados saem do board (`cancelled`).
 - Tempo desde a criação
 - Itens (qty × nome) e total
 - Nota do pedido, se houver
+- **Imprimir** (ESC/POS USB) e, no topo, **Imprimir novos na térmica** (auto, sem diálogo do Chrome)
 
 Toque no card expande os itens. Botões avançam o status (mais confiável no celular que arrastar).
 

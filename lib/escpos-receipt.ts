@@ -1,5 +1,5 @@
 import { formatBrlFromCents, GUEST_ORDER_STATUS_LABEL, type OrderStatus } from "@eaimesa/shared";
-import type { StaffTableTab } from "./types";
+import type { StaffOrder, StaffTableTab } from "./types";
 
 /** Font A em papel 80 mm: 48 colunas. */
 export const ESCPOS_COLS = 48;
@@ -215,5 +215,52 @@ export function encodeEscPosReceipt(venueName: string, tableLabel: string, tab: 
     cmd(GS, 0x56, 0x41, 0x03),
   );
 
+  return concat(chunks);
+}
+
+function centerW(value: string, width: number): string {
+  if (value.length >= width) return value.slice(0, width);
+  const pad = Math.floor((width - value.length) / 2);
+  return `${" ".repeat(pad)}${value}`;
+}
+
+function qtyLine(qty: number, name: string, note: string | null): string {
+  const lines = wrap(`${qty}x ${name}`, ESCPOS_COLS);
+  if (note) lines.push(...wrap(`  ${note}`, ESCPOS_COLS));
+  return `${lines.join("\n")}\n`;
+}
+
+/** Via da cozinha/bar — um pedido, sem total a receber. */
+export function encodeEscPosKitchenTicket(order: StaffOrder): Uint8Array {
+  const who = [order.tableLabel, order.guestName].filter(Boolean).join(" - ");
+  const source = order.source === "guest" ? "Cardápio" : "Balcão";
+  const chunks: Uint8Array[] = [
+    cmd(ESC, 0x40),
+    cmd(ESC, 0x74, 0x02),
+    cmd(ESC, 0x61, 0x01),
+    cmd(GS, 0x21, 0x11),
+    text(`${centerW("NOVO PEDIDO", 24)}\n`),
+    text(`${centerW(order.tableLabel || "Mesa", 24)}\n`),
+    cmd(GS, 0x21, 0x00),
+    cmd(ESC, 0x61, 0x00),
+    text(dash()),
+    text(`${center(who)}\n`),
+    text(`${center(`${source}  ${when(order.createdAt)}`)}\n`),
+    text(dash()),
+  ];
+
+  if (order.items.length === 0) {
+    chunks.push(cmd(ESC, 0x61, 0x01), text("Nenhum item.\n"), cmd(ESC, 0x61, 0x00));
+  } else {
+    for (const item of order.items) {
+      chunks.push(text(qtyLine(item.qty, item.name, item.note)));
+    }
+  }
+
+  if (order.note) {
+    chunks.push(text(dash()), text(`${wrap(`Obs.: ${order.note}`, ESCPOS_COLS).join("\n")}\n`));
+  }
+
+  chunks.push(text("\n\n"), cmd(GS, 0x56, 0x41, 0x03));
   return concat(chunks);
 }
