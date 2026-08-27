@@ -10,15 +10,30 @@ import type { Session } from "../lib/types";
 import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
 
+// Nav do painel = módulos do plano. Configurações fica só no avatar.
+// `module` é a chave do módulo (ADR-029); `always` mostra o link mesmo quando
+// `venue.modules` não veio (compat) para módulos que existem em qualquer plano.
 const ALL_LINKS = [
-  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", service: true, cardapioOnly: false },
-  { href: "/painel/chamados", label: "Chamados", icon: "◎", service: false, cardapioOnly: true },
-  { href: "/painel/configuracoes", label: "Configurações", icon: "☰", service: false, cardapioOnly: false },
+  { href: "/painel/pedidos", label: "Pedidos", icon: "▣", module: "orders_kanban", always: false },
+  { href: "/painel/financeiro", label: "Financeiro", icon: "$", module: "finance", always: false },
+  { href: "/painel/mesas", label: "Mesas", icon: "▦", module: "tables", always: true },
+  { href: "/painel/chamados", label: "Chamados", icon: "◎", module: "waiter_call", always: true },
+  { href: "/painel/caixa", label: "Caixa", icon: "▤", module: "finance", always: false },
 ] as const;
+
+const COLS: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-2",
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+};
 
 /** Rotas só do Auto atendimento — Cardápio é redirecionado. */
 const SERVICE_ONLY_PREFIXES = [
   "/painel/pedidos",
+  "/painel/financeiro",
+  "/painel/caixa",
   "/painel/equipe",
   "/painel/configuracoes/equipe",
   "/painel/bar/equipe",
@@ -79,13 +94,14 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
     path.startsWith("/painel/bar/plano") ||
     path.startsWith("/painel/configuracoes/responsavel");
   const prompt = promptPayment ? paymentPromptForVenue(me.venue) : null;
+  const service = planAllowsService(me.venue.planKind ?? me.venue.plan);
   const links = panel
     ? []
     : ALL_LINKS.filter((l) => {
-        const service = planAllowsService(me.venue.planKind ?? me.venue.plan);
-        if (l.service && !service) return false;
-        if (l.cardapioOnly && service) return false;
-        return true;
+        const mods = me.venue.modules;
+        // Módulos no plano vêm serializados em venue.modules; sem eles, usa fallback.
+        if (mods) return mods[l.module] !== undefined;
+        return l.always || service;
       });
 
   return (
@@ -146,14 +162,9 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
           aria-label="Painel"
           className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur-xl sm:hidden"
         >
-          <ul className={`grid px-2 py-2 ${links.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+          <ul className={`grid px-2 py-2 ${COLS[links.length] ?? "grid-cols-3"}`}>
             {links.map((l) => {
-              const active =
-                l.href === "/painel/configuracoes"
-                  ? path.startsWith("/painel/configuracoes") ||
-                    path.startsWith("/painel/pagamento") ||
-                    path.startsWith("/painel/bar")
-                  : path.startsWith(l.href);
+              const active = path.startsWith(l.href);
               return (
                 <li key={l.href}>
                   <Link
@@ -187,12 +198,7 @@ function PainelNav({
   return (
     <nav aria-label="Painel" className="flex rounded-2xl bg-paper-2/80 p-1">
       {links.map((l) => {
-        const active =
-          l.href === "/painel/configuracoes"
-            ? path.startsWith("/painel/configuracoes") ||
-              path.startsWith("/painel/pagamento") ||
-              path.startsWith("/painel/bar")
-            : path.startsWith(l.href);
+        const active = path.startsWith(l.href);
         return (
           <Link
             key={l.href}

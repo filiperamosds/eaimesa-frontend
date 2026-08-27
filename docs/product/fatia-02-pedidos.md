@@ -7,7 +7,7 @@ Fila do estabelecimento na tela. O dono (depois o garçom) vê os pedidos em col
 - Board Kanban em `/painel/pedidos` — **entrada padrão do painel** após o login (`/painel` redireciona para cá). Perfil **Painel** (cozinha/bar) usa a mesma rota, só com as categorias do cadastro ([fatia 14](fatia-14-kanban-painel.md)).
 - Abas visíveis no topo: Pedidos | Configurações (plano Cardápio: só Configurações). Mesas ficam em Configurações → Mesas.
 - Pedido de **balcão** na comanda da mesa (`/garcom`; preço snapshot no servidor)
-- Mudança de status: `pending` → `accepted` → `preparing` → `delivered` (e `cancelled`)
+- Mudança de status: `pending` → `preparing` → `delivered` (e `cancelled`; `accepted` legado cai em Preparando)
 - API `GET/POST /v1/owner/orders` e `PATCH /v1/owner/orders/{id}`
 - Seed local: **Seu Estabelecimento** (plano Cardápio) — sem pedidos demo
 
@@ -19,7 +19,7 @@ O cardápio público `/{slug}` **não** tem pedidos — só o painel autenticado
 - Claim do garçom, PIN, cookie guest
 - Mesas como entidade (fatia 3)
 - SSE / som de novo pedido (poll curto no board)
-- Impressora térmica
+- Agente local de impressora (a via USB no Kanban está na [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md))
 
 ## Por que Kanban
 
@@ -31,12 +31,12 @@ Ver [ADR-005](../decisions/ADR-005-kanban-pedidos.md).
 
 | Coluna | Status | Ação típica |
 |--------|--------|-------------|
-| Novos | `pending` | Aceitar |
-| Aceitos | `accepted` | Mandar preparar |
-| Preparando | `preparing` | Marcar entregue |
+| Novos | `pending` | Preparar |
+| Preparando | `preparing` (e `accepted` legado) | Marcar entregue |
 | Entregues | `delivered` | Arquivo do turno |
+| Cancelados | `cancelled` | Sem avanço |
 
-Cancelados saem do board (`cancelled`).
+Não há coluna Aceitos. `accepted` permanece no banco e na API; no board entra em Preparando.
 
 ## Card
 
@@ -44,6 +44,7 @@ Cancelados saem do board (`cancelled`).
 - Tempo desde a criação
 - Itens (qty × nome) e total
 - Nota do pedido, se houver
+- **Imprimir** (ESC/POS USB). Auto-print liga no card em Configurações → Estabelecimento; **Configurar impressora** autoriza a POS80 neste Chrome (não depende do Salvar).
 
 Toque no card expande os itens. Botões avançam o status (mais confiável no celular que arrastar).
 

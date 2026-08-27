@@ -71,18 +71,19 @@ export function PaymentForm({
     savedCards.find((c) => c.isDefault) ?? savedCards[0] ?? null;
   const [useSaved, setUseSaved] = useState(Boolean(defaultSaved));
   const [draft, setDraft] = useState<CreditCardDraft>(EMPTY_CARD_DRAFT);
-  const [payerName, setPayerName] = useState(initialPayer?.name ?? "");
-  const [cpfCnpj, setCpfCnpj] = useState(
+  // Dados do responsável são somente leitura aqui (edita em Configurações → Responsável).
+  const [payerName] = useState(initialPayer?.name ?? "");
+  const [cpfCnpj] = useState(
     initialPayer?.cpfCnpj ? formatCpfCnpjInput(initialPayer.cpfCnpj) : "",
   );
-  const [email, setEmail] = useState(initialPayer?.email || defaultEmail);
-  const [phone, setPhone] = useState(
+  const [email] = useState(initialPayer?.email || defaultEmail);
+  const [phone] = useState(
     initialPayer?.phone ? formatPhoneInput(initialPayer.phone) : "",
   );
-  const [postalCode, setPostalCode] = useState(
+  const [postalCode] = useState(
     initialPayer?.postalCode ? formatCepInput(initialPayer.postalCode) : "",
   );
-  const [addressNumber, setAddressNumber] = useState(initialPayer?.addressNumber ?? "");
+  const [addressNumber] = useState(initialPayer?.addressNumber ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
   const amount = formatBrlFromCents(amountCents);
   const hosted = checkoutMode === "hosted";
@@ -243,84 +244,38 @@ export function PaymentForm({
 
       {needPayer ? (
         <div className="space-y-3">
-          {isRepresentativeComplete(initialPayer) ? (
-            <p className="rounded-2xl border border-line bg-paper-2/60 px-3 py-2 text-xs text-ink-soft">
-              Pagador pré-preenchido com o responsável. Sem alterar os campos, o checkout usa o
-              cadastro salvo.
-            </p>
-          ) : null}
+          <p className="rounded-2xl border border-line bg-paper-2/60 px-3 py-2 text-xs text-ink-soft">
+            Dados do responsável (somente leitura). Para alterar, vá em{" "}
+            <a href="/painel/configuracoes/responsavel" className="font-medium text-chili underline">
+              Configurações → Responsável
+            </a>
+            .
+          </p>
           <label className="block text-sm">
             <span className="mb-1 block font-medium">Nome do pagador</span>
-            <input
-              className="field"
-              autoComplete="name"
-              placeholder="Como no documento"
-              value={payerName}
-              disabled={pending}
-              onChange={(e) => setPayerName(e.target.value)}
-            />
+            <input className="field" value={payerName} disabled readOnly />
           </label>
           <label className="block text-sm">
             <span className="mb-1 block font-medium">CPF ou CNPJ</span>
-            <input
-              className="field font-mono tracking-wide"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="000.000.000-00"
-              value={cpfCnpj}
-              disabled={pending}
-              onChange={(e) => setCpfCnpj(formatCpfCnpjInput(e.target.value))}
-            />
+            <input className="field font-mono tracking-wide" value={cpfCnpj} disabled readOnly />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium">E-mail de cobrança (opcional)</span>
-            <input
-              className="field"
-              type="email"
-              autoComplete="email"
-              value={email}
-              disabled={pending}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <span className="mb-1 block font-medium">E-mail de cobrança</span>
+            <input className="field" type="email" value={email} disabled readOnly />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium">
-              Telefone{method === "card" ? "" : " (opcional)"}
-            </span>
-            <input
-              className="field"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="(11) 98888-7777"
-              value={phone}
-              disabled={pending}
-              onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-            />
+            <span className="mb-1 block font-medium">Telefone</span>
+            <input className="field" value={phone} disabled readOnly />
           </label>
           {method === "card" ? (
             <>
               <label className="block text-sm">
                 <span className="mb-1 block font-medium">CEP do titular</span>
-                <input
-                  className="field font-mono tracking-wide"
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  placeholder="00000-000"
-                  value={postalCode}
-                  disabled={pending}
-                  onChange={(e) => setPostalCode(formatCepInput(e.target.value))}
-                />
+                <input className="field font-mono tracking-wide" value={postalCode} disabled readOnly />
               </label>
               <label className="block text-sm">
                 <span className="mb-1 block font-medium">Número do endereço</span>
-                <input
-                  className="field"
-                  autoComplete="address-line2"
-                  placeholder="123"
-                  value={addressNumber}
-                  disabled={pending}
-                  onChange={(e) => setAddressNumber(e.target.value)}
-                />
+                <input className="field" value={addressNumber} disabled readOnly />
               </label>
             </>
           ) : null}

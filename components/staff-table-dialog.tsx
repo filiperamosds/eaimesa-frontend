@@ -11,6 +11,7 @@ import { api, ApiError } from "../lib/api";
 import type { StaffOrder, StaffTableTab, StaffTableTabsPayload } from "../lib/types";
 import { PhoneField } from "./masked-fields";
 import { StaffAddOrderDialog } from "./staff-add-order-dialog";
+import { StaffCloseTabDialog } from "./staff-close-tab-dialog";
 import { StaffTabReceipt } from "./staff-tab-receipt";
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
   tableLabel: string;
   venueName: string;
   canClose: boolean;
+  cashBlocked?: boolean;
   onClose: () => void;
   onGenerateQr: () => void;
   onChanged: () => void;
@@ -55,6 +57,7 @@ export function StaffTableDialog({
   tableLabel,
   venueName,
   canClose,
+  cashBlocked = false,
   onClose,
   onGenerateQr,
   onChanged,
@@ -69,6 +72,7 @@ export function StaffTableDialog({
   const [addingTab, setAddingTab] = useState<StaffTableTab | null>(null);
   const [openingTab, setOpeningTab] = useState(false);
   const [receiptTab, setReceiptTab] = useState<StaffTableTab | null>(null);
+  const [closingTab, setClosingTab] = useState<StaffTableTab | null>(null);
 
   async function load(opts?: { silent?: boolean }) {
     if (!opts?.silent) {
@@ -114,20 +118,6 @@ export function StaffTableDialog({
   const pin = data?.table.pinDisplay ?? null;
   const unassigned = data?.unassignedOrders ?? [];
 
-  async function closeTab(tabId: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      await api(`/v1/staff/tabs/${tabId}/close`, { method: "POST" });
-      await load();
-      onChanged();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível fechar a comanda.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function closeTable() {
     setBusy(true);
     setError(null);
@@ -166,6 +156,11 @@ export function StaffTableDialog({
           </p>
         )}
         {error ? <p className="mt-3 text-sm text-chili">{error}</p> : null}
+        {cashBlocked ? (
+          <p className="mt-3 rounded-2xl border border-chili/30 bg-chili/5 px-3 py-2 text-sm text-chili">
+            Caixa fechado. Abra o turno para gerar QR, abrir comanda ou lançar pedido.
+          </p>
+        ) : null}
         {loading ? (
           <p className="py-10 text-center text-ink-soft">Carregando…</p>
         ) : (
@@ -238,9 +233,9 @@ export function StaffTableDialog({
             ) : (
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || cashBlocked}
                 onClick={() => setOpeningTab(true)}
-                className="btn-secondary mt-4 w-full text-sm"
+                className="btn-secondary mt-4 w-full text-sm disabled:opacity-50"
               >
                 Abrir comanda
               </button>
@@ -306,9 +301,9 @@ export function StaffTableDialog({
                 {selected.status === "open" ? (
                   <button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || cashBlocked}
                     onClick={() => setAddingTab(selected)}
-                    className="btn-primary mt-4 w-full !py-2 text-sm"
+                    className="btn-primary mt-4 w-full !py-2 text-sm disabled:opacity-50"
                   >
                     Adicionar pedido
                   </button>
@@ -317,7 +312,7 @@ export function StaffTableDialog({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => void closeTab(selected.id)}
+                    onClick={() => setClosingTab(selected)}
                     className="btn-secondary mt-3 w-full text-sm"
                   >
                     Receber {formatBrlFromCents(selected.totalCents)} e fechar comanda
@@ -330,7 +325,13 @@ export function StaffTableDialog({
           </div>
         )}
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onGenerateQr} className="btn-secondary text-sm">
+          <button
+            type="button"
+            onClick={onGenerateQr}
+            disabled={cashBlocked}
+            className="btn-secondary text-sm disabled:opacity-50"
+            title={cashBlocked ? "Abra o caixa para gerar o QR" : undefined}
+          >
             Novo QR
           </button>
           {canClose ? (
@@ -376,6 +377,18 @@ export function StaffTableDialog({
           tableLabel={tableLabel}
           tab={receiptTab}
           onClose={() => setReceiptTab(null)}
+        />
+      ) : null}
+      {closingTab ? (
+        <StaffCloseTabDialog
+          tabId={closingTab.id}
+          guestName={closingTab.guestName}
+          onCancel={() => setClosingTab(null)}
+          onDone={() => {
+            setClosingTab(null);
+            void load();
+            onChanged();
+          }}
         />
       ) : null}
     </div>

@@ -4,14 +4,17 @@ import {
   filterOrdersByCategories,
   formatBrlFromCents,
   KANBAN_COLUMNS,
+  kanbanColumnFor,
   ORDER_NEXT,
   ORDER_NEXT_LABEL,
   ORDER_STATUS_LABEL,
   type OrderStatus,
 } from "@eaimesa/shared";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { hasGrantedThermalPrinter, printEscPosOrder } from "../lib/print-escpos";
+import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
 import type { StaffOrder } from "../lib/types";
 
 function timeAgo(iso: string) {
@@ -24,9 +27,9 @@ function timeAgo(iso: string) {
 
 const COLUMN_DOT: Record<(typeof KANBAN_COLUMNS)[number], string> = {
   pending: "bg-chili",
-  accepted: "bg-amber",
   preparing: "bg-sage",
   delivered: "bg-ink/30",
+  cancelled: "bg-chili/50",
 };
 
 type BoardEndpoints = {
@@ -59,11 +62,38 @@ export function OrdersBoard({
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [fMesa, setFMesa] = useState("");
+  const [fNome, setFNome] = useState("");
+  const [autoPrint, setAutoPrint] = useState(false);
+  const [printingId, setPrintingId] = useState<string | null>(null);
+  const primedRef = useRef(false);
+  const seenRef = useRef(new Set<string>());
+  const autoPrintRef = useRef(false);
+  const printChain = useRef(Promise.resolve());
+
+  autoPrintRef.current = autoPrint;
 
   const load = useCallback(async () => {
     const data = await api<{ orders: StaffOrder[] }>(endpoints.list);
+    const incoming = station ? filterOrdersByCategories(data.orders, categoryIds) : data.orders;
+    if (!primedRef.current) {
+      for (const o of incoming) seenRef.current.add(o.id);
+      primedRef.current = true;
+      setOrders(data.orders);
+      return;
+    }
+    const fresh = incoming.filter((o) => o.status === "pending" && !seenRef.current.has(o.id));
+    for (const o of incoming) seenRef.current.add(o.id);
     setOrders(data.orders);
-  }, [endpoints.list]);
+    if (!autoPrintRef.current) return;
+    for (const order of fresh) {
+      printChain.current = printChain.current
+        .then(() => printEscPosOrder(order, false))
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : "Falha ao imprimir na térmica.");
+        });
+    }
+  }, [endpoints.list, station, categoryIds]);
 
   useEffect(() => {
     load().catch((e) => setError(e instanceof ApiError ? e.message : "Falha ao carregar pedidos."));
@@ -73,19 +103,52 @@ export function OrdersBoard({
     return () => clearInterval(t);
   }, [load]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isThermalAutoPrintEnabled()) return;
+    void hasGrantedThermalPrinter().then((ok) => {
+      if (ok) setAutoPrint(true);
+      else setThermalAutoPrintEnabled(false);
+    });
+  }, []);
+
   const visible = useMemo(
     () => (station ? filterOrdersByCategories(orders, categoryIds) : orders),
     [orders, station, categoryIds],
   );
 
+  const filtered = useMemo(() => {
+    const mesa = fMesa.trim().toLowerCase();
+    const nome = fNome.trim().toLowerCase();
+    if (!mesa && !nome) return visible;
+    return visible.filter((o) => {
+      const mesaOk = !mesa || (o.tableLabel ?? "").toLowerCase().includes(mesa);
+      const nomeOk = !nome || (o.guestName ?? "").toLowerCase().includes(nome);
+      return mesaOk && nomeOk;
+    });
+  }, [visible, fMesa, fNome]);
+
   const byStatus = useMemo(() => {
     const map: Record<string, StaffOrder[]> = {};
     for (const col of KANBAN_COLUMNS) map[col] = [];
-    for (const o of visible) {
-      map[o.status]?.push(o);
+    for (const o of filtered) {
+      const col = kanbanColumnFor(o.status);
+      if (col) (map[col] ??= []).push(o);
     }
     return map;
-  }, [visible]);
+  }, [filtered]);
+
+  async function printOrder(order: StaffOrder) {
+    setError(null);
+    setPrintingId(order.id);
+    try {
+      await printEscPosOrder(order, true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível imprimir na térmica.");
+    } finally {
+      setPrintingId(null);
+    }
+  }
 
   async function setStatus(id: string, status: OrderStatus) {
     setError(null);
@@ -94,10 +157,7 @@ export function OrdersBoard({
         method: "PATCH",
         body: JSON.stringify({ status }),
       });
-      setOrders((cur) => {
-        if (status === "cancelled") return cur.filter((o) => o.id !== id);
-        return cur.map((o) => (o.id === id ? updated : o));
-      });
+      setOrders((cur) => cur.map((o) => (o.id === id ? updated : o)));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível atualizar.");
     }
@@ -113,16 +173,46 @@ export function OrdersBoard({
             {station
               ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
               : compact
-                ? "Aceite e avance os pedidos. Para lançar itens, abra a mesa em Mesas."
+                ? "Avance os pedidos. Para lançar itens, abra a mesa em Mesas."
                 : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
           </p>
         </div>
-        {station ? null : (
+        {compact && !station ? (
           <Link href="/garcom" className="btn-secondary !py-2 text-sm">
             Mesas e comandas
           </Link>
-        )}
+        ) : null}
       </div>
+      {station ? null : (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <input
+            className="field max-w-[12rem]"
+            placeholder="Filtrar por mesa"
+            value={fMesa}
+            onChange={(e) => setFMesa(e.target.value)}
+            aria-label="Filtrar por mesa"
+          />
+          <input
+            className="field max-w-[14rem]"
+            placeholder="Filtrar por comanda (nome)"
+            value={fNome}
+            onChange={(e) => setFNome(e.target.value)}
+            aria-label="Filtrar por nome de comanda"
+          />
+          {fMesa || fNome ? (
+            <button
+              type="button"
+              onClick={() => {
+                setFMesa("");
+                setFNome("");
+              }}
+              className="btn-ghost !py-2 text-sm"
+            >
+              Limpar
+            </button>
+          ) : null}
+        </div>
+      )}
       {error ? <p className="mb-3 text-sm text-chili">{error}</p> : null}
       <div className="flex gap-3 overflow-x-auto pb-4">
         {KANBAN_COLUMNS.map((col) => (
@@ -149,6 +239,8 @@ export function OrdersBoard({
                     if (next) void setStatus(order.id, next);
                   }}
                   onCancel={() => void setStatus(order.id, "cancelled")}
+                  printing={printingId === order.id}
+                  onPrint={() => void printOrder(order)}
                 />
               ))}
             </ul>
@@ -166,6 +258,8 @@ function OrderCard({
   onToggle,
   onAdvance,
   onCancel,
+  printing,
+  onPrint,
 }: {
   order: StaffOrder;
   station: boolean;
@@ -173,6 +267,8 @@ function OrderCard({
   onToggle: () => void;
   onAdvance: () => void;
   onCancel: () => void;
+  printing: boolean;
+  onPrint: () => void;
 }) {
   const nextLabel = ORDER_NEXT_LABEL[order.status];
   return (
@@ -221,11 +317,19 @@ function OrderCard({
             {nextLabel}
           </button>
         ) : null}
-        {order.status !== "delivered" && !station ? (
+        {order.status !== "delivered" && order.status !== "cancelled" && !station ? (
           <button type="button" onClick={onCancel} className="rounded-full px-3 py-1 text-xs text-chili">
             Cancelar
           </button>
         ) : null}
+        <button
+          type="button"
+          onClick={onPrint}
+          disabled={printing}
+          className="rounded-full px-3 py-1 text-xs text-ink-soft disabled:opacity-50"
+        >
+          {printing ? "Enviando…" : "Imprimir"}
+        </button>
       </div>
     </li>
   );

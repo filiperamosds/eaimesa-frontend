@@ -53,7 +53,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel/mesas` | Redirect → `/painel/configuracoes/mesas` |
 | `/painel/configuracoes` | Hub: cardápio, bar, mesas, chamada, equipe, responsável |
 | `/painel/configuracoes/cardapio` | CRUD do cardápio |
-| `/painel/configuracoes/bar` | Nome, slug; CTAs para mesas / chamada |
+| `/painel/configuracoes/bar` | Nome, slug, térmica (checkbox + configurar impressora) e encerramento; um Salvar |
 | `/painel/configuracoes/mesas` | Mesas (CRUD + QR fixo) — Cardápio e Auto |
 | `/painel/configuracoes/chamada` | Ligar/desligar “Chamar garçom” + TTL (ADR-026) |
 | `/painel/configuracoes/equipe` | Staff / caixa / painel |

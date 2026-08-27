@@ -207,7 +207,7 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/orders` | Pedidos do venue (sem `cancelled`, 48 h) |
+| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`) |
 | POST | `/v1/owner/orders` | Pedido de balcão (opcional `tabId`); snapshot de preço |
 | PATCH | `/v1/owner/orders/{id}` | `{ status }` |
 
@@ -267,12 +267,28 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs`, `pinDisplay` |
-| POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Abre sessão + PIN se a mesa ainda não tiver. Body de resposta inclui `pinDisplay` |
+| GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `requireOpenCash` + `cashSessionOpen` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs`, `pinDisplay` |
+| POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Sem caixa e `requireOpenCash` → 409 `CASH_SESSION_REQUIRED` |
 | GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
 | POST | `/v1/staff/tables/{tableId}/tabs` | Garçom abre comanda `{ name, phone }` (mesmo contrato do guest). Cria sessão/PIN se faltar |
 | POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
 | POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta). Mesma regra de close |
+
+### Staff — caixa por turno (financeiro)
+
+Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier`** — garçom → 403 `CASHIER_REQUIRED`.
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/staff/tabs/{tabId}/settlement` | Preview: subtotal, taxa, total devido |
+| POST | `/v1/staff/cash-sessions` | Abre caixa `{ openingFloatCents }`; resposta inclui `expectedByMethod` |
+| GET | `/v1/staff/cash-sessions/current` | Caixa aberto + `expectedByMethod` ao vivo (vendas do turno + fundo + movimentações). 404 se nenhum |
+| POST | `/v1/staff/cash-sessions/{id}/movements` | `{ type: sangria\|suprimento\|ajuste, amountCents, reason }` |
+| POST | `/v1/staff/cash-sessions/{id}/close` | `{ countedByMethod }` — formas omitidas = esperado |
+
+O conferido no fechar caixa **já nasce preenchido** com o esperado. O caixa corrige se a gaveta/maquininha diferir.
+
+`PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
 
 ### Staff — fila (fatia 8)
 
@@ -280,7 +296,7 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/orders` | Fila 48h (`pending`…`delivered`); painel filtra por categoria |
+| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); painel filtra por categoria |
 | POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor. Painel: 403 |
 | PATCH | `/v1/staff/orders/{id}` | `{ status }` (pedido inteiro; painel só se o pedido tiver item da estação) |
 | GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda. Painel: 403 |
@@ -292,6 +308,8 @@ Resposta de `GET /v1/staff/tables` (recorte):
 ```json
 {
   "canCloseTabs": true,
+  "requireOpenCash": false,
+  "cashSessionOpen": true,
   "tables": [
     {
       "id": "uuid",
@@ -421,10 +439,10 @@ Erros: `PIN_INVALID`, `PIN_LOCKED`, `TAB_CLOSED`, `TAB_REQUIRED`, `TABS_STILL_OP
 #### PATCH /v1/owner/orders/{id}
 
 ```json
-{ "status": "accepted" }
+{ "status": "preparing" }
 ```
 
-Valores: `pending` | `accepted` | `preparing` | `delivered` | `cancelled`.
+Valores: `pending` | `accepted` | `preparing` | `delivered` | `cancelled`. O board avança `pending` → `preparing` → `delivered`; `accepted` continua válido (legado).
 
 ## Planejado (fatias seguintes)
 

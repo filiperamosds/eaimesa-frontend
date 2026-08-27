@@ -29,7 +29,7 @@ Gerado pelo staff autenticado para uma mesa. **Este** é o QR que abre a comanda
 
 | Tipo | Onde | Export |
 |------|------|--------|
-| **Cardápio (fixo)** | Configurações → Mesas (`/painel/configuracoes/mesas`); QR geral também em Estabelecimento | PNG; URL `/{slug}` (geral) ou `/{slug}?mesa={menuCode}` (por mesa — [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)) |
+| **Cardápio (fixo)** | Configurações → Mesas (`/painel/configuracoes/mesas`) | PNG; URL `/{slug}` (geral) ou `/{slug}?mesa={menuCode}` (por mesa — [ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)) |
 | **Claim (comanda)** | `/painel/*` ao abrir mesa | PNG pontual; TTL + uso único |
 
 O cardápio público e a landing **não** geram claim. Modo comanda **só** após escanear o QR do garçom.

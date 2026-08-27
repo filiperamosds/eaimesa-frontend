@@ -39,7 +39,7 @@ sequenceDiagram
 
   S->>API: POST /v1/staff/orders (tabId + itens)
   API-->>S: Pedido pending
-  S->>API: PATCH status accepted / preparing / delivered
+  S->>API: PATCH status preparing / delivered / cancelled
 ```
 
 1. Staff entra (`/login`) e cai em `/painel/pedidos` (ou clica a aba **Pedidos**).
@@ -138,7 +138,7 @@ sequenceDiagram
   C->>API: GET /v1/guest/orders
   API-->>C: parcial (itens + totalCents)
   G->>API: GET /v1/staff/orders
-  G->>API: PATCH status accepted / preparing / delivered
+  G->>API: PATCH status preparing / delivered / cancelled
   K->>API: GET /v1/owner/orders
 ```
 
@@ -163,6 +163,9 @@ Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 1. Caixa, dono ou garçom (se `staffCanCloseTabs`): confere o total (**A receber** / cupom) e `POST /v1/staff/tabs/{id}/close` — fecha **uma** comanda (revoga sessões daquela conta). Garçom sem permissão → 403 `CASHIER_REQUIRED`.
 2. Mesma regra: `POST /v1/staff/tables/{id}/close` — encerra a **mesa** só se todas as comandas estão `closed`.
 3. Próxima rodada na mesa = novo claim (novo PIN).
+4. Fechar **caixa** (`/painel/caixa`, `/garcom/caixa`): `GET /v1/staff/cash-sessions/current` traz o esperado do turno (vendas + fundo + movimentações). Os campos já vêm preenchidos; o caixa corrige e `POST .../close`.
+5. Config **Exigir caixa aberto** em Configurações → Financeiro (`finance.config.requireOpenCash`): sem turno aberto, QR e pedidos são recusados (`CASH_SESSION_REQUIRED`).
+6. **Imprimir na térmica** (Chrome USB/serial, ESC/POS) manda o cupom direto na POS80 — não passa pelo diálogo A4. Se o Mac já tiver a POS80 como impressora do sistema, pause essa fila para o Chrome usar o USB. **Impressora do sistema** fica para laser/PDF. Agente local de cozinha continua fora do MVP ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)).
 
 ## 5b. Fatia 10 — planos e checkout stub
 
@@ -226,6 +229,6 @@ Na fatia 1, `suspended` ainda mostra o cardápio (read-only) com aviso, se o sta
 | `open` | Comanda da pessoa | Parcial no dialog da mesa |
 | `closed` | Precisa de nova comanda | Arquivo; mesa só encerra se todas closed |
 
-## Impressora (fase 2)
+## Impressora
 
-Após `accepted`, job `print_pending` para agente local do venue. Falha de print **não** cancela pedido — fila na tela permanece.
+No Kanban (`/painel/pedidos`, `/garcom/pedidos`): auto-print liga em **Configurações → Estabelecimento**. O botão **Configurar impressora** no card abre o picker USB/serial deste Chrome ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Pedido novo em `pending` gera via ESC/POS; falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
