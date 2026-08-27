@@ -135,10 +135,22 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
           ) : null}
 
           <div className="mt-6 border-t-2 border-ink pt-4">
+            { (tab.serviceFeePercent ?? 0) > 0 ? (
+              <div className="mb-3 space-y-1 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span>Itens</span>
+                  <span className="tabular-nums">{formatBrlFromCents(tab.totalCents)}</span>
+                </div>
+                <div className="flex justify-between gap-3 text-ink-soft">
+                  <span>Taxa de serviço ({tab.serviceFeePercent}%)</span>
+                  <span className="tabular-nums">{formatBrlFromCents(tab.serviceFeeCents ?? 0)}</span>
+                </div>
+              </div>
+            ) : null}
             <div className="flex items-end justify-between gap-3">
               <span className="text-sm font-bold uppercase tracking-wide">Total a receber</span>
               <span className="font-serif text-3xl font-semibold tabular-nums tracking-tight text-chili print:text-ink">
-                {formatBrlFromCents(tab.totalCents)}
+                {formatBrlFromCents(tab.dueCents ?? tab.totalCents + (tab.serviceFeeCents ?? 0))}
               </span>
             </div>
             <p className="mt-3 text-center text-[11px] text-ink-soft">

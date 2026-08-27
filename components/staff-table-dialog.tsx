@@ -5,6 +5,8 @@ import {
   formatBrlFromCents,
   GUEST_ORDER_STATUS_LABEL,
   openComandaSchema,
+  serviceFeeCents,
+  tabDueCents,
 } from "@eaimesa/shared";
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
@@ -40,7 +42,16 @@ function mergeOrders(
     const totalCents = orders
       .filter((o) => o.status !== "cancelled")
       .reduce((s, o) => s + o.totalCents, 0);
-    return { ...tab, orders, totalCents };
+    const percent = tab.serviceFeePercent ?? 0;
+    const fee = serviceFeeCents(totalCents, percent);
+    return {
+      ...tab,
+      orders,
+      totalCents,
+      serviceFeePercent: percent,
+      serviceFeeCents: fee,
+      dueCents: tabDueCents(totalCents, percent),
+    };
   });
   const seen = new Set(tabs.flatMap((t) => t.orders.map((o) => o.id)));
   const unassigned: StaffOrder[] = [];
@@ -114,6 +125,8 @@ export function StaffTableDialog({
     [raw, boardOrders, overlay],
   );
   const selected: StaffTableTab | undefined = data?.tabs.find((t) => t.id === selectedId);
+  const selectedDue = selected ? (selected.dueCents ?? tabDueCents(selected.totalCents, selected.serviceFeePercent ?? 0)) : 0;
+  const selectedFeeOn = (selected?.serviceFeePercent ?? 0) > 0;
   const openCount = data?.table.openTabCount ?? 0;
   const pin = data?.table.pinDisplay ?? null;
   const unassigned = data?.unassignedOrders ?? [];
@@ -186,7 +199,7 @@ export function StaffTableDialog({
                         </span>
                       </span>
                       <span className="text-sm font-medium tabular-nums text-chili">
-                        {formatBrlFromCents(t.totalCents)}
+                        {formatBrlFromCents(t.dueCents ?? tabDueCents(t.totalCents, t.serviceFeePercent ?? 0))}
                       </span>
                     </button>
                   </li>
@@ -261,8 +274,14 @@ export function StaffTableDialog({
                     {selected.status === "open" ? "A receber" : "Total da comanda"}
                   </p>
                   <p className="mt-1 font-serif text-4xl tabular-nums tracking-tight text-chili">
-                    {formatBrlFromCents(selected.totalCents)}
+                    {formatBrlFromCents(selectedDue)}
                   </p>
+                  {selectedFeeOn ? (
+                    <p className="mt-1 text-xs text-ink-soft">
+                      Taxa de serviço ({selected.serviceFeePercent}%) ·{" "}
+                      {formatBrlFromCents(selected.serviceFeeCents ?? 0)}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-xs text-ink-soft">
                     {selected.orders.filter((o) => o.status !== "cancelled").length}{" "}
                     {selected.orders.filter((o) => o.status !== "cancelled").length === 1
@@ -315,7 +334,7 @@ export function StaffTableDialog({
                     onClick={() => setClosingTab(selected)}
                     className="btn-secondary mt-3 w-full text-sm"
                   >
-                    Receber {formatBrlFromCents(selected.totalCents)} e fechar comanda
+                    Receber {formatBrlFromCents(selectedDue)} e fechar comanda
                   </button>
                 ) : selected.status === "open" ? (
                   <p className="mt-3 text-sm text-ink-soft">Peça ao caixa para encerrar esta comanda.</p>

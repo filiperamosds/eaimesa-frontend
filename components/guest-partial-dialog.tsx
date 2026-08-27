@@ -8,6 +8,8 @@ export function GuestPartialDialog({
   tableLabel,
   orders,
   totalCents,
+  serviceFeePercent = 0,
+  serviceFeeCents = 0,
   error,
   onClose,
 }: {
@@ -15,6 +17,8 @@ export function GuestPartialDialog({
   tableLabel: string;
   orders: GuestOrder[];
   totalCents: number;
+  serviceFeePercent?: number;
+  serviceFeeCents?: number;
   error?: string | null;
   onClose: () => void;
 }) {
@@ -36,7 +40,12 @@ export function GuestPartialDialog({
         <p className="mt-1 text-sm text-ink-soft">{tableLabel}</p>
         {error ? <p className="mt-3 text-sm text-chili">{error}</p> : null}
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
-          <GuestPartial orders={orders} totalCents={totalCents} />
+          <GuestPartial
+            orders={orders}
+            totalCents={totalCents}
+            serviceFeePercent={serviceFeePercent}
+            serviceFeeCents={serviceFeeCents}
+          />
         </div>
         <div className="mt-5 flex justify-end">
           <button type="button" className="btn-primary !py-2 text-sm" onClick={onClose}>

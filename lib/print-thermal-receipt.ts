@@ -54,6 +54,13 @@ export function thermalReceiptHtml(venueName: string, tableLabel: string, tab: S
       ? `<p class="center muted">Nenhum item nesta comanda.</p>`
       : items;
 
+  const feeOn = (tab.serviceFeePercent ?? 0) > 0;
+  const due = tab.dueCents ?? tab.totalCents + (tab.serviceFeeCents ?? 0);
+  const feeHtml = feeOn
+    ? `<div class="row"><span>Itens</span><span>${esc(formatBrlFromCents(tab.totalCents))}</span></div>
+  <div class="row muted"><span>Taxa de serviço (${tab.serviceFeePercent}%)</span><span>${esc(formatBrlFromCents(tab.serviceFeeCents ?? 0))}</span></div>`
+    : "";
+
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -88,7 +95,8 @@ export function thermalReceiptHtml(venueName: string, tableLabel: string, tab: S
   <p class="center muted">${esc(tab.guestPhoneMasked)}<br>Aberta em ${esc(when(tab.createdAt))}</p>
   ${body}
   ${cancelledHtml}
-  <div class="total"><span>TOTAL A RECEBER</span><b>${esc(formatBrlFromCents(tab.totalCents))}</b></div>
+  ${feeHtml}
+  <div class="total"><span>TOTAL A RECEBER</span><b>${esc(formatBrlFromCents(due))}</b></div>
   <p class="fine">Documento de conferência — não é cupom fiscal.</p>
 </body>
 </html>`;

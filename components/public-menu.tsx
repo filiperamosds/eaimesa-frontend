@@ -24,7 +24,15 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const suspended = menu.venue.subscriptionStatus === "suspended";
   const canOrder = Boolean(ordering && tab && !tab.needsProfile && !suspended);
   const hasTab = Boolean(ordering && tab && !tab.needsProfile);
-  const { orders, totalCents, error: ordersError, reload } = useGuestOrders(hasTab);
+  const {
+    orders,
+    totalCents,
+    subtotalCents,
+    serviceFeePercent,
+    serviceFeeCents,
+    error: ordersError,
+    reload,
+  } = useGuestOrders(hasTab);
   /**
    * Chamar garçom: não depende mais de “não ser Auto atendimento”.
    * Liga com waiterCallEnabled=true no payload público; no Cardápio, undefined ainda tenta (?mesa=).
@@ -228,6 +236,9 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
           canOrder={canOrder}
           orders={orders}
           partialCents={totalCents}
+          subtotalCents={subtotalCents}
+          serviceFeePercent={serviceFeePercent}
+          serviceFeeCents={serviceFeeCents}
           onOrdered={() => void reload()}
         />
       ) : null}
@@ -237,7 +248,9 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
           guestName={tab.guestName ?? "Sua comanda"}
           tableLabel={tab.tableLabel}
           orders={orders}
-          totalCents={totalCents}
+          totalCents={subtotalCents}
+          serviceFeePercent={serviceFeePercent}
+          serviceFeeCents={serviceFeeCents}
           error={ordersError}
           onClose={() => setPartialOpen(false)}
         />

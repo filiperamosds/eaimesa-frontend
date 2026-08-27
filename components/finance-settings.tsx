@@ -110,8 +110,8 @@ export function FinanceSettings() {
             <span>
               <span className="block font-medium">Cobrar taxa de serviço</span>
               <span className="mt-1 block text-sm text-ink-soft">
-                Quando ligada, a taxa entra no total devido no fechamento da comanda. O caixa ainda
-                pode dar desconto ou cortesia.
+                Quando ligada, a taxa entra na parcial, no cupom do garçom e no total devido no
+                fechamento. O caixa ainda pode dar desconto ou cortesia.
               </span>
             </span>
           </label>
