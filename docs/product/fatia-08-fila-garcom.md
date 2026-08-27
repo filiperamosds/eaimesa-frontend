@@ -14,7 +14,7 @@ Lançar itens **não** é nesta tela. O garçom abre a mesa em `/garcom`, entra 
 ## Não inclui
 
 - SSE / som
-- Impressora
+- Agente local de impressora (via USB no Kanban: [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md))
 - Travamento da comanda (`lock`)
 - Pagamento
 - Lançar pedido no Kanban (comanda em `/garcom`)
@@ -22,7 +22,7 @@ Lançar itens **não** é nesta tela. O garçom abre a mesa em `/garcom`, entra 
 ## Fluxo
 
 1. Login garçom → `/garcom` (mesas) ou **Pedidos**.
-2. Pedido do cardápio (guest) ou lançado na comanda cai em **Novos** (`pending`).
+2. Pedido do cardápio (guest) ou lançado na comanda cai em **Novos** (`pending`). Com **Imprimir novos na térmica** ligado, a via sai na POS80 sem a caixa do Chrome.
 3. Garçom Aceitar → Preparar → Entregar.
 4. Para incluir itens: **Mesas** → comanda aberta → dialog **Adicionar pedido** (categorias, depois itens).
 
