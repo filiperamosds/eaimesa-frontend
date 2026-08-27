@@ -32,7 +32,7 @@
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
 9e. [Backend — chamar garçom](api/backend-waiter-call.md) — presença `?mesa=`, cookie, fila (ADR-026)
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**, **cupom ESC/POS USB (ADR-029)**
+11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**, **cupom ESC/POS USB (ADR-029)**, **taxa de serviço do garçom que abriu a mesa (ADR-032)**
 
 ## Cursor
 
