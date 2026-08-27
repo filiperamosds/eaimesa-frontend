@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { formatBrlFromCents, GUEST_ORDER_STATUS_LABEL } from "@eaimesa/shared";
-import { printThermalReceipt } from "../lib/print-thermal-receipt";
+import { printEscPosReceipt } from "../lib/print-escpos";
+import { printSystemReceipt } from "../lib/print-thermal-receipt";
 import type { StaffTableTab } from "../lib/types";
 
 type Props = {
@@ -28,9 +30,24 @@ function formatWhen(iso: string) {
 export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) {
   const activeOrders = tab.orders.filter((o) => o.status !== "cancelled");
   const cancelled = tab.orders.filter((o) => o.status === "cancelled");
+  const [printError, setPrintError] = useState<string | null>(null);
+  const [printing, setPrinting] = useState(false);
 
-  function print() {
-    printThermalReceipt(venueName, tableLabel, tab);
+  async function printThermal() {
+    setPrintError(null);
+    setPrinting(true);
+    try {
+      await printEscPosReceipt(venueName, tableLabel, tab);
+    } catch (err) {
+      setPrintError(err instanceof Error ? err.message : "Não foi possível imprimir na térmica.");
+    } finally {
+      setPrinting(false);
+    }
+  }
+
+  function printSystem() {
+    setPrintError(null);
+    printSystemReceipt(venueName, tableLabel, tab);
   }
 
   return (
@@ -47,8 +64,13 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
         <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3 print:hidden">
           <p className="text-sm font-medium">Cupom para conferência</p>
           <div className="flex gap-2">
-            <button type="button" className="btn-secondary !px-3 !py-1.5 text-sm" onClick={print}>
-              Imprimir
+            <button
+              type="button"
+              className="btn-secondary !px-3 !py-1.5 text-sm disabled:opacity-50"
+              disabled={printing}
+              onClick={() => void printThermal()}
+            >
+              {printing ? "Enviando…" : "Imprimir"}
             </button>
             <button type="button" className="btn-ghost !px-3 !py-1.5 text-sm" onClick={onClose}>
               Fechar
@@ -123,14 +145,23 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
               Documento de conferência — não é cupom fiscal.
             </p>
             <p className="mt-2 text-center text-[11px] text-ink-soft print:hidden">
-              Na impressora: papel 80&nbsp;mm, sem cabeçalho nem rodapé. Não escolha A4.
+              Use <b>Imprimir na térmica</b> (USB). O diálogo do Chrome manda A4/PostScript e a POS80 imprime código.
             </p>
           </div>
         </div>
 
         <div className="border-t border-line px-4 py-3 print:hidden">
-          <button type="button" className="btn-primary w-full !py-2.5 text-sm" onClick={print}>
-            Imprimir cupom
+          {printError ? <p className="mb-2 text-sm text-chili">{printError}</p> : null}
+          <button
+            type="button"
+            className="btn-primary w-full !py-2.5 text-sm disabled:opacity-50"
+            disabled={printing}
+            onClick={() => void printThermal()}
+          >
+            {printing ? "Enviando para a térmica…" : "Imprimir na térmica"}
+          </button>
+          <button type="button" className="btn-ghost mt-2 w-full !py-2 text-sm" onClick={printSystem}>
+            Impressora do sistema (laser / PDF)
           </button>
         </div>
       </div>

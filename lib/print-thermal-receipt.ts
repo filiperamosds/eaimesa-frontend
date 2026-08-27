@@ -60,12 +60,12 @@ export function thermalReceiptHtml(venueName: string, tableLabel: string, tab: S
   <meta charset="utf-8" />
   <title>Cupom</title>
   <style>
-    @page { size: 80mm auto; margin: 2mm; }
+    @page { size: 80mm 297mm; margin: 0; }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
-      padding: 0;
-      width: 76mm;
+      padding: 2mm;
+      width: 80mm;
       background: #fff;
       color: #000;
       font: 12px/1.35 "Courier New", ui-monospace, monospace;
@@ -97,7 +97,7 @@ export function thermalReceiptHtml(venueName: string, tableLabel: string, tab: S
 function printHtmlInIframe(html: string) {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
-  iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+  iframe.style.cssText = "position:fixed;left:-80mm;top:0;width:80mm;height:297mm;border:0;";
   document.body.appendChild(iframe);
   const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
   if (!doc) {
@@ -121,24 +121,12 @@ function printHtmlInIframe(html: string) {
   }, 200);
 }
 
+/** Diálogo do sistema — só laser/PDF. POS80 no Chrome vira A4/PostScript. */
+export function printSystemReceipt(venueName: string, tableLabel: string, tab: StaffTableTab) {
+  printHtmlInIframe(thermalReceiptHtml(venueName, tableLabel, tab));
+}
+
+/** @deprecated use printSystemReceipt */
 export function printThermalReceipt(venueName: string, tableLabel: string, tab: StaffTableTab) {
-  const html = thermalReceiptHtml(venueName, tableLabel, tab);
-  const popup = window.open("", "_blank", "width=320,height=640");
-  if (!popup) {
-    printHtmlInIframe(html);
-    return;
-  }
-  popup.document.open();
-  popup.document.write(html);
-  popup.document.close();
-  const run = () => {
-    popup.focus();
-    popup.print();
-  };
-  popup.onafterprint = () => popup.close();
-  if (popup.document.readyState === "complete") {
-    window.setTimeout(run, 200);
-  } else {
-    popup.onload = () => window.setTimeout(run, 200);
-  }
+  printSystemReceipt(venueName, tableLabel, tab);
 }
