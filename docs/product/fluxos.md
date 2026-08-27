@@ -165,6 +165,7 @@ Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 3. Próxima rodada na mesa = novo claim (novo PIN).
 4. Fechar **caixa** (`/painel/caixa`, `/garcom/caixa`): `GET /v1/staff/cash-sessions/current` traz o esperado do turno (vendas + fundo + movimentações). Os campos já vêm preenchidos; o caixa corrige e `POST .../close`.
 5. Config **Exigir caixa aberto** em Configurações → Financeiro (`finance.config.requireOpenCash`): sem turno aberto, QR e pedidos são recusados (`CASH_SESSION_REQUIRED`).
+6. **Imprimir cupom** abre um documento só com o texto da comanda, 80&nbsp;mm (térmica). Não manda o HTML do app. Na caixa do sistema: papel 80&nbsp;mm, sem cabeçalho/rodapé; não usar A4. Agente ESC/POS dedicado continua fora do MVP.
 
 ## 5b. Fatia 10 — planos e checkout stub
 
