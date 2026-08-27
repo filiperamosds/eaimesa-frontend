@@ -16,7 +16,7 @@ import { Logo } from "./site-chrome";
 const ALL_LINKS = [
   { href: "/painel/pedidos", label: "Pedidos", icon: "▣", module: "orders_kanban", always: false },
   { href: "/painel/financeiro", label: "Financeiro", icon: "$", module: "finance", always: false },
-  { href: "/painel/configuracoes/mesas", label: "Mesas", icon: "▦", module: "tables", always: true },
+  { href: "/painel/mesas", label: "Mesas", icon: "▦", module: "tables", always: true },
   { href: "/painel/chamados", label: "Chamados", icon: "◎", module: "waiter_call", always: true },
   { href: "/painel/caixa", label: "Caixa", icon: "▤", module: "finance", always: false },
 ] as const;

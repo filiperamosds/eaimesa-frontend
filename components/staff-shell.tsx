@@ -60,7 +60,11 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
     me.role === "staff" ? (me.member?.name ?? me.account.email) : me.account.email;
   const floorLabel = me.role === "owner" ? "Dono" : memberRoleLabel(me.member?.role);
   const onMesas = path === "/garcom";
-  const links = LINKS.filter((l) => l.module !== "finance" || venueHasModule(me.venue, "finance", false));
+  // Caixa: só dono e caixa (cashier). Garçom não vê.
+  const cashier = me.role === "owner" || me.member?.role === "cashier";
+  const links = LINKS.filter((l) =>
+    l.module === "finance" ? cashier && venueHasModule(me.venue, "finance", false) : true,
+  );
 
   return (
     <div className="min-h-screen pb-20">

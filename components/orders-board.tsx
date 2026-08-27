@@ -59,6 +59,8 @@ export function OrdersBoard({
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [fMesa, setFMesa] = useState("");
+  const [fNome, setFNome] = useState("");
 
   const load = useCallback(async () => {
     const data = await api<{ orders: StaffOrder[] }>(endpoints.list);
@@ -78,14 +80,25 @@ export function OrdersBoard({
     [orders, station, categoryIds],
   );
 
+  const filtered = useMemo(() => {
+    const mesa = fMesa.trim().toLowerCase();
+    const nome = fNome.trim().toLowerCase();
+    if (!mesa && !nome) return visible;
+    return visible.filter((o) => {
+      const mesaOk = !mesa || (o.tableLabel ?? "").toLowerCase().includes(mesa);
+      const nomeOk = !nome || (o.guestName ?? "").toLowerCase().includes(nome);
+      return mesaOk && nomeOk;
+    });
+  }, [visible, fMesa, fNome]);
+
   const byStatus = useMemo(() => {
     const map: Record<string, StaffOrder[]> = {};
     for (const col of KANBAN_COLUMNS) map[col] = [];
-    for (const o of visible) {
+    for (const o of filtered) {
       map[o.status]?.push(o);
     }
     return map;
-  }, [visible]);
+  }, [filtered]);
 
   async function setStatus(id: string, status: OrderStatus) {
     setError(null);
@@ -117,12 +130,42 @@ export function OrdersBoard({
                 : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
           </p>
         </div>
-        {station ? null : (
+        {compact && !station ? (
           <Link href="/garcom" className="btn-secondary !py-2 text-sm">
             Mesas e comandas
           </Link>
-        )}
+        ) : null}
       </div>
+      {station ? null : (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <input
+            className="field max-w-[12rem]"
+            placeholder="Filtrar por mesa"
+            value={fMesa}
+            onChange={(e) => setFMesa(e.target.value)}
+            aria-label="Filtrar por mesa"
+          />
+          <input
+            className="field max-w-[14rem]"
+            placeholder="Filtrar por comanda (nome)"
+            value={fNome}
+            onChange={(e) => setFNome(e.target.value)}
+            aria-label="Filtrar por nome de comanda"
+          />
+          {fMesa || fNome ? (
+            <button
+              type="button"
+              onClick={() => {
+                setFMesa("");
+                setFNome("");
+              }}
+              className="btn-ghost !py-2 text-sm"
+            >
+              Limpar
+            </button>
+          ) : null}
+        </div>
+      )}
       {error ? <p className="mb-3 text-sm text-chili">{error}</p> : null}
       <div className="flex gap-3 overflow-x-auto pb-4">
         {KANBAN_COLUMNS.map((col) => (
