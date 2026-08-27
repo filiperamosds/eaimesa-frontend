@@ -229,6 +229,6 @@ Na fatia 1, `suspended` ainda mostra o cardápio (read-only) com aviso, se o sta
 | `open` | Comanda da pessoa | Parcial no dialog da mesa |
 | `closed` | Precisa de nova comanda | Arquivo; mesa só encerra se todas closed |
 
-## Impressora (fase 2)
+## Impressora
 
-Após `accepted`, job `print_pending` para agente local do venue. Falha de print **não** cancela pedido — fila na tela permanece.
+No Kanban (`/painel/pedidos`, `/garcom/pedidos`): **Imprimir novos na térmica** (Chrome USB, [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Pedido novo em `pending` gera via ESC/POS; falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.

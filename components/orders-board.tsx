@@ -10,9 +10,12 @@ import {
   type OrderStatus,
 } from "@eaimesa/shared";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { connectThermalPrinter, hasGrantedThermalPrinter, printEscPosOrder } from "../lib/print-escpos";
 import type { StaffOrder } from "../lib/types";
+
+const AUTO_PRINT_KEY = "eaimesa.kanban.autoPrint";
 
 function timeAgo(iso: string) {
   const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -61,11 +64,36 @@ export function OrdersBoard({
   const [openId, setOpenId] = useState<string | null>(null);
   const [fMesa, setFMesa] = useState("");
   const [fNome, setFNome] = useState("");
+  const [autoPrint, setAutoPrint] = useState(false);
+  const [printingId, setPrintingId] = useState<string | null>(null);
+  const primedRef = useRef(false);
+  const seenRef = useRef(new Set<string>());
+  const autoPrintRef = useRef(false);
+  const printChain = useRef(Promise.resolve());
+
+  autoPrintRef.current = autoPrint;
 
   const load = useCallback(async () => {
     const data = await api<{ orders: StaffOrder[] }>(endpoints.list);
+    const incoming = station ? filterOrdersByCategories(data.orders, categoryIds) : data.orders;
+    if (!primedRef.current) {
+      for (const o of incoming) seenRef.current.add(o.id);
+      primedRef.current = true;
+      setOrders(data.orders);
+      return;
+    }
+    const fresh = incoming.filter((o) => o.status === "pending" && !seenRef.current.has(o.id));
+    for (const o of incoming) seenRef.current.add(o.id);
     setOrders(data.orders);
-  }, [endpoints.list]);
+    if (!autoPrintRef.current) return;
+    for (const order of fresh) {
+      printChain.current = printChain.current
+        .then(() => printEscPosOrder(order, false))
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : "Falha ao imprimir na térmica.");
+        });
+    }
+  }, [endpoints.list, station, categoryIds]);
 
   useEffect(() => {
     load().catch((e) => setError(e instanceof ApiError ? e.message : "Falha ao carregar pedidos."));
@@ -74,6 +102,15 @@ export function OrdersBoard({
     }, 5000);
     return () => clearInterval(t);
   }, [load]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(AUTO_PRINT_KEY) !== "1") return;
+    void hasGrantedThermalPrinter().then((ok) => {
+      if (ok) setAutoPrint(true);
+      else sessionStorage.removeItem(AUTO_PRINT_KEY);
+    });
+  }, []);
 
   const visible = useMemo(
     () => (station ? filterOrdersByCategories(orders, categoryIds) : orders),
@@ -99,6 +136,34 @@ export function OrdersBoard({
     }
     return map;
   }, [filtered]);
+
+  async function toggleAutoPrint() {
+    setError(null);
+    if (autoPrint) {
+      setAutoPrint(false);
+      sessionStorage.removeItem(AUTO_PRINT_KEY);
+      return;
+    }
+    try {
+      await connectThermalPrinter();
+      setAutoPrint(true);
+      sessionStorage.setItem(AUTO_PRINT_KEY, "1");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível conectar a térmica.");
+    }
+  }
+
+  async function printOrder(order: StaffOrder) {
+    setError(null);
+    setPrintingId(order.id);
+    try {
+      await printEscPosOrder(order, true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível imprimir na térmica.");
+    } finally {
+      setPrintingId(null);
+    }
+  }
 
   async function setStatus(id: string, status: OrderStatus) {
     setError(null);
@@ -127,14 +192,26 @@ export function OrdersBoard({
               ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
               : compact
                 ? "Aceite e avance os pedidos. Para lançar itens, abra a mesa em Mesas."
-                : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
+                : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}{" "}
+            {autoPrint
+              ? "Pedidos novos saem na POS80 sem a caixa do Chrome."
+              : "Ligue a térmica uma vez para imprimir os novos direto."}
           </p>
         </div>
-        {compact && !station ? (
-          <Link href="/garcom" className="btn-secondary !py-2 text-sm">
-            Mesas e comandas
-          </Link>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {compact && !station ? (
+            <Link href="/garcom" className="btn-secondary !py-2 text-sm">
+              Mesas e comandas
+            </Link>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void toggleAutoPrint()}
+            className={autoPrint ? "btn-primary !py-2 text-sm" : "btn-secondary !py-2 text-sm"}
+          >
+            {autoPrint ? "Imprimindo novos" : "Imprimir novos na térmica"}
+          </button>
+        </div>
       </div>
       {station ? null : (
         <div className="mb-4 flex flex-wrap gap-2">
@@ -192,6 +269,8 @@ export function OrdersBoard({
                     if (next) void setStatus(order.id, next);
                   }}
                   onCancel={() => void setStatus(order.id, "cancelled")}
+                  printing={printingId === order.id}
+                  onPrint={() => void printOrder(order)}
                 />
               ))}
             </ul>
@@ -209,6 +288,8 @@ function OrderCard({
   onToggle,
   onAdvance,
   onCancel,
+  printing,
+  onPrint,
 }: {
   order: StaffOrder;
   station: boolean;
@@ -216,6 +297,8 @@ function OrderCard({
   onToggle: () => void;
   onAdvance: () => void;
   onCancel: () => void;
+  printing: boolean;
+  onPrint: () => void;
 }) {
   const nextLabel = ORDER_NEXT_LABEL[order.status];
   return (
@@ -269,6 +352,14 @@ function OrderCard({
             Cancelar
           </button>
         ) : null}
+        <button
+          type="button"
+          onClick={onPrint}
+          disabled={printing}
+          className="rounded-full px-3 py-1 text-xs text-ink-soft disabled:opacity-50"
+        >
+          {printing ? "Enviando…" : "Imprimir"}
+        </button>
       </div>
     </li>
   );

@@ -1,5 +1,5 @@
-import { encodeEscPosReceipt } from "./escpos-receipt";
-import type { StaffTableTab } from "./types";
+import { encodeEscPosKitchenTicket, encodeEscPosReceipt } from "./escpos-receipt";
+import type { StaffOrder, StaffTableTab } from "./types";
 
 type UsbEndpoint = { direction: string; endpointNumber: number; packetSize: number };
 type UsbAlternate = { interfaceClass: number; endpoints: UsbEndpoint[] };
@@ -208,9 +208,62 @@ async function requestAndSend(data: Uint8Array) {
   throw new Error("Nenhuma térmica selecionada.");
 }
 
+export async function hasGrantedThermalPrinter(): Promise<boolean> {
+  const usb = usbApi();
+  if (usb && (await usb.getDevices()).length > 0) return true;
+  const serial = serialApi();
+  return Boolean(serial && (await serial.getPorts()).length > 0);
+}
+
+/** Pede a POS80 uma vez (gesto do usuário). Depois o Kanban imprime sem diálogo. */
+export async function connectThermalPrinter(): Promise<void> {
+  if (await hasGrantedThermalPrinter()) return;
+  const usb = usbApi();
+  const serial = serialApi();
+  if (!usb && !serial) {
+    throw new Error("Este navegador não fala USB com a térmica. Use o Chrome.");
+  }
+  if (usb) {
+    try {
+      try {
+        await usb.requestDevice({ filters: [] });
+      } catch (emptyErr) {
+        if (emptyErr instanceof TypeError || (emptyErr instanceof DOMException && emptyErr.name === "TypeError")) {
+          await usb.requestDevice({ filters: USB_FILTERS });
+        } else {
+          throw emptyErr;
+        }
+      }
+      return;
+    } catch (err) {
+      if (!isCancelled(err)) throw printError(err, "Falha no USB da térmica.");
+    }
+  }
+  if (serial) {
+    try {
+      await serial.requestPort({ filters: [] });
+      return;
+    } catch (err) {
+      throw printError(err, "Falha na porta serial da térmica.");
+    }
+  }
+  throw new Error("Nenhuma térmica selecionada.");
+}
+
+export async function sendEscPos(data: Uint8Array, promptIfNeeded = true) {
+  if (await sendToGranted(data)) return;
+  if (!promptIfNeeded) {
+    throw new Error("Conecte a térmica no Kanban (Imprimir novos).");
+  }
+  await requestAndSend(data);
+}
+
 /** Envia o cupom em ESC/POS na POS80 (USB/serial). Não passa pelo diálogo A4 do Chrome. */
 export async function printEscPosReceipt(venueName: string, tableLabel: string, tab: StaffTableTab) {
-  const data = encodeEscPosReceipt(venueName, tableLabel, tab);
-  if (await sendToGranted(data)) return;
-  await requestAndSend(data);
+  await sendEscPos(encodeEscPosReceipt(venueName, tableLabel, tab), true);
+}
+
+/** Via da cozinha: um pedido. Sem prompt se a POS80 já estiver autorizada. */
+export async function printEscPosOrder(order: StaffOrder, promptIfNeeded = true) {
+  await sendEscPos(encodeEscPosKitchenTicket(order), promptIfNeeded);
 }
