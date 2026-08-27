@@ -4,7 +4,7 @@ import { ERROR_CODES, planAllowsService, slugifyFromName, withSlugSuffix } from 
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { useMenuSlugFromName } from "../lib/menu-slug";
-import { connectThermalPrinter, hasGrantedThermalPrinter } from "../lib/print-escpos";
+import { configureThermalPrinter, connectThermalPrinter, hasGrantedThermalPrinter } from "../lib/print-escpos";
 import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
 import type { Session, Venue } from "../lib/types";
 
@@ -15,6 +15,9 @@ export function ConfigBarPanels() {
   const [nameTouched, setNameTouched] = useState(false);
   const [staffCanCloseTabs, setStaffCanCloseTabs] = useState(true);
   const [thermalPrint, setThermalPrint] = useState(false);
+  const [printerBusy, setPrinterBusy] = useState(false);
+  const [printerReady, setPrinterReady] = useState(false);
+  const [printerMsg, setPrinterMsg] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -33,8 +36,9 @@ export function ConfigBarPanels() {
   }, []);
 
   useEffect(() => {
-    if (!isThermalAutoPrintEnabled()) return;
     void hasGrantedThermalPrinter().then((ok) => {
+      setPrinterReady(ok);
+      if (!isThermalAutoPrintEnabled()) return;
       if (ok) setThermalPrint(true);
       else setThermalAutoPrintEnabled(false);
     });
@@ -76,11 +80,29 @@ export function ConfigBarPanels() {
       setNameTouched(false);
       if (service) setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
       if (service) setThermalAutoPrintEnabled(thermalPrint);
+      if (service) setPrinterReady(await hasGrantedThermalPrinter());
       setMsg("Salvo.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível salvar.");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function configurePrinter() {
+    setError(null);
+    setMsg(null);
+    setPrinterMsg(null);
+    setPrinterBusy(true);
+    try {
+      await configureThermalPrinter();
+      setPrinterReady(true);
+      setPrinterMsg("Impressora configurada neste Chrome.");
+    } catch (err) {
+      setPrinterReady(await hasGrantedThermalPrinter());
+      setError(err instanceof Error ? err.message : "Não foi possível configurar a impressora.");
+    } finally {
+      setPrinterBusy(false);
     }
   }
 
@@ -112,21 +134,39 @@ export function ConfigBarPanels() {
         </label>
 
         {service ? (
-          <label className="surface flex cursor-pointer items-start gap-3 p-4">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 accent-chili"
-              checked={thermalPrint}
-              onChange={(e) => setThermalPrint(e.target.checked)}
-            />
-            <span>
-              <span className="block font-medium">Imprimir pedidos novos na térmica</span>
-              <span className="mt-1 block text-sm text-ink-soft">
-                Via dos pedidos novos no Kanban e cupom de conferência, neste Chrome, sem a caixa de
-                imprimir do sistema.
+          <div className="surface space-y-3 p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-chili"
+                checked={thermalPrint}
+                onChange={(e) => setThermalPrint(e.target.checked)}
+              />
+              <span>
+                <span className="block font-medium">Imprimir pedidos novos na térmica</span>
+                <span className="mt-1 block text-sm text-ink-soft">
+                  Via dos pedidos novos no Kanban e cupom de conferência, neste Chrome, sem a caixa de
+                  imprimir do sistema.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+            <div className="flex flex-wrap items-center gap-2 sm:pl-7">
+              <button
+                type="button"
+                className="btn-secondary !py-1.5 text-sm"
+                disabled={printerBusy || pending}
+                onClick={() => void configurePrinter()}
+              >
+                {printerBusy ? "Abrindo…" : "Configurar impressora"}
+              </button>
+              {printerReady ? (
+                <span className="text-xs text-sage">Autorizada neste Chrome.</span>
+              ) : (
+                <span className="text-xs text-ink-soft">Nenhuma impressora neste Chrome.</span>
+              )}
+            </div>
+            {printerMsg ? <p className="text-sm text-sage sm:pl-7">{printerMsg}</p> : null}
+          </div>
         ) : null}
 
         {service ? (
@@ -148,7 +188,7 @@ export function ConfigBarPanels() {
 
         {error ? <p className="text-sm text-chili">{error}</p> : null}
         {msg ? <p className="text-sm text-sage">{msg}</p> : null}
-        <button type="submit" disabled={pending} className="btn-primary !py-2">
+        <button type="submit" disabled={pending || printerBusy} className="btn-primary !py-2">
           {pending ? "Salvando…" : "Salvar"}
         </button>
       </form>

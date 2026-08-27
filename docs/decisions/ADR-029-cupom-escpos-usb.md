@@ -14,7 +14,7 @@ O **agente local** de cozinha continua fora do MVP ([visão](../product/visao.md
 
 - **Imprimir na térmica** (cupom da comanda) e a **via do Kanban** enviam bytes ESC/POS (CP850, 48 colunas, corte) por **WebUSB** ou **WebSerial** no Chrome. Não abre janela nem caixa A4.
 - Primeira vez: o Chrome lista o dispositivo USB. Depois reusa a permissão.
-- Kanban: ligar em **Configurações → Estabelecimento**. Pedidos `pending` que chegarem no poll saem sozinhos neste Chrome. Pedidos que já estavam na fila não reimprimem. Monitor Painel imprime só os itens da estação. Cada card ainda tem **Imprimir**.
+- Kanban: ligar em **Configurações → Estabelecimento**. O card **Imprimir pedidos novos na térmica** tem **Configurar impressora** (picker USB/serial deste Chrome, sem salvar o resto do formulário). Pedidos `pending` que chegarem no poll saem sozinhos neste Chrome. Pedidos que já estavam na fila não reimprimem. Monitor Painel imprime só os itens da estação. Cada card ainda tem **Imprimir**.
 - Se o sistema já tiver a POS80 na fila de impressão, o USB fica ocupado — o usuário pausa/remove essa impressora em Ajustes.
 - **Impressora do sistema** permanece para laser/PDF no cupom da comanda.
 

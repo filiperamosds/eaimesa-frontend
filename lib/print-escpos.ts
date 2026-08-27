@@ -12,6 +12,9 @@ type UsbInterface = {
 type UsbConfiguration = { configurationValue: number; interfaces: UsbInterface[] };
 type UsbDevice = {
   opened: boolean;
+  vendorId: number;
+  productId: number;
+  serialNumber?: string;
   configuration: UsbConfiguration | null;
   configurations: UsbConfiguration[];
   open: () => Promise<void>;
@@ -21,6 +24,7 @@ type UsbDevice = {
   releaseInterface: (n: number) => Promise<void>;
   selectAlternateInterface: (n: number, alt: number) => Promise<void>;
   transferOut: (endpoint: number, data: BufferSource) => Promise<{ status: string; bytesWritten: number }>;
+  forget?: () => Promise<void>;
 };
 type UsbApi = {
   getDevices: () => Promise<UsbDevice[]>;
@@ -32,6 +36,7 @@ type SerialPort = {
   writable: { getWriter: () => { write: (d: Uint8Array) => Promise<void>; releaseLock: () => void } } | null;
   open: (opts: { baudRate: number }) => Promise<void>;
   close: () => Promise<void>;
+  forget?: () => Promise<void>;
 };
 type SerialApi = {
   getPorts: () => Promise<SerialPort[]>;
@@ -172,6 +177,72 @@ async function sendToGranted(data: Uint8Array): Promise<boolean> {
   return false;
 }
 
+async function requestUsbDevice(usb: UsbApi): Promise<UsbDevice> {
+  try {
+    return await usb.requestDevice({ filters: [] });
+  } catch (emptyErr) {
+    if (emptyErr instanceof TypeError || (emptyErr instanceof DOMException && emptyErr.name === "TypeError")) {
+      return await usb.requestDevice({ filters: USB_FILTERS });
+    }
+    throw emptyErr;
+  }
+}
+
+function usbId(device: UsbDevice) {
+  return `${device.vendorId}:${device.productId}:${device.serialNumber ?? ""}`;
+}
+
+async function forgetOtherUsb(usb: UsbApi, chosen: UsbDevice) {
+  const keep = usbId(chosen);
+  for (const device of await usb.getDevices()) {
+    if (usbId(device) === keep) continue;
+    try {
+      await device.forget?.();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+async function forgetOtherSerial(serial: SerialApi, chosen: SerialPort) {
+  for (const port of await serial.getPorts()) {
+    if (port === chosen) continue;
+    try {
+      await port.forget?.();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Abre o picker do Chrome (USB, senão serial) e fica com o aparelho escolhido. */
+async function pickThermalPrinter(): Promise<void> {
+  const usb = usbApi();
+  const serial = serialApi();
+  if (!usb && !serial) {
+    throw new Error("Este navegador não fala USB com a térmica. Use o Chrome.");
+  }
+  if (usb) {
+    try {
+      const device = await requestUsbDevice(usb);
+      await forgetOtherUsb(usb, device);
+      return;
+    } catch (err) {
+      if (!isCancelled(err)) throw printError(err, "Falha no USB da térmica.");
+    }
+  }
+  if (serial) {
+    try {
+      const port = await serial.requestPort({ filters: [] });
+      await forgetOtherSerial(serial, port);
+      return;
+    } catch (err) {
+      throw printError(err, "Falha na porta serial da térmica.");
+    }
+  }
+  throw new Error("Nenhuma térmica selecionada.");
+}
+
 async function requestAndSend(data: Uint8Array) {
   const usb = usbApi();
   const serial = serialApi();
@@ -180,16 +251,8 @@ async function requestAndSend(data: Uint8Array) {
   }
   if (usb) {
     try {
-      let device: UsbDevice;
-      try {
-        device = await usb.requestDevice({ filters: [] });
-      } catch (emptyErr) {
-        if (emptyErr instanceof TypeError || (emptyErr instanceof DOMException && emptyErr.name === "TypeError")) {
-          device = await usb.requestDevice({ filters: USB_FILTERS });
-        } else {
-          throw emptyErr;
-        }
-      }
+      const device = await requestUsbDevice(usb);
+      await forgetOtherUsb(usb, device);
       await sendUsb(device, data);
       return;
     } catch (err) {
@@ -199,6 +262,7 @@ async function requestAndSend(data: Uint8Array) {
   if (serial) {
     try {
       const port = await serial.requestPort({ filters: [] });
+      await forgetOtherSerial(serial, port);
       await sendSerial(port, data);
       return;
     } catch (err) {
@@ -218,36 +282,12 @@ export async function hasGrantedThermalPrinter(): Promise<boolean> {
 /** Pede a POS80 uma vez (gesto do usuário). Depois o Kanban imprime sem diálogo. */
 export async function connectThermalPrinter(): Promise<void> {
   if (await hasGrantedThermalPrinter()) return;
-  const usb = usbApi();
-  const serial = serialApi();
-  if (!usb && !serial) {
-    throw new Error("Este navegador não fala USB com a térmica. Use o Chrome.");
-  }
-  if (usb) {
-    try {
-      try {
-        await usb.requestDevice({ filters: [] });
-      } catch (emptyErr) {
-        if (emptyErr instanceof TypeError || (emptyErr instanceof DOMException && emptyErr.name === "TypeError")) {
-          await usb.requestDevice({ filters: USB_FILTERS });
-        } else {
-          throw emptyErr;
-        }
-      }
-      return;
-    } catch (err) {
-      if (!isCancelled(err)) throw printError(err, "Falha no USB da térmica.");
-    }
-  }
-  if (serial) {
-    try {
-      await serial.requestPort({ filters: [] });
-      return;
-    } catch (err) {
-      throw printError(err, "Falha na porta serial da térmica.");
-    }
-  }
-  throw new Error("Nenhuma térmica selecionada.");
+  await pickThermalPrinter();
+}
+
+/** Sempre abre o picker — para trocar a POS80 neste Chrome. */
+export async function configureThermalPrinter(): Promise<void> {
+  await pickThermalPrinter();
 }
 
 export async function sendEscPos(data: Uint8Array, promptIfNeeded = true) {
