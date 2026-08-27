@@ -59,7 +59,7 @@ Implementação **agora**: [fatia 17 — equipe de operadores](fatia-17-platform
 
 - Pagamento da conta no app / split
 - CPF do consumidor para pedir
-- Agente impressora térmica
+- Agente impressora térmica (cozinha / auto-print). Cupom de conferência no Chrome: [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)
 - Delivery, iFood, WhatsApp bot
 - App nativo, domínio customizado por estabelecimento
 - NFC-e
