@@ -74,3 +74,10 @@ export function venueHasModule(
   if (!mods) return fallback;
   return mods[key]?.enabled === true;
 }
+
+/** Config `finance.requireOpenCash`: bloquear pedido/QR sem caixa aberto. */
+export function venueRequiresOpenCash(
+  venue: { modules?: VenueModules | null } | null | undefined,
+): boolean {
+  return venue?.modules?.finance?.config?.requireOpenCash === true;
+}

@@ -164,6 +164,7 @@ Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 2. Mesma regra: `POST /v1/staff/tables/{id}/close` — encerra a **mesa** só se todas as comandas estão `closed`.
 3. Próxima rodada na mesa = novo claim (novo PIN).
 4. Fechar **caixa** (`/painel/caixa`, `/garcom/caixa`): `GET /v1/staff/cash-sessions/current` traz o esperado do turno (vendas + fundo + movimentações). Os campos já vêm preenchidos; o caixa corrige e `POST .../close`.
+5. Config **Exigir caixa aberto** em Configurações → Financeiro (`finance.config.requireOpenCash`): sem turno aberto, QR e pedidos são recusados (`CASH_SESSION_REQUIRED`).
 
 ## 5b. Fatia 10 — planos e checkout stub
 
