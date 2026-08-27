@@ -5,7 +5,7 @@ O garçom abre a comanda na mesa. O dono cadastra usuários de **garçom** no pa
 ## Inclui
 
 - CRUD de equipe em `/painel/configuracoes/equipe` (dono) — cria `account` + `venue_member` com `role` `staff` (garçom), `cashier` (caixa) ou `panel` (Kanban; exige `categoryIds`)
-- **Login único** em `/login` — cookie `eaimesa_owner` com JWT `role: owner | staff` (`member.role` distingue caixa e painel)
+- **Login único** em `/login` — cookie `eaimesa_owner` com JWT `role: owner | staff` (`member.role` distingue caixa e painel). Membership inativa → 403 `STAFF_INACTIVE` (“Seu usuário está inativo.”) — [ADR-031](../decisions/ADR-031-escala-abrir-caixa.md)
 - App `/garcom` — grade de mesas, gera QR; caixa e dono sempre encerram contas; garçom conforme `staffCanCloseTabs`. Painel **não** entra aqui.
 - API `POST /v1/staff/tables/{id}/claims` (staff ou dono)
 - Redeem `POST /v1/public/venues/{slug}/c/{token}/redeem` → tab + PIN + cookie `eaimesa_guest`

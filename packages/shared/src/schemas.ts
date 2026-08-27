@@ -180,6 +180,7 @@ export const patchVenueSchema = z
     name: z.string().trim().min(2).max(80).optional(),
     slug: slugSchema.optional(),
     staffCanCloseTabs: z.boolean().optional(),
+    requireShiftOnOpenCash: z.boolean().optional(),
     representative: representativeSchema.optional(),
     waiterCallEnabled: z.boolean().optional(),
     waiterCallTtlMinutes: z
@@ -194,6 +195,7 @@ export const patchVenueSchema = z
       b.name !== undefined ||
       b.slug !== undefined ||
       b.staffCanCloseTabs !== undefined ||
+      b.requireShiftOnOpenCash !== undefined ||
       b.representative !== undefined ||
       b.waiterCallEnabled !== undefined ||
       b.waiterCallTtlMinutes !== undefined,

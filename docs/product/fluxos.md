@@ -165,6 +165,7 @@ Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 3. Próxima rodada na mesa = novo claim (novo PIN).
 4. Fechar **caixa** (`/painel/caixa`, `/garcom/caixa`): `GET /v1/staff/cash-sessions/current` traz o esperado do turno (vendas + fundo + movimentações). Os campos já vêm preenchidos; o caixa corrige e `POST .../close`.
 5. Config **Exigir caixa aberto** em Configurações → Financeiro (`finance.config.requireOpenCash`): sem turno aberto, QR e pedidos são recusados (`CASH_SESSION_REQUIRED`).
+6. Config **Exigir escala ao abrir o caixa** em Estabelecimento (`requireShiftOnOpenCash`): na abertura, lista garçom e caixa (todos marcados); desmarcar inativa o membro. Login inativo mostra “Seu usuário está inativo.” ([ADR-031](../decisions/ADR-031-escala-abrir-caixa.md)).
 6. **Imprimir na térmica** (Chrome USB/serial, ESC/POS) manda o cupom direto na POS80 — não passa pelo diálogo A4. Se a taxa de serviço estiver ligada, o cupom traz o % e o total com taxa. Se o Mac já tiver a POS80 como impressora do sistema, pause essa fila para o Chrome usar o USB. **Impressora do sistema** fica para laser/PDF. Agente local de cozinha continua fora do MVP ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)).
 
 ## 5b. Fatia 10 — planos e checkout stub

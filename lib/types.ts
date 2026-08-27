@@ -12,7 +12,8 @@ export type Venue = {
   acceptsOrders: boolean;
   trialEndsAt?: string | null;
   currentPeriodEndsAt?: string | null;
-  staffCanCloseTabs?: boolean;
+    staffCanCloseTabs?: boolean;
+    requireShiftOnOpenCash?: boolean;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
   /** Fatia 16 — módulos efetivos do venue (ADR-029). */
