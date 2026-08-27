@@ -12,10 +12,9 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
-import { connectThermalPrinter, hasGrantedThermalPrinter, printEscPosOrder } from "../lib/print-escpos";
+import { hasGrantedThermalPrinter, printEscPosOrder } from "../lib/print-escpos";
+import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
 import type { StaffOrder } from "../lib/types";
-
-const AUTO_PRINT_KEY = "eaimesa.kanban.autoPrint";
 
 function timeAgo(iso: string) {
   const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -105,10 +104,10 @@ export function OrdersBoard({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(AUTO_PRINT_KEY) !== "1") return;
+    if (!isThermalAutoPrintEnabled()) return;
     void hasGrantedThermalPrinter().then((ok) => {
       if (ok) setAutoPrint(true);
-      else sessionStorage.removeItem(AUTO_PRINT_KEY);
+      else setThermalAutoPrintEnabled(false);
     });
   }, []);
 
@@ -136,22 +135,6 @@ export function OrdersBoard({
     }
     return map;
   }, [filtered]);
-
-  async function toggleAutoPrint() {
-    setError(null);
-    if (autoPrint) {
-      setAutoPrint(false);
-      sessionStorage.removeItem(AUTO_PRINT_KEY);
-      return;
-    }
-    try {
-      await connectThermalPrinter();
-      setAutoPrint(true);
-      sessionStorage.setItem(AUTO_PRINT_KEY, "1");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível conectar a térmica.");
-    }
-  }
 
   async function printOrder(order: StaffOrder) {
     setError(null);
@@ -192,26 +175,14 @@ export function OrdersBoard({
               ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
               : compact
                 ? "Aceite e avance os pedidos. Para lançar itens, abra a mesa em Mesas."
-                : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}{" "}
-            {autoPrint
-              ? "Pedidos novos saem na POS80 sem a caixa do Chrome."
-              : "Ligue a térmica uma vez para imprimir os novos direto."}
+                : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {compact && !station ? (
-            <Link href="/garcom" className="btn-secondary !py-2 text-sm">
-              Mesas e comandas
-            </Link>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => void toggleAutoPrint()}
-            className={autoPrint ? "btn-primary !py-2 text-sm" : "btn-secondary !py-2 text-sm"}
-          >
-            {autoPrint ? "Imprimindo novos" : "Imprimir novos na térmica"}
-          </button>
-        </div>
+        {compact && !station ? (
+          <Link href="/garcom" className="btn-secondary !py-2 text-sm">
+            Mesas e comandas
+          </Link>
+        ) : null}
       </div>
       {station ? null : (
         <div className="mb-4 flex flex-wrap gap-2">

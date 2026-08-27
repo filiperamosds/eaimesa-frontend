@@ -253,7 +253,7 @@ export async function connectThermalPrinter(): Promise<void> {
 export async function sendEscPos(data: Uint8Array, promptIfNeeded = true) {
   if (await sendToGranted(data)) return;
   if (!promptIfNeeded) {
-    throw new Error("Conecte a térmica no Kanban (Imprimir novos).");
+    throw new Error("Ligue a térmica em Configurações → Estabelecimento.");
   }
   await requestAndSend(data);
 }
