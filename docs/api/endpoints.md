@@ -288,6 +288,8 @@ Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier
 
 O conferido no fechar caixa **já nasce preenchido** com o esperado. O caixa corrige se a gaveta/maquininha diferir.
 
+`GET /v1/owner/finance/summary?groupBy=waiter`: taxa de serviço por quem abriu a mesa (`serviceFeeCents`, `salesCents`, `tabs`). KPI `serviceFeeCents` no summary. [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md).
+
 `PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
 
 ### Staff — fila (fatia 8)
