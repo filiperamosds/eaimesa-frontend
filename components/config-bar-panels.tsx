@@ -1,51 +1,157 @@
 "use client";
 
-import { planAllowsService } from "@eaimesa/shared";
+import { ERROR_CODES, planAllowsService, slugifyFromName, withSlugSuffix } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
-import type { Session } from "../lib/types";
-import { ThermalPrintSettings } from "./thermal-print-settings";
-import { VenueCloseSettings } from "./venue-close-settings";
-import { VenueSettings } from "./venue-settings";
+import { api, ApiError } from "../lib/api";
+import { useMenuSlugFromName } from "../lib/menu-slug";
+import { connectThermalPrinter, hasGrantedThermalPrinter } from "../lib/print-escpos";
+import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
+import type { Session, Venue } from "../lib/types";
 
 export function ConfigBarPanels() {
+  const [venue, setVenue] = useState<Venue | null>(null);
   const [service, setService] = useState(false);
+  const [name, setName] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
+  const [staffCanCloseTabs, setStaffCanCloseTabs] = useState(true);
+  const [thermalPrint, setThermalPrint] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const derivedSlug = useMenuSlugFromName(name, venue?.slug ?? null);
+  const slug = venue && !nameTouched ? venue.slug : derivedSlug;
 
   useEffect(() => {
-    api<Session>("/v1/auth/me")
-      .then((s) => setService(planAllowsService(s.venue.planKind ?? s.venue.plan)))
-      .catch(() => undefined);
+    void Promise.all([api<Session>("/v1/auth/me"), api<Venue>("/v1/owner/venue")])
+      .then(([session, v]) => {
+        setService(planAllowsService(session.venue.planKind ?? session.venue.plan));
+        setVenue(v);
+        setName(v.name);
+        setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Falha ao carregar."));
   }, []);
 
+  useEffect(() => {
+    if (!isThermalAutoPrintEnabled()) return;
+    void hasGrantedThermalPrinter().then((ok) => {
+      if (ok) setThermalPrint(true);
+      else setThermalAutoPrintEnabled(false);
+    });
+  }, []);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setMsg(null);
+    setPending(true);
+    try {
+      if (service && thermalPrint) {
+        await connectThermalPrinter();
+      }
+
+      let nextSlug = slug;
+      let v: Venue | null = null;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        try {
+          const body: { name: string; slug: string; staffCanCloseTabs?: boolean } = {
+            name,
+            slug: nextSlug,
+          };
+          if (service) body.staffCanCloseTabs = staffCanCloseTabs;
+          v = await api<Venue>("/v1/owner/venue", {
+            method: "PATCH",
+            body: JSON.stringify(body),
+          });
+          break;
+        } catch (err) {
+          const taken = err instanceof ApiError && err.code === ERROR_CODES.SLUG_TAKEN;
+          if (!taken || attempt === 7) throw err;
+          nextSlug = withSlugSuffix(slugifyFromName(name), attempt + 2);
+        }
+      }
+      if (!v) throw new Error("Não foi possível salvar.");
+      setVenue(v);
+      setName(v.name);
+      setNameTouched(false);
+      if (service) setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
+      if (service) setThermalAutoPrintEnabled(thermalPrint);
+      setMsg("Salvo.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (!venue && !error) return <p className="text-ink-soft">Carregando…</p>;
+  if (!venue) return <p className="text-sm text-chili">{error}</p>;
+
   return (
-    <div className="space-y-12">
-      <div>
-        <h2 className="font-serif text-2xl">Meu estabelecimento</h2>
-        <p className="mt-2 mb-8 text-ink-soft">
-          A URL do cardápio sai do nome. Se o caminho já existir, o sistema acrescenta um número
-          (seu-estabelecimento-2).
-        </p>
-        <VenueSettings />
-      </div>
-      {service ? (
-        <div>
-          <h2 className="font-serif text-2xl">Impressora térmica</h2>
-          <p className="mt-2 mb-8 max-w-2xl text-ink-soft">
-            Via dos pedidos novos no Kanban e cupom de conferência, neste Chrome, sem a caixa de
-            imprimir do sistema.
+    <div>
+      <h2 className="font-serif text-2xl">Meu estabelecimento</h2>
+      <form onSubmit={(e) => void save(e)} className="mt-8 max-w-lg space-y-6">
+        <label className="block text-sm">
+          <span className="mb-1 block font-medium">Nome</span>
+          <input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameTouched(true);
+            }}
+            className="field"
+            required
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block font-medium">URL do cardápio</span>
+          <input value={slug} className="field" disabled readOnly />
+          <p className="mt-1 text-xs text-ink-soft">
+            Cardápio em /{slug}. Se o caminho já existir, o sistema acrescenta um número.
           </p>
-          <ThermalPrintSettings />
-        </div>
-      ) : null}
-      {service ? (
-        <div>
-          <h2 className="font-serif text-2xl">Encerramento no salão</h2>
-          <p className="mt-2 mb-8 max-w-2xl text-ink-soft">
-            Regras do salão. O caixa não é afetado — ele sempre pode fechar comanda e mesa.
-          </p>
-          <VenueCloseSettings />
-        </div>
-      ) : null}
+        </label>
+
+        {service ? (
+          <label className="surface flex cursor-pointer items-start gap-3 p-4">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-chili"
+              checked={thermalPrint}
+              onChange={(e) => setThermalPrint(e.target.checked)}
+            />
+            <span>
+              <span className="block font-medium">Imprimir pedidos novos na térmica</span>
+              <span className="mt-1 block text-sm text-ink-soft">
+                Via dos pedidos novos no Kanban e cupom de conferência, neste Chrome, sem a caixa de
+                imprimir do sistema.
+              </span>
+            </span>
+          </label>
+        ) : null}
+
+        {service ? (
+          <label className="surface flex cursor-pointer items-start gap-3 p-4">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-chili"
+              checked={staffCanCloseTabs}
+              onChange={(e) => setStaffCanCloseTabs(e.target.checked)}
+            />
+            <span>
+              <span className="block font-medium">Garçom pode encerrar comanda e mesa</span>
+              <span className="mt-1 block text-sm text-ink-soft">
+                Regras do salão. O caixa não é afetado — ele sempre pode fechar comanda e mesa.
+              </span>
+            </span>
+          </label>
+        ) : null}
+
+        {error ? <p className="text-sm text-chili">{error}</p> : null}
+        {msg ? <p className="text-sm text-sage">{msg}</p> : null}
+        <button type="submit" disabled={pending} className="btn-primary !py-2">
+          {pending ? "Salvando…" : "Salvar"}
+        </button>
+      </form>
     </div>
   );
 }
