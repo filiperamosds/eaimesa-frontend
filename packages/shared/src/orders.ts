@@ -1,7 +1,8 @@
 export const ORDER_STATUSES = ["pending", "accepted", "preparing", "delivered", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-export const KANBAN_COLUMNS = ["pending", "accepted", "preparing", "delivered"] as const;
+export const KANBAN_COLUMNS = ["pending", "preparing", "delivered", "cancelled"] as const;
+export type KanbanColumn = (typeof KANBAN_COLUMNS)[number];
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   pending: "Novos",
@@ -11,14 +12,21 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   cancelled: "Cancelados",
 };
 
+/** Coluna do board. `accepted` legado cai em Preparando. */
+export function kanbanColumnFor(status: OrderStatus): KanbanColumn | null {
+  if (status === "accepted") return "preparing";
+  if ((KANBAN_COLUMNS as readonly string[]).includes(status)) return status as KanbanColumn;
+  return null;
+}
+
 export const ORDER_NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
-  pending: "accepted",
+  pending: "preparing",
   accepted: "preparing",
   preparing: "delivered",
 };
 
 export const ORDER_NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
-  pending: "Aceitar",
+  pending: "Preparar",
   accepted: "Preparar",
   preparing: "Entregar",
 };

@@ -207,7 +207,7 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/orders` | Pedidos do venue (sem `cancelled`, 48 h) |
+| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`) |
 | POST | `/v1/owner/orders` | Pedido de balcão (opcional `tabId`); snapshot de preço |
 | PATCH | `/v1/owner/orders/{id}` | `{ status }` |
 
@@ -296,7 +296,7 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/orders` | Fila 48h (`pending`…`delivered`); painel filtra por categoria |
+| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); painel filtra por categoria |
 | POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor. Painel: 403 |
 | PATCH | `/v1/staff/orders/{id}` | `{ status }` (pedido inteiro; painel só se o pedido tiver item da estação) |
 | GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda. Painel: 403 |
@@ -439,10 +439,10 @@ Erros: `PIN_INVALID`, `PIN_LOCKED`, `TAB_CLOSED`, `TAB_REQUIRED`, `TABS_STILL_OP
 #### PATCH /v1/owner/orders/{id}
 
 ```json
-{ "status": "accepted" }
+{ "status": "preparing" }
 ```
 
-Valores: `pending` | `accepted` | `preparing` | `delivered` | `cancelled`.
+Valores: `pending` | `accepted` | `preparing` | `delivered` | `cancelled`. O board avança `pending` → `preparing` → `delivered`; `accepted` continua válido (legado).
 
 ## Planejado (fatias seguintes)
 

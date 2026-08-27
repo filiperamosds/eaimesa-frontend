@@ -1,7 +1,8 @@
 # ADR-005: Kanban na fila de pedidos
 
 **Status:** Aceito  
-**Data:** 2026-08-18
+**Data:** 2026-08-18  
+**Atualizado:** 2026-08-27
 
 ## Contexto
 
@@ -9,11 +10,12 @@ A fatia 2 precisa de uma tela de pedidos para o estabelecimento. Duas opções n
 
 ## Decisão
 
-Board **Kanban** em `/painel/pedidos`, uma coluna por status ativo (`pending`, `accepted`, `preparing`, `delivered`).
+Board **Kanban** em `/painel/pedidos`, uma coluna por status ativo (`pending`, `preparing`, `delivered`, `cancelled`).
 
-- Avanço de status por **botão** no card (Aceitar / Preparar / Entregar).
+- Avanço de status por **botão** no card (Preparar / Entregar).
 - Arrastar entre colunas **não** é o caminho primário (toque em tablet/celular de bar).
-- Cancelados não ocupam coluna.
+- Não há coluna Aceitos. `accepted` permanece no contrato HTTP e no banco; no board cai em Preparando.
+- Cancelados ocupam a última coluna (sem avanço nem novo cancelamento).
 
 ## Alternativas
 
@@ -22,6 +24,7 @@ Board **Kanban** em `/painel/pedidos`, uma coluna por status ativo (`pending`, `
 | Lista única + filtro | Esconde quantos estão parados em cada etapa |
 | Drag-and-drop como único gesto | Ruim com as mãos molhadas / tela pequena |
 | Uma tela “só novos” | Não cobre o ciclo até entregar |
+| Coluna Aceitos | Etapa extra sem uso no salão; Preparar a partir de Novos basta |
 
 ## Consequências
 

@@ -4,6 +4,7 @@ import {
   filterOrdersByCategories,
   formatBrlFromCents,
   KANBAN_COLUMNS,
+  kanbanColumnFor,
   ORDER_NEXT,
   ORDER_NEXT_LABEL,
   ORDER_STATUS_LABEL,
@@ -26,9 +27,9 @@ function timeAgo(iso: string) {
 
 const COLUMN_DOT: Record<(typeof KANBAN_COLUMNS)[number], string> = {
   pending: "bg-chili",
-  accepted: "bg-amber",
   preparing: "bg-sage",
   delivered: "bg-ink/30",
+  cancelled: "bg-chili/50",
 };
 
 type BoardEndpoints = {
@@ -131,7 +132,8 @@ export function OrdersBoard({
     const map: Record<string, StaffOrder[]> = {};
     for (const col of KANBAN_COLUMNS) map[col] = [];
     for (const o of filtered) {
-      map[o.status]?.push(o);
+      const col = kanbanColumnFor(o.status);
+      if (col) map[col].push(o);
     }
     return map;
   }, [filtered]);
@@ -155,10 +157,7 @@ export function OrdersBoard({
         method: "PATCH",
         body: JSON.stringify({ status }),
       });
-      setOrders((cur) => {
-        if (status === "cancelled") return cur.filter((o) => o.id !== id);
-        return cur.map((o) => (o.id === id ? updated : o));
-      });
+      setOrders((cur) => cur.map((o) => (o.id === id ? updated : o)));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível atualizar.");
     }
@@ -174,7 +173,7 @@ export function OrdersBoard({
             {station
               ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
               : compact
-                ? "Aceite e avance os pedidos. Para lançar itens, abra a mesa em Mesas."
+                ? "Avance os pedidos. Para lançar itens, abra a mesa em Mesas."
                 : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
           </p>
         </div>
@@ -318,7 +317,7 @@ function OrderCard({
             {nextLabel}
           </button>
         ) : null}
-        {order.status !== "delivered" && !station ? (
+        {order.status !== "delivered" && order.status !== "cancelled" && !station ? (
           <button type="button" onClick={onCancel} className="rounded-full px-3 py-1 text-xs text-chili">
             Cancelar
           </button>

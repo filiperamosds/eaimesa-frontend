@@ -39,7 +39,7 @@ sequenceDiagram
 
   S->>API: POST /v1/staff/orders (tabId + itens)
   API-->>S: Pedido pending
-  S->>API: PATCH status accepted / preparing / delivered
+  S->>API: PATCH status preparing / delivered / cancelled
 ```
 
 1. Staff entra (`/login`) e cai em `/painel/pedidos` (ou clica a aba **Pedidos**).
@@ -138,7 +138,7 @@ sequenceDiagram
   C->>API: GET /v1/guest/orders
   API-->>C: parcial (itens + totalCents)
   G->>API: GET /v1/staff/orders
-  G->>API: PATCH status accepted / preparing / delivered
+  G->>API: PATCH status preparing / delivered / cancelled
   K->>API: GET /v1/owner/orders
 ```
 
