@@ -13,7 +13,7 @@ const LINKS = [
   { href: "/painel/configuracoes/mesas", label: "Mesas", service: false, module: null },
   { href: "/painel/configuracoes/chamada", label: "Chamada", service: false, module: null },
   { href: "/painel/configuracoes/equipe", label: "Equipe", service: true, module: null },
-  { href: "/painel/configuracoes/financeiro", label: "Financeiro", service: true, module: "service_fee" },
+  { href: "/painel/configuracoes/financeiro", label: "Financeiro", service: true, module: "finance" },
   { href: "/painel/configuracoes/responsavel", label: "Responsável", service: false, module: null },
   { href: "/painel/pagamento", label: "Pagamento", service: false, module: null },
 ] as const;
@@ -21,22 +21,22 @@ const LINKS = [
 export function ConfiguracoesNav() {
   const path = usePathname();
   const [service, setService] = useState(true);
-  const [feeOn, setFeeOn] = useState(true);
+  const [financeOn, setFinanceOn] = useState(true);
 
   useEffect(() => {
     api<Session>("/v1/auth/me")
       .then((s) => {
         const svc = planAllowsService(s.venue.planKind ?? s.venue.plan);
         setService(svc);
-        // Mostra a config se o módulo está no plano (mesmo desligado, para poder ligar).
-        setFeeOn(s.venue.modules ? Boolean(s.venue.modules.service_fee) : svc);
+        const mods = s.venue.modules;
+        setFinanceOn(mods ? Boolean(mods.finance || mods.service_fee) : svc);
       })
       .catch(() => undefined);
   }, []);
 
   const links = LINKS.filter((l) => {
     if (l.service && !service) return false;
-    if (l.module === "service_fee" && !feeOn) return false;
+    if (l.module === "finance" && !financeOn) return false;
     return true;
   });
 
