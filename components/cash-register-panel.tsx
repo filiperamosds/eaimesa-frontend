@@ -1,7 +1,7 @@
 "use client";
 
 import { formatBrlFromCents } from "@eaimesa/shared";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { MoneyField } from "./masked-fields";
 
@@ -14,13 +14,16 @@ const MOVEMENT_LABEL: Record<MovementType, string> = {
   ajuste: "Ajuste",
 };
 
-type CountMethod = "cash" | "debit" | "credit" | "pix";
+type CountMethod = "cash" | "debit" | "credit" | "pix" | "courtesy" | "other";
 const COUNT_LABEL: Record<CountMethod, string> = {
   cash: "Dinheiro",
   debit: "Débito",
   credit: "Crédito",
   pix: "Pix",
+  courtesy: "Cortesia",
+  other: "Outro",
 };
+const ALWAYS_COUNT: CountMethod[] = ["cash", "debit", "credit", "pix"];
 
 type CashSession = {
   id: string;
@@ -31,9 +34,36 @@ type CashSession = {
   countedByMethod?: Record<string, number> | null;
 };
 
+const EMPTY_COUNT: Record<CountMethod, number> = {
+  cash: 0,
+  debit: 0,
+  credit: 0,
+  pix: 0,
+  courtesy: 0,
+  other: 0,
+};
+
 function loadStoredId(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(STORAGE_KEY);
+}
+
+function fromExpected(raw?: Record<string, number> | null): Record<CountMethod, number> {
+  return {
+    cash: raw?.cash ?? 0,
+    debit: raw?.debit ?? 0,
+    credit: raw?.credit ?? 0,
+    pix: raw?.pix ?? 0,
+    courtesy: raw?.courtesy ?? 0,
+    other: raw?.other ?? 0,
+  };
+}
+
+function visibleMethods(expected: Record<CountMethod, number>): CountMethod[] {
+  const extra = (Object.keys(COUNT_LABEL) as CountMethod[]).filter(
+    (m) => !ALWAYS_COUNT.includes(m) && (expected[m] ?? 0) !== 0,
+  );
+  return [...ALWAYS_COUNT, ...extra];
 }
 
 export function CashRegisterPanel() {
@@ -42,11 +72,13 @@ export function CashRegisterPanel() {
   const [mvType, setMvType] = useState<MovementType>("suprimento");
   const [mvAmount, setMvAmount] = useState(0);
   const [mvReason, setMvReason] = useState("");
-  const [counted, setCounted] = useState<Record<CountMethod, number>>({ cash: 0, debit: 0, credit: 0, pix: 0 });
+  const [expected, setExpected] = useState<Record<CountMethod, number>>(EMPTY_COUNT);
+  const [counted, setCounted] = useState<Record<CountMethod, number>>(EMPTY_COUNT);
   const [closed, setClosed] = useState<CashSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   function store(id: string | null) {
     setSessionId(id);
@@ -54,6 +86,33 @@ export function CashRegisterPanel() {
     if (id) window.localStorage.setItem(STORAGE_KEY, id);
     else window.localStorage.removeItem(STORAGE_KEY);
   }
+
+  function applyExpected(raw?: Record<string, number> | null, fillCounted = true) {
+    const next = fromExpected(raw);
+    setExpected(next);
+    if (fillCounted) setCounted(next);
+  }
+
+  const loadCurrent = useCallback(async (fillCounted = true) => {
+    try {
+      const s = await api<CashSession>("/v1/staff/cash-sessions/current");
+      store(s.id);
+      applyExpected(s.expectedByMethod, fillCounted);
+      setClosed(null);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        store(null);
+        applyExpected(null, true);
+        return;
+      }
+      setError(err instanceof ApiError ? err.message : "Não foi possível carregar o caixa.");
+    }
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    void loadCurrent(true).finally(() => setLoading(false));
+  }, [loadCurrent]);
 
   async function openCash() {
     setBusy(true);
@@ -65,9 +124,15 @@ export function CashRegisterPanel() {
         body: JSON.stringify({ openingFloatCents: openingFloat }),
       });
       store(s.id);
+      applyExpected(s.expectedByMethod, true);
       setClosed(null);
       setMsg("Caixa aberto.");
     } catch (err) {
+      if (err instanceof ApiError && err.code === "CASH_SESSION_OPEN") {
+        await loadCurrent(true);
+        setMsg("Já havia um caixa aberto. Valores do turno carregados.");
+        return;
+      }
       setError(err instanceof ApiError ? err.message : "Não foi possível abrir o caixa.");
     } finally {
       setBusy(false);
@@ -87,6 +152,7 @@ export function CashRegisterPanel() {
       setMsg(`${MOVEMENT_LABEL[mvType]} de ${formatBrlFromCents(mvAmount)} registrada.`);
       setMvAmount(0);
       setMvReason("");
+      await loadCurrent(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível registrar.");
     } finally {
@@ -106,6 +172,7 @@ export function CashRegisterPanel() {
       });
       setClosed(s);
       store(null);
+      applyExpected(null, true);
       setMsg("Caixa fechado.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível fechar o caixa.");
@@ -113,6 +180,9 @@ export function CashRegisterPanel() {
       setBusy(false);
     }
   }
+
+  const methods = visibleMethods(expected);
+  const liveDiff = methods.reduce((sum, m) => sum + (counted[m] ?? 0) - (expected[m] ?? 0), 0);
 
   return (
     <div className="space-y-5">
@@ -124,7 +194,9 @@ export function CashRegisterPanel() {
       {error ? <p className="text-sm text-chili">{error}</p> : null}
       {msg ? <p className="text-sm text-sage">{msg}</p> : null}
 
-      {!sessionId ? (
+      {loading ? (
+        <p className="text-sm text-ink-soft">Carregando o caixa…</p>
+      ) : !sessionId ? (
         <div className="surface space-y-4 p-5">
           <p className="font-medium">Abrir caixa</p>
           <label className="block text-sm">
@@ -163,11 +235,17 @@ export function CashRegisterPanel() {
 
           <div className="surface space-y-3 p-5">
             <p className="font-medium">Fechar caixa</p>
-            <p className="text-xs text-ink-soft">Informe o conferido por forma. O sistema calcula a diferença contra o esperado.</p>
+            <p className="text-xs text-ink-soft">
+              Já vem preenchido com o que o caixa vendeu no turno (mais fundo de troco e movimentações). Corrija se a
+              conferência for diferente.
+            </p>
             <div className="grid grid-cols-2 gap-3">
-              {(Object.keys(COUNT_LABEL) as CountMethod[]).map((m) => (
+              {methods.map((m) => (
                 <label key={m} className="block text-sm">
-                  <span className="mb-1 block text-ink-soft">{COUNT_LABEL[m]}</span>
+                  <span className="mb-1 flex items-baseline justify-between gap-2 text-ink-soft">
+                    <span>{COUNT_LABEL[m]}</span>
+                    <span className="tabular-nums text-[11px]">esperado {formatBrlFromCents(expected[m] ?? 0)}</span>
+                  </span>
                   <MoneyField
                     className="field text-sm"
                     cents={counted[m]}
@@ -176,9 +254,25 @@ export function CashRegisterPanel() {
                 </label>
               ))}
             </div>
-            <button type="button" onClick={() => void closeCash()} disabled={busy} className="btn-primary !py-2 text-sm">
-              {busy ? "Fechando…" : "Fechar caixa"}
-            </button>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-ink-soft">Diferença agora</span>
+              <span className={`tabular-nums font-medium ${liveDiff < 0 ? "text-chili" : "text-sage"}`}>
+                {formatBrlFromCents(liveDiff)}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void loadCurrent(true)}
+                disabled={busy}
+                className="btn-secondary !py-2 text-sm"
+              >
+                Atualizar vendas do turno
+              </button>
+              <button type="button" onClick={() => void closeCash()} disabled={busy} className="btn-primary !py-2 text-sm">
+                {busy ? "Fechando…" : "Fechar caixa"}
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -193,7 +287,7 @@ export function CashRegisterPanel() {
             </span>
           </div>
           {closed.expectedByMethod
-            ? (Object.keys(COUNT_LABEL) as CountMethod[]).map((m) => (
+            ? visibleMethods(fromExpected(closed.expectedByMethod)).map((m) => (
                 <div key={m} className="flex items-center justify-between text-xs text-ink-soft">
                   <span>{COUNT_LABEL[m]}</span>
                   <span className="tabular-nums">
