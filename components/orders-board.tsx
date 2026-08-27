@@ -133,7 +133,7 @@ export function OrdersBoard({
     for (const col of KANBAN_COLUMNS) map[col] = [];
     for (const o of filtered) {
       const col = kanbanColumnFor(o.status);
-      if (col) map[col].push(o);
+      if (col) (map[col] ??= []).push(o);
     }
     return map;
   }, [filtered]);
