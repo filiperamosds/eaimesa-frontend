@@ -51,7 +51,8 @@ export function LoginForm() {
         setError("Seu usuário está inativo.");
       } else {
         setError(err instanceof ApiError ? err.message : "Falha no login.");
-      } finally {
+      }
+    } finally {
       setPending(false);
     }
   }
