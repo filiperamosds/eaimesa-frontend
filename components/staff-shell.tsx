@@ -1,6 +1,6 @@
 "use client";
 
-import { isPanelMember, memberRoleLabel } from "@eaimesa/shared";
+import { isPanelMember, memberRoleLabel, venueHasModule } from "@eaimesa/shared";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -10,8 +10,9 @@ import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
 
 const LINKS = [
-  { href: "/garcom", label: "Mesas", exact: true },
-  { href: "/garcom/pedidos", label: "Pedidos", exact: false },
+  { href: "/garcom", label: "Mesas", exact: true, module: null },
+  { href: "/garcom/pedidos", label: "Pedidos", exact: false, module: null },
+  { href: "/garcom/caixa", label: "Caixa", exact: false, module: "finance" },
 ] as const;
 
 export function StaffShell({ children }: { children: React.ReactNode }) {
@@ -58,6 +59,8 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
   const displayName =
     me.role === "staff" ? (me.member?.name ?? me.account.email) : me.account.email;
   const floorLabel = me.role === "owner" ? "Dono" : memberRoleLabel(me.member?.role);
+  const onMesas = path === "/garcom";
+  const links = LINKS.filter((l) => l.module !== "finance" || venueHasModule(me.venue, "finance", false));
 
   return (
     <div className="min-h-screen pb-20">
@@ -80,7 +83,7 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
         </div>
         <div className="mx-auto hidden max-w-[88rem] px-5 pb-3 sm:block">
           <nav aria-label="Garçom" className="flex max-w-md rounded-2xl bg-paper-2/80 p-1">
-            {LINKS.map((l) => {
+            {links.map((l) => {
               const active = l.exact ? path === l.href : path.startsWith(l.href);
               return (
                 <Link
@@ -100,20 +103,20 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className={`mx-auto px-5 py-6 ${onPedidos ? "max-w-[88rem]" : "max-w-lg"}`}>
-        {onPedidos ? null : (
+        {onMesas ? (
           <>
             <p className="eyebrow">{floorLabel}</p>
             <h1 className="mt-1 font-serif text-2xl">Mesas</h1>
           </>
-        )}
+        ) : null}
         {children}
       </div>
       <nav
         aria-label="Garçom"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur-xl sm:hidden"
       >
-        <ul className="grid grid-cols-2 px-2 py-2">
-          {LINKS.map((l) => {
+        <ul className={`grid px-2 py-2 ${links.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+          {links.map((l) => {
             const active = l.exact ? path === l.href : path.startsWith(l.href);
             return (
               <li key={l.href}>

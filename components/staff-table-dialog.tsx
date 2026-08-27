@@ -11,6 +11,7 @@ import { api, ApiError } from "../lib/api";
 import type { StaffOrder, StaffTableTab, StaffTableTabsPayload } from "../lib/types";
 import { PhoneField } from "./masked-fields";
 import { StaffAddOrderDialog } from "./staff-add-order-dialog";
+import { StaffCloseTabDialog } from "./staff-close-tab-dialog";
 import { StaffTabReceipt } from "./staff-tab-receipt";
 
 type Props = {
@@ -69,6 +70,7 @@ export function StaffTableDialog({
   const [addingTab, setAddingTab] = useState<StaffTableTab | null>(null);
   const [openingTab, setOpeningTab] = useState(false);
   const [receiptTab, setReceiptTab] = useState<StaffTableTab | null>(null);
+  const [closingTab, setClosingTab] = useState<StaffTableTab | null>(null);
 
   async function load(opts?: { silent?: boolean }) {
     if (!opts?.silent) {
@@ -113,20 +115,6 @@ export function StaffTableDialog({
   const openCount = data?.table.openTabCount ?? 0;
   const pin = data?.table.pinDisplay ?? null;
   const unassigned = data?.unassignedOrders ?? [];
-
-  async function closeTab(tabId: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      await api(`/v1/staff/tabs/${tabId}/close`, { method: "POST" });
-      await load();
-      onChanged();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível fechar a comanda.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function closeTable() {
     setBusy(true);
@@ -317,7 +305,7 @@ export function StaffTableDialog({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => void closeTab(selected.id)}
+                    onClick={() => setClosingTab(selected)}
                     className="btn-secondary mt-3 w-full text-sm"
                   >
                     Receber {formatBrlFromCents(selected.totalCents)} e fechar comanda
@@ -376,6 +364,18 @@ export function StaffTableDialog({
           tableLabel={tableLabel}
           tab={receiptTab}
           onClose={() => setReceiptTab(null)}
+        />
+      ) : null}
+      {closingTab ? (
+        <StaffCloseTabDialog
+          tabId={closingTab.id}
+          guestName={closingTab.guestName}
+          onCancel={() => setClosingTab(null)}
+          onDone={() => {
+            setClosingTab(null);
+            void load();
+            onChanged();
+          }}
         />
       ) : null}
     </div>
