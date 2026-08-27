@@ -37,7 +37,7 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 1. Toque na mesa abre o dialog (livre ou ocupada). PIN grande se a sessão existir.
 2. **Abrir comanda**: nome + telefone. **Novo QR** para o cliente escanear. Os dois geram/mostram o PIN.
 3. Cartão da mesa lista os **nomes**. O quadro recarrega sozinho.
-4. Seleciona uma conta → **A receber** em destaque, itens e **Imprimir na térmica** (ESC/POS no USB; o Chrome pede a POS80 uma vez, ou em Configurações → Estabelecimento → **Configurar impressora**). Não use o diálogo do sistema na POS80: o Mac manda A4/PostScript e ela imprime código. **Adicionar pedido**: escolhe categorias (só aí há **Cancelar**), soma itens de várias categorias (ex. bebida + petisco) e **Lança** um pedido.
+4. Seleciona uma conta → **A receber** em destaque (com **taxa de serviço %** se estiver ligada), itens e **Imprimir na térmica** (ESC/POS no USB; o Chrome pede a POS80 uma vez, ou em Configurações → Estabelecimento → **Configurar impressora**). Não use o diálogo do sistema na POS80: o Mac manda A4/PostScript e ela imprime código. **Adicionar pedido**: escolhe categorias (só aí há **Cancelar**), soma itens de várias categorias (ex. bebida + petisco) e **Lança** um pedido.
 5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`) — botão mostra o valor. **Encerrar mesa** só com zero comandas abertas.
 
 ## Por que não uma comanda só

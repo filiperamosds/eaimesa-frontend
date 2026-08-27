@@ -7,7 +7,7 @@ O garçom já vê a parcial por comanda. Quem pediu no celular também precisa v
 - Faixa do cardápio: nome · mesa · total · **Parcial** (abre **dialog** no `/{slug}`, sem navegar)
 - `/{slug}/comanda` continua para abrir a comanda (nome/telefone) e como atalho se alguém chegar direto na URL
 - Cesta no `/{slug}`: seção **Já na comanda** + total
-- `GET /v1/guest/orders` devolve `{ orders, totalCents }` (cancelados no histórico; **fora** do total)
+- `GET /v1/guest/orders` devolve `{ orders, totalCents, serviceFeePercent, serviceFeeCents, dueCents }` (cancelados no histórico; **fora** de `totalCents`). Se a taxa de serviço estiver ligada, a parcial mostra o % e `dueCents = totalCents + serviceFeeCents`.
 - Poll curto (~5s) para o status acompanhar a fila
 - Só a comanda da pessoa (não a da mesa inteira)
 
@@ -21,7 +21,7 @@ O garçom já vê a parcial por comanda. Quem pediu no celular também precisa v
 
 1. Cliente pede pelo cardápio.
 2. Toca **Parcial** na faixa (ou **Ver comanda** na cesta): dialog com itens, status e total.
-3. Vê fila → aceito → preparando → entregue, e o total.
+3. Vê fila → aceito → preparando → entregue, o subtotal e a taxa de serviço se estiver ligada.
 4. Para fechar, chama o garçom (como hoje).
 
 `GET` da parcial não exige o estabelecimento estar aceitando pedido novo (`accepts_orders`). `POST` continua exigindo.

@@ -269,7 +269,7 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 |--------|------|-----------|
 | GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `requireOpenCash` + `cashSessionOpen` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs`, `pinDisplay` |
 | POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Sem caixa e `requireOpenCash` → 409 `CASH_SESSION_REQUIRED` |
-| GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
+| GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial (`totalCents`, `serviceFeePercent`, `serviceFeeCents`, `dueCents`) + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
 | POST | `/v1/staff/tables/{tableId}/tabs` | Garçom abre comanda `{ name, phone }` (mesmo contrato do guest). Cria sessão/PIN se faltar |
 | POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
 | POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta). Mesma regra de close |
@@ -397,7 +397,7 @@ Cookie `eaimesa_guest` com **tab** `open`. Preço **não** vai no body.
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/guest/orders` | Cookie guest | Carrinho → pedido `pending`, `source=guest` |
-| GET | `/v1/guest/orders` | Cookie guest | Pedidos da comanda (48h) + `totalCents` (sem cancelados) |
+| GET | `/v1/guest/orders` | Cookie guest | Pedidos da comanda (48h) + `totalCents` (sem cancelados) + taxa (`serviceFeePercent`, `serviceFeeCents`, `dueCents`) |
 | GET | `/v1/guest/orders/{id}` | Cookie guest | Um pedido da comanda |
 
 Header obrigatório no POST: `Idempotency-Key` (UUID). Mesma chave no venue devolve o mesmo pedido.
@@ -407,6 +407,9 @@ Header obrigatório no POST: `Idempotency-Key` (UUID). Mesma chave no venue devo
 ```json
 {
   "totalCents": 3890,
+  "serviceFeePercent": 10,
+  "serviceFeeCents": 389,
+  "dueCents": 4279,
   "orders": [
     {
       "id": "uuid",
@@ -421,7 +424,7 @@ Header obrigatório no POST: `Idempotency-Key` (UUID). Mesma chave no venue devo
 }
 ```
 
-Só a comanda do cookie. Cancelados aparecem na lista e **não** somam em `totalCents`.
+Só a comanda do cookie. Cancelados aparecem na lista e **não** somam em `totalCents`. Se `service_fee` estiver desligada, `serviceFeePercent` e `serviceFeeCents` são 0 e `dueCents = totalCents`.
 
 #### POST /v1/guest/orders (body)
 

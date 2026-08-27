@@ -21,10 +21,23 @@ type Props = {
   canOrder: boolean;
   orders: GuestOrder[];
   partialCents: number;
+  subtotalCents?: number;
+  serviceFeePercent?: number;
+  serviceFeeCents?: number;
   onOrdered: () => void;
 };
 
-export function GuestCart({ cart, onChange, canOrder, orders, partialCents, onOrdered }: Props) {
+export function GuestCart({
+  cart,
+  onChange,
+  canOrder,
+  orders,
+  partialCents,
+  subtotalCents,
+  serviceFeePercent = 0,
+  serviceFeeCents = 0,
+  onOrdered,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [orderNote, setOrderNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +125,12 @@ export function GuestCart({ cart, onChange, canOrder, orders, partialCents, onOr
               {orders.length > 0 ? (
                 <section>
                   <p className="mb-2 text-sm font-medium">Já na comanda</p>
-                  <GuestPartial orders={orders} totalCents={partialCents} />
+                  <GuestPartial
+                    orders={orders}
+                    totalCents={subtotalCents ?? partialCents}
+                    serviceFeePercent={serviceFeePercent}
+                    serviceFeeCents={serviceFeeCents}
+                  />
                 </section>
               ) : null}
               {cart.length === 0 ? (

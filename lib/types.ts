@@ -190,6 +190,9 @@ export type StaffTableTab = {
   status: "open" | "closed";
   createdAt: string;
   totalCents: number;
+  serviceFeePercent?: number;
+  serviceFeeCents?: number;
+  dueCents?: number;
   orders: StaffTabOrder[];
 };
 
@@ -233,4 +236,7 @@ export type GuestOrder = StaffOrder;
 export type GuestOrdersPayload = {
   orders: GuestOrder[];
   totalCents: number;
+  serviceFeePercent?: number;
+  serviceFeeCents?: number;
+  dueCents?: number;
 };

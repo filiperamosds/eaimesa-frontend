@@ -12,7 +12,7 @@ export function ComandaProfileView() {
   const slug = useVenueSlug();
   const tab = useGuestTab(slug ?? "");
   const hasTab = Boolean(tab && !tab.needsProfile);
-  const { orders, totalCents, error } = useGuestOrders(hasTab);
+  const { orders, subtotalCents, serviceFeePercent, serviceFeeCents, error } = useGuestOrders(hasTab);
 
   if (slug === undefined) {
     return (
@@ -41,7 +41,12 @@ export function ComandaProfileView() {
         </div>
         {error ? <p className="mt-4 text-sm text-chili">{error}</p> : null}
         <div className="surface mt-6 p-5">
-          <GuestPartial orders={orders} totalCents={totalCents} />
+          <GuestPartial
+            orders={orders}
+            totalCents={subtotalCents}
+            serviceFeePercent={serviceFeePercent}
+            serviceFeeCents={serviceFeeCents}
+          />
         </div>
         <Link href={`/${slug}`} className="btn-primary mt-6 inline-flex !py-2 text-sm">
           Pedir mais no cardápio
