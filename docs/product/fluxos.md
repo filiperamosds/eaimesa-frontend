@@ -201,7 +201,7 @@ sequenceDiagram
 1. Cadastro escolhe o plano (com o valor, ou de/por se houver promo); entra em `trial` (7 dias) e vai para o produto. Pagamento **não** abre no cadastro. Nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) — ou com status `past_due` — o painel mostra banner para `/painel/pagamento`. Quem quiser pagar antes usa **Configurações → Pagamento**. Responsável em `/painel/configuracoes/responsavel`; no checkout Asaas o front omite `payer` se inalterado.
 2. Stub (`immediate`): (~2s) aprova e grava `active`. `currentPeriodEndsAt` = `max(agora, trial_ends_at, current_period_ends_at) + paidPeriodDays`. Front envia o cartão no POST; o stub ignora.
 3. Asaas cartão: form no painel envia `creditCard`; Laravel cobra e guarda token. PIX: redirect hosted. `?checkout=ok` não confirma.
-4. Subir `kind` Cardápio → Auto atendimento: sempre, com **prorrata** (`upgradeQuotes`). Troca lateral (mesmo kind): sempre. Descer no meio da vigência **paga**: agendar (`schedule-downgrade`); imediato só depois do fim (ou no trial). Plano `active` no mesmo SKU: sem novo checkout.
+4. Subir `kind` Cardápio → Auto atendimento: sempre, com **prorrata** (`upgradeQuotes`). Troca lateral (mesmo kind): sempre. Descer no meio da vigência **paga**: agendar (`schedule-downgrade`); imediato só depois do fim (ou no trial). Plano `active` no mesmo SKU: sem novo checkout. Cancelar assinatura: para cobranças futuras; acesso até o fim do mês pago.
 5. Plano `kind=cardapio`: API responde 403 `PLAN_FEATURE` em equipe, pedidos, claim, PIN e comanda. **Mesas** (`/v1/owner/tables`) são liberadas para QR. O `/{slug}` não mostra PIN nem “Entrar para pedir”; `/entrar` redireciona ao cardápio.
 
 ## 5c. Fatia 11 — console SaaS

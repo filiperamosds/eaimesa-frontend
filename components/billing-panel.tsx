@@ -18,6 +18,7 @@ import {
   type PaymentMethod,
   type SavedCard,
   type ScheduledDowngrade,
+  type SubscriptionCancellation,
   type UpgradeQuote,
 } from "@eaimesa/shared";
 import Link from "next/link";
@@ -48,7 +49,9 @@ type BillingMe = {
   canUpgrade: boolean;
   canDowngrade: boolean;
   canScheduleDowngrade?: boolean;
+  canCancelSubscription?: boolean;
   scheduledDowngrade?: ScheduledDowngrade | null;
+  cancellation?: SubscriptionCancellation | null;
   upgradeQuotes?: UpgradeQuote[];
   plans: BillingPlanRow[];
   gateway?: BillingGateway;
@@ -110,6 +113,12 @@ function checkoutErrorMessage(err: unknown): string {
     }
     if (err.code === ERROR_CODES.ALREADY_SUBSCRIBED) {
       return "Este plano já está ativo. Troque de plano ou gerencie o cartão.";
+    }
+    if (err.code === ERROR_CODES.ALREADY_CANCELED) {
+      return "A assinatura já está cancelada. O acesso segue até o fim da vigência.";
+    }
+    if (err.code === ERROR_CODES.NOTHING_TO_CANCEL) {
+      return "Não há assinatura vigente para cancelar.";
     }
     if (err.code === ERROR_CODES.PLAN_DOWNGRADE_LOCKED) {
       return "Não dá para descer de plano no meio da vigência. Você pode agendar o downgrade para o fim do período pago.";
@@ -307,6 +316,52 @@ export function BillingPanel() {
     }
   }
 
+  async function cancelSubscription() {
+    setError(null);
+    setSuccess(null);
+    setNotice(null);
+    setPending(true);
+    try {
+      const result = await api<{
+        ok?: boolean;
+        canceledAt?: string;
+        accessUntil?: string | null;
+        message?: string;
+      }>("/v1/billing/cancel-subscription", { method: "POST" });
+      setCheckoutPlan(null);
+      setLockedDowngradePlan(null);
+      const until = result.accessUntil ? formatAt(result.accessUntil) : null;
+      setNotice({
+        kind: "info",
+        text:
+          result.message ??
+          (until
+            ? `Assinatura cancelada. Não haverá novas cobranças. O sistema continua até ${until}.`
+            : "Assinatura cancelada. Não haverá novas cobranças."),
+      });
+      await load();
+    } catch (err) {
+      setError(checkoutErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  function confirmAndCancel() {
+    if (!data) return;
+    const when = data.venue.currentPeriodEndsAt
+      ? formatAt(data.venue.currentPeriodEndsAt)
+      : "o fim da vigência";
+    if (
+      !confirm(
+        `Cancelar a assinatura? Não haverá novas cobranças. O sistema continua até ${when}.`,
+      )
+    ) {
+      return;
+    }
+    void cancelSubscription();
+  }
+
   async function pay(
     plan: string,
     method: PaymentMethod,
@@ -439,6 +494,18 @@ export function BillingPanel() {
         </div>
       ) : null}
 
+      {data.cancellation?.canceledAt ? (
+        <div className="rounded-2xl border border-amber/40 bg-amber/10 p-5">
+          <p className="text-sm font-medium">Assinatura cancelada</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Não haverá novas cobranças.
+            {data.cancellation.accessUntil
+              ? ` O sistema continua disponível até ${formatAt(data.cancellation.accessUntil)}.`
+              : " O sistema continua disponível até o fim da vigência."}
+          </p>
+        </div>
+      ) : null}
+
       {!gateway.available ? (
         <p className="rounded-2xl border border-chili/30 bg-chili/5 p-4 text-sm text-chili">
           Pagamento indisponível no momento. Tente de novo mais tarde.
@@ -548,6 +615,16 @@ export function BillingPanel() {
               <button type="button" className="btn-primary !py-2 text-sm" onClick={scrollToCards}>
                 Gerenciar cartão
               </button>
+              {data.canCancelSubscription ? (
+                <button
+                  type="button"
+                  className="btn-ghost text-sm"
+                  disabled={pending}
+                  onClick={confirmAndCancel}
+                >
+                  Cancelar assinatura
+                </button>
+              ) : null}
               <button type="button" className="btn-ghost text-sm" onClick={() => setCheckoutPlan(null)}>
                 Trocar plano
               </button>
@@ -585,7 +662,7 @@ export function BillingPanel() {
             const downgrade = !isCurrent && rank < currentRank;
             const lateral = !isCurrent && rank === currentRank;
             const already = isCurrent && paidOpen;
-            const schedule = downgrade && paidOpen;
+            const schedule = downgrade && Boolean(data.canScheduleDowngrade);
             const quote = quoteFor(data, p.id);
             const enabled =
               !already &&
@@ -619,6 +696,16 @@ export function BillingPanel() {
                     <button type="button" className="btn-ghost text-sm" onClick={scrollToCards}>
                       Gerenciar cartão
                     </button>
+                    {data.canCancelSubscription ? (
+                      <button
+                        type="button"
+                        className="btn-ghost text-sm"
+                        disabled={pending}
+                        onClick={confirmAndCancel}
+                      >
+                        Cancelar assinatura
+                      </button>
+                    ) : null}
                   </div>
                 ) : (
                   <button
