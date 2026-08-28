@@ -1,6 +1,6 @@
 # Documentação EaiMesa
 
-Índice. Fatia atual: **Equipe de operadores SaaS**; fatias 1–17 no repo.
+Índice. Fatia atual: **E-mails e confirmação**; fatias 1–18 no repo.
 
 1. [Fatia 1 — Cardápio](product/fatia-01-cardapio.md)
 1b. [Fatia 2 — Pedidos](product/fatia-02-pedidos.md) — Kanban / KDS no painel
@@ -19,6 +19,7 @@
 1o. [Fatia 15 — Chamar garçom](product/fatia-15-chamar-garcom-cardapio.md) — QR `?mesa=` + presença + fila (plano Cardápio)
 1p. [Fatia 16 — Eventos de integração](product/fatia-16-integration-events.md) — `/admin/integracoes`, webhooks Asaas
 1q. [Fatia 17 — Equipe de operadores](product/fatia-17-platform-equipe.md) — `/admin/equipe`, `GET/POST /v1/platform/users`
+1r. [Fatia 18 — E-mails](product/fatia-18-emails.md) — código, convite, trial, pagamento ([ADR-034](decisions/ADR-034-emails-confirmacao.md))
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
 4. [Pricing](product/pricing.md) — Cardápio e Auto atendimento
@@ -32,7 +33,7 @@
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
 9e. [Backend — chamar garçom](api/backend-waiter-call.md) — presença `?mesa=`, cookie, fila (ADR-026)
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**, **cupom ESC/POS USB (ADR-029)**, **escala na abertura do caixa (ADR-031)**, **taxa de serviço do garçom que abriu a mesa (ADR-032)**, **cancelar assinatura no fim da vigência (ADR-033)**
+11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**, **cupom ESC/POS USB (ADR-029)**, **escala na abertura do caixa (ADR-031)**, **taxa de serviço do garçom que abriu a mesa (ADR-032)**, **cancelar assinatura no fim da vigência (ADR-033)**, **e-mails transacionais (ADR-034)**
 
 ## Cursor
 

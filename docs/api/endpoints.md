@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–17)
+## Implementado (fatias 1–18)
 
 ### Saúde
 
@@ -29,10 +29,16 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
-| POST | `/v1/auth/register` | — | Cria account + venue (role owner); Set-Cookie |
-| POST | `/v1/auth/login` | — | E-mail/senha; owner ou staff; Set-Cookie + `redirectPath`. Staff inativo → 403 `STAFF_INACTIVE` (“Seu usuário está inativo.”) |
+| POST | `/v1/auth/register` | — | Cria account + venue **sem** cookie. 201 `{ needsEmailVerification, email }`. Trial só após o código |
+| POST | `/v1/auth/verify-email` | — | `{ email, code }` → Set-Cookie + inicia trial |
+| POST | `/v1/auth/resend-verification` | — | `{ email }` |
+| POST | `/v1/auth/forgot-password` | — | `{ email }` |
+| POST | `/v1/auth/reset-password` | — | `{ email, code, password, passwordConfirmation }` |
+| GET | `/v1/auth/staff-invite/{token}` | — | Preview do convite |
+| POST | `/v1/auth/staff-invite/{token}` | — | `{ password, passwordConfirmation }` → Set-Cookie staff |
+| POST | `/v1/auth/login` | — | E-mail/senha. `EMAIL_NOT_VERIFIED` / `INVITE_PENDING` / `STAFF_INACTIVE` |
 | POST | `/v1/auth/logout` | Cookie | Clear-Cookie |
-| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`, `requireShiftOnOpenCash`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier` \| `panel`, `categoryIds` se painel). Staff inativo → 403 `STAFF_INACTIVE` |
+| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue; `member` se staff |
 
 #### POST /v1/auth/register (body)
 
@@ -40,6 +46,7 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 {
   "email": "dono@bar.com",
   "password": "mínimo 8 chars",
+  "passwordConfirmation": "igual à senha",
   "venueName": "Seu Estabelecimento",
   "slug": "seu-estabelecimento",
   "plan": "auto_atendimento",
@@ -50,7 +57,7 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 }
 ```
 
-O front **não deixa editar** o slug: gera a partir de `venueName` (`Seu Estabelecimento` → `seu-estabelecimento`). Se o caminho já existir (ou for reservado), usa `-2`, `-3`… (`seu-estabelecimento-2`). Confere com `GET /v1/public/venues/{slug}` (404 = livre). `representative.name` + `representative.cpfCnpj` (CPF, 11 dígitos) entram em `venue.representative`; e-mail, telefone, CEP e número continuam em Configurações → Responsável. Laravel persiste o par no register.
+O front **não deixa editar** o slug: gera a partir de `venueName`. **Não** há cookie até `POST /v1/auth/verify-email`. Rotas: `/confirmar-email`, `/esqueci-senha`, `/redefinir-senha`, `/convite?token=`.
 
 #### POST /v1/auth/login (body)
 
@@ -255,8 +262,9 @@ Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + pa
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/staff` | Lista equipe + `role` + `categoryIds` + contagem ativa |
-| POST | `/v1/owner/staff` | `{ name, email, password, role?, categoryIds? }` |
+| GET | `/v1/owner/staff` | Lista equipe + `role` + `categoryIds` + `invitePending` |
+| POST | `/v1/owner/staff` | `{ name, email, role?, categoryIds? }` — sem senha; envia convite |
+| POST | `/v1/owner/staff/{id}/resend-invite` | Reenvia o link |
 | PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role?, categoryIds? }` |
 | DELETE | `/v1/owner/staff/{id}` | Remove o membro |
 
@@ -469,7 +477,7 @@ Implementado na fatia 8 (`GET/PATCH/POST /v1/staff/orders`). `lock` e SSE contin
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| POST | `/v1/owner/staff/invites` | Convite staff (futuro) |
+Convite de staff implementado na fatia 18 (`POST /v1/owner/staff` + `/convite?token=`).
 
 ### Platform (fatia 11)
 

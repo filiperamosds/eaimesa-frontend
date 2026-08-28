@@ -36,6 +36,8 @@
 | Eventos de integração | Body em `integration_events`; `meta.headers` **sem** token/Authorization/Cookie; listagem `/admin/integracoes` só cookie platform |
 | Secret na URL | Cookie httpOnly após login |
 | Cadastro público de operador | Não existe rota pública. Só `POST /v1/platform/users` com cookie `eaimesa_platform` (`/admin/equipe`) |
+| Código de e-mail / convite | Código 6 dígitos hashed, 15 min; convite em query `token` (hash SHA-256, 7 dias). Sem cookie até confirmar |
+| SMTP | From `nao-responder@eaimesa.com`; sem Reply-To; `suporte@eaimesa.com` só no rodapé |
 | Estender trial/vigência no console | Cookie `eaimesa_platform`; 404 se o id não existe; **não** cobra no Asaas |
 
 ## Headers e cookies

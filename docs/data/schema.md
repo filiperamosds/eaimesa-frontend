@@ -6,9 +6,11 @@ Convenções: UUID interno; `slug` kebab-case único; `public_id` string opaca 1
 
 ### Account
 
-Login do dono.
+Login do dono e da equipe.
 
 - `id`, `email` UNIQUE, `password_hash`, `created_at`
+- `email_verified_at` — null até o dono confirmar o código (fatia 18)
+- `password_set_at` — null enquanto o convite de staff estiver pendente
 
 ### Venue
 
@@ -21,7 +23,9 @@ Login do dono.
 - `staff_can_close_tabs` (default true): se false, garçom não fecha comanda/mesa (caixa e dono sim)
 - `require_shift_on_open_cash` / API `requireShiftOnOpenCash` (default false): se true, abrir o caixa exige a escala (garçom/caixa; painel de fora) ([ADR-031](../decisions/ADR-031-escala-abrir-caixa.md))
 - `representative` (JSON/API camelCase): responsável / pagador Asaas — `name`, `cpfCnpj`, `email`, `phone`, `postalCode`, `addressNumber` ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)). No cadastro entram só `name` + `cpfCnpj`; o restante pode faltar até Configurações → Responsável.
-- `trial_ends_at`, `current_period_ends_at` (vigência paga)
+- `trial_ends_at` — null até confirmar o e-mail; depois agora + trial_days
+- `trial_ending_notified_on` — último e-mail “trial acabando”
+- `current_period_ends_at` (vigência paga)
 - Sem tabela de períodos: um pagamento soma `paid_period_days` (default 30) no **fim da cobertura atual** — `max(agora, trial_ends_at, current_period_ends_at)` — ver [ADR-019](../decisions/ADR-019-vigencia-empilhada.md).
 - Console (`PATCH /v1/platform/venues/{id}`): operador pode adiantar/estender essas datas. Sem `subscriptionStatus` no body, a API recalcula o status (exceto `suspended`). Não sincroniza o gateway.
 - `created_at`, `updated_at`

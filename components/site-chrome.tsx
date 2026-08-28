@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from "@eaimesa/shared";
 import Link from "next/link";
 import { LogoMark } from "./logo-mark";
 
@@ -62,6 +63,12 @@ export function SiteFooter() {
           <p className="mt-3 max-w-sm text-sm text-white/60">
             Cardápio e comanda para bares e restaurantes. O cliente usa o celular; o link da porta
             não abre pedido.
+          </p>
+          <p className="mt-3 text-sm text-white/70">
+            Suporte:{" "}
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-white">
+              {SUPPORT_EMAIL}
+            </a>
           </p>
         </div>
         <div className="flex gap-5 text-sm text-white/70">

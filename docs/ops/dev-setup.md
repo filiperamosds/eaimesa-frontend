@@ -97,6 +97,10 @@ curl http://localhost:8000/health
 
 `pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
 
+Rotas novas da fatia 18 (`/confirmar-email`, `/esqueci-senha`, `/redefinir-senha`, `/convite`) saem como pastas no export. Convite usa query `?token=` (não path), porque o token é dinâmico.
+
+Cron de e-mail (trial acabando) é da **API Laravel**, não deste front. No hPanel: tipo **Personalizado**, `php artisan schedule:run` na pasta da API — não `wget …/wp-cron.php`. Ver ops do backend.
+
 ## Git
 
 | Branch | Papel |

@@ -21,6 +21,10 @@ export const RESERVED_SLUGS = [
   "garcom",
   "bem-vindo",
   "__venue",
+  "confirmar-email",
+  "esqueci-senha",
+  "redefinir-senha",
+  "convite",
 ] as const;
 
 export const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

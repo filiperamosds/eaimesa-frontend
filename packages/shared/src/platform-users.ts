@@ -12,20 +12,31 @@ export const platformUserListSchema = z.object({
   users: z.array(platformUserSchema),
 });
 
-export const createPlatformUserSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .email("E-mail inválido.")
-    .max(190)
-    .transform((e) => e.toLowerCase()),
-  password: z
-    .string()
-    .min(8, "Senha: mínimo 8 caracteres.")
-    .max(128, "Senha: máximo 128 caracteres."),
-  name: z.string().trim().min(2, "Nome do operador: mínimo 2 caracteres.").max(80),
-  active: z.boolean().optional().default(true),
-});
+export const createPlatformUserSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email("E-mail inválido.")
+      .max(190)
+      .transform((e) => e.toLowerCase()),
+    name: z.string().trim().min(2, "Nome do operador: mínimo 2 caracteres.").max(80),
+    active: z.boolean().optional().default(true),
+  })
+  .and(
+    z
+      .object({
+        password: z
+          .string()
+          .min(8, "Senha: mínimo 8 caracteres.")
+          .max(128, "Senha: máximo 128 caracteres."),
+        passwordConfirmation: z.string().min(1, "Confirme a senha."),
+      })
+      .refine((d) => d.password === d.passwordConfirmation, {
+        message: "As senhas não coincidem.",
+        path: ["passwordConfirmation"],
+      }),
+  );
 
 export type PlatformUser = z.infer<typeof platformUserSchema>;
 export type PlatformUserList = z.infer<typeof platformUserListSchema>;

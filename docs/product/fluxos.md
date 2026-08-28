@@ -11,9 +11,12 @@ sequenceDiagram
   participant API as API
   participant C as Cliente
 
-  D->>W: /cadastro (nome do estabelecimento, responsável, e-mail, senha)
+  D->>W: /cadastro (nome, responsável, e-mail, senha + confirmar)
   W->>API: POST /v1/auth/register
-  API-->>W: Set-Cookie eaimesa_owner
+  API-->>W: 201 needsEmailVerification (sem cookie)
+  D->>W: /confirmar-email (código 6 dígitos)
+  W->>API: POST /v1/auth/verify-email
+  API-->>W: Set-Cookie eaimesa_owner + inicia trial
   D->>W: /painel — Kanban de pedidos (nav: Pedidos, Mesas, Chamados, Caixa, Financeiro)
   W->>API: GET /v1/owner/orders
   D->>W: /painel/configuracoes/cardapio — categorias e itens
@@ -23,7 +26,7 @@ sequenceDiagram
   API-->>C: Cardápio (somente leitura)
 ```
 
-1. Dono cria conta + venue (nome; slug gerado a partir do nome). Depois de logado, a logo no header volta à **home do papel** (`/painel/pedidos`, cardápio no plano Cardápio, `/garcom` ou `/admin`) — não à landing `/`.
+1. Dono cria conta + venue (nome; slug gerado a partir do nome) e **confirma o e-mail**. Sem confirmar, não entra no painel e o trial não começa. Depois de logado, a logo no header volta à **home do papel** (`/painel/pedidos`, cardápio no plano Cardápio, `/garcom` ou `/admin`) — não à landing `/`.
 2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor) em **Configurações → Cardápio**.
 3. Comparte `https://eaimesa.com.br/{slug}` (QR fixo na mesa, Instagram, balcão) — **só cardápio**.
 4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: **Configurações → Mesas**.
@@ -68,9 +71,9 @@ sequenceDiagram
 
 ## 1. Onboarding do estabelecimento (B2B)
 
-1. Dono cria conta (e-mail + senha + nome e CPF do responsável).
+1. Dono cria conta (e-mail + senha + confirmar + nome e CPF do responsável) e **confirma o código** do e-mail. Sem confirmar, o login recusa e o trial não começa.
 2. Cadastra venue: **nome**; o slug sai do nome (`seu-estabelecimento`, ou `seu-estabelecimento-2` se já existir). URL do cardápio não é editável.
-3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). Cadastro entra em `trial` (7 dias) e o front abre o **produto** (cardápio ou pedidos). Landing/cadastro **não** pedem cartão (nome e CPF do responsável já entram no cadastro). O painel destaca `/painel/pagamento` (cartão e PIX) nos **últimos 3 dias** do trial ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook.
+3. Escolhe um plano do catálogo (tipo Cardápio ou Auto atendimento). O trial (7 dias) começa **na confirmação do e-mail**. Landing/cadastro **não** pedem cartão. O painel destaca `/painel/pagamento` nos **últimos 3 dias** do trial (banner + e-mail) ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook. Pagamento ok/erro gera e-mail na conta (plano, valor, PIX ou cartão `**** last4`).
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
 6. Divulga `/{slug}` — **não** o claim.
@@ -84,8 +87,10 @@ sequenceDiagram
   participant API as API
   participant C as Cliente
 
-  D->>API: POST /v1/owner/staff (cadastro)
-  G->>API: POST /v1/auth/login
+  D->>API: POST /v1/owner/staff (nome, e-mail, perfil — sem senha)
+  API-->>G: e-mail com link /convite?token=
+  G->>W: /convite (cria senha + confirmar)
+  G->>API: POST /v1/auth/staff-invite/{token}
   G->>API: POST /v1/staff/tables/{id}/claims
   API-->>G: claimUrl + TTL
   G->>C: Cliente escaneia QR
@@ -94,7 +99,7 @@ sequenceDiagram
   API-->>C: pinDisplay → /{slug}/bem-vindo (PIN + nome/telefone)
 ```
 
-1. Dono cadastra garçons, caixas e (se quiser) painéis da cozinha/bar em **Configurações → Equipe** (`/painel/configuracoes/equipe`).
+1. Dono convida garçons, caixas e painéis em **Configurações → Equipe**. A pessoa cria a senha pelo **link** do e-mail. Equipe já cadastrada permanece com senha. Reset: `/esqueci-senha` (código).
 2. Garçom entra em `/login` → `/garcom`, escolhe mesa, mostra QR (countdown ~3 min). Painel entra no mesmo `/login` → `/painel/pedidos` (só o Kanban das categorias marcadas).
 3. Cliente escaneia → redeem → PIN da mesa + **nome e telefone** (comanda pessoal).
 4. O quadro do garçom lista os nomes na mesa e, ao toque, abre a parcial. Não gera outro QR se a mesa já está ocupada.

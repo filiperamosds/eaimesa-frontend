@@ -8,7 +8,7 @@ import { api, ApiError } from "../lib/api";
 import { resolveOwnerLoginTarget } from "../lib/auth-redirect";
 import type { BillingPlan, BillingPlansPayload } from "../lib/load-billing-plans";
 import { useMenuSlugFromName } from "../lib/menu-slug";
-import type { LoginResponse, Session } from "../lib/types";
+import type { LoginResponse, RegisterResponse, Session } from "../lib/types";
 import { PlanPrice } from "./plan-price";
 
 export function LoginForm() {
@@ -47,7 +47,13 @@ export function LoginForm() {
       router.push(resolveOwnerLoginTarget(result, next));
       router.refresh();
     } catch (err) {
-      if (err instanceof ApiError && err.code === ERROR_CODES.STAFF_INACTIVE) {
+      if (err instanceof ApiError && err.code === ERROR_CODES.EMAIL_NOT_VERIFIED) {
+        router.push(`/confirmar-email?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+        return;
+      }
+      if (err instanceof ApiError && err.code === ERROR_CODES.INVITE_PENDING) {
+        setError("Confira o e-mail para criar sua senha.");
+      } else if (err instanceof ApiError && err.code === ERROR_CODES.STAFF_INACTIVE) {
         setError("Seu usuário está inativo.");
       } else {
         setError(err instanceof ApiError ? err.message : "Falha no login.");
@@ -76,6 +82,11 @@ export function LoginForm() {
         {pending ? "Entrando…" : "Entrar"}
       </button>
       <p className="text-center text-sm text-ink-soft">
+        <Link href="/esqueci-senha" className="font-medium text-ink underline">
+          Esqueci a senha
+        </Link>
+      </p>
+      <p className="text-center text-sm text-ink-soft">
         Garçom ou caixa? Mesmo login — vocês entram na tela da equipe. Monitor da cozinha ou do bar
         (perfil Painel) abre a fila.
       </p>
@@ -94,6 +105,7 @@ export function RegisterForm() {
   const requested = useSearchParams().get("plano");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [venueName, setVenueName] = useState("");
   const [representativeName, setRepresentativeName] = useState("");
   const [representativeCpf, setRepresentativeCpf] = useState("");
@@ -123,6 +135,7 @@ export function RegisterForm() {
     const parsed = registerSchema.safeParse({
       email,
       password,
+      passwordConfirmation,
       venueName,
       slug,
       plan,
@@ -135,10 +148,10 @@ export function RegisterForm() {
     setPending(true);
     try {
       let nextSlug = parsed.data.slug;
-      let result: LoginResponse | null = null;
+      let result: RegisterResponse | null = null;
       for (let attempt = 0; attempt < 8; attempt += 1) {
         try {
-          result = await api<LoginResponse>("/v1/auth/register", {
+          result = await api<RegisterResponse>("/v1/auth/register", {
             method: "POST",
             body: JSON.stringify({ ...parsed.data, slug: nextSlug }),
           });
@@ -150,6 +163,10 @@ export function RegisterForm() {
         }
       }
       if (!result) throw new Error("Não foi possível cadastrar.");
+      if ("needsEmailVerification" in result && result.needsEmailVerification) {
+        router.push(`/confirmar-email?email=${encodeURIComponent(result.email)}`);
+        return;
+      }
       router.push(result.redirectPath || "/painel/configuracoes/cardapio");
       router.refresh();
     } catch (err) {
@@ -204,8 +221,15 @@ export function RegisterForm() {
         onChange={setPassword}
         autoComplete="new-password"
       />
+      <Field
+        label="Confirmar senha"
+        type="password"
+        value={passwordConfirmation}
+        onChange={setPasswordConfirmation}
+        autoComplete="new-password"
+      />
       <fieldset>
-        <legend className="mb-2 text-sm font-medium">Plano (trial de {trialDays} dias)</legend>
+        <legend className="mb-2 text-sm font-medium">Plano (trial de {trialDays} dias após confirmar o e-mail)</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {plans.map((p) => (
             <label
