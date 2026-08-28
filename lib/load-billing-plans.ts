@@ -39,7 +39,7 @@ export type BillingPlansPayload = {
   gateway?: BillingGateway;
 };
 
-function fallback(): BillingPlansPayload {
+export function catalogFallback(): BillingPlansPayload {
   return {
     trialDays: TRIAL_DAYS,
     paidPeriodDays: PAID_PERIOD_DAYS,
@@ -56,12 +56,13 @@ function fallback(): BillingPlansPayload {
   };
 }
 
+/** Fetch no servidor. Com `output: export` o catálogo congela no build — a vitrine usa `useBillingPlans`. */
 export async function loadBillingPlans(): Promise<BillingPlansPayload> {
   try {
     const res = await fetch(`${apiBase()}/v1/billing/plans`, { next: { revalidate: 15 } });
-    if (!res.ok) return fallback();
+    if (!res.ok) return catalogFallback();
     return (await res.json()) as BillingPlansPayload;
   } catch {
-    return fallback();
+    return catalogFallback();
   }
 }

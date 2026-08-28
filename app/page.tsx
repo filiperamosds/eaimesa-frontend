@@ -1,13 +1,7 @@
-import Link from "next/link";
-import { PlanMarketingCards } from "../components/plan-cards";
-import { planCtaPrice } from "../components/plan-price";
+import { HomePlanCtas, LivePlanMarketingCards } from "../components/home-plan-ctas";
 import { SiteFooter, SiteHeader } from "../components/site-chrome";
-import { loadBillingPlans } from "../lib/load-billing-plans";
 
-export default async function HomePage() {
-  const catalog = await loadBillingPlans();
-  const listed = catalog.plans.filter((p) => p.listed !== false);
-
+export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -25,29 +19,7 @@ export default async function HomePage() {
                 para instalar, sem tablet sujo na mesa. Pedido pelo QR do garçom entra depois; o link
                 público nunca abre comanda sozinho.
               </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                {listed.map((plan, i) => (
-                  <Link
-                    key={plan.id}
-                    href={`/cadastro?plano=${plan.id}`}
-                    className={i === 0 ? "btn-primary" : "btn-secondary"}
-                  >
-                    Adquirir {plan.name} · {planCtaPrice(plan)}
-                  </Link>
-                ))}
-              </div>
-              <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 text-sm">
-                {[
-                  [`${catalog.trialDays} dias`, "de trial"],
-                  ["0%", "comissão"],
-                  [`${listed.length} ${listed.length === 1 ? "plano" : "planos"}`, "agora"],
-                ].map(([k, v]) => (
-                  <div key={v}>
-                    <dt className="font-serif text-2xl text-ink">{k}</dt>
-                    <dd className="text-ink-soft">{v}</dd>
-                  </div>
-                ))}
-              </dl>
+              <HomePlanCtas />
             </div>
 
             <div className="relative mx-auto w-full max-w-sm">
@@ -111,12 +83,12 @@ export default async function HomePage() {
           <p className="eyebrow">Planos</p>
           <h2 className="mt-3 font-serif text-4xl">Escolha o que o estabelecimento precisa</h2>
           <p className="mt-3 max-w-xl text-ink-soft">
-            Dois tipos de produto — Cardápio ou Auto atendimento — e quantos SKUs o operador
-            cadastrar. Trial de {catalog.trialDays} dias. A cobrança (cartão ou PIX) aparece no
-            painel quando o trial estiver acabando.
+            Dois tipos de produto — Cardápio ou Auto atendimento — e os SKUs que o operador listar
+            no console. Trial de 7 dias. A cobrança (cartão ou PIX) aparece no painel quando o trial
+            estiver acabando.
           </p>
           <div className="mt-10">
-            <PlanMarketingCards plans={catalog.plans} trialDays={catalog.trialDays} />
+            <LivePlanMarketingCards />
           </div>
         </section>
       </main>
