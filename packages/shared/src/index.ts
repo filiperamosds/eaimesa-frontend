@@ -14,3 +14,4 @@ export * from "./billing";
 export * from "./platform-logs";
 export * from "./platform-integration-events";
 export * from "./platform-users";
+export * from "./contact";

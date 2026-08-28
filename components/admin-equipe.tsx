@@ -65,6 +65,7 @@ export function AdminEquipe() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [pending, setPending] = useState(false);
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null);
 
@@ -110,6 +111,7 @@ export function AdminEquipe() {
       name,
       email,
       password,
+      passwordConfirmation,
       active: true,
     });
     if (!parsed.success) {
@@ -125,6 +127,7 @@ export function AdminEquipe() {
       setName("");
       setEmail("");
       setPassword("");
+      setPasswordConfirmation("");
       setToast({ kind: "ok", message: "Operador cadastrado. Ele já pode entrar em /admin/login." });
       await load();
     } catch (err) {
@@ -151,7 +154,7 @@ export function AdminEquipe() {
 
       <form onSubmit={onSubmit} className="rounded-2xl border border-dashed border-amber/40 bg-white/5 p-5">
         <p className="font-medium">Convidar operador</p>
-        <p className="mt-1 text-sm text-white/45">Nome, e-mail e senha (mínimo 8 caracteres). Entra ativo.</p>
+        <p className="mt-1 text-sm text-white/45">Nome, e-mail e senha (mínimo 8 caracteres, com confirmação). Entra ativo.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
             <span className="mb-1 block text-white/60">Nome</span>
@@ -185,6 +188,19 @@ export function AdminEquipe() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            required
+            minLength={8}
+            maxLength={128}
+          />
+        </label>
+        <label className="mt-3 block text-sm sm:max-w-sm">
+          <span className="mb-1 block text-white/60">Confirmar senha</span>
+          <input
+            className="field-night"
+            type="password"
+            value={passwordConfirmation}
+            onChange={(e) => setPasswordConfirmation(e.target.value)}
             autoComplete="new-password"
             required
             minLength={8}
