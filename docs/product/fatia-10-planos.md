@@ -8,8 +8,8 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 
 - Planos vendáveis: **Cardápio** (R$ 49/mês) e **Auto atendimento** (R$ 149/mês)
 - Cadastro escolhe o plano; **trial de 7 dias**; cobrança no fim do trial (aviso nos últimos 3 dias)
-- Landing e `/preco`: **dois cards** com nome, valor, o que inclui e CTA
-- Cadastro mostra o **preço** do plano escolhido
+- Landing e `/preco`: um card (e um CTA no hero) **por SKU listado** no `/admin/planos` — não só os dois seed. O Next é `output: export`, então a vitrine busca `GET /v1/billing/plans` **no cliente**; SKU novo aparece sem rebuild
+- Cadastro: no desktop os planos ficam na **faixa preta** à esquerda, com o selecionado em destaque (preço, blurb, o que inclui). No celular o picker continua no formulário
 - Painel `/painel/pagamento`: escolhe **cartão ou PIX**. Cartão: o POST leva `{ plan, method, creditCard }` (e `payer` só se alterado) **ou** usa cartão salvo. Plano `active` no mesmo SKU: sem checkout (`ALREADY_SUBSCRIBED`). Banner só quando o trial está acabando ou `past_due`
 - `POST /v1/billing/checkout` — stub (`checkoutMode=immediate`): espera **2s** e devolve `status: success`. Gateway Asaas: [fatia 12](fatia-12-pagamento-asaas.md)
 - Pagamento antecipado empilha 30 dias no fim da cobertura atual (`trial_ends_at` / `current_period_ends_at`), não a partir de agora ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md))
@@ -38,7 +38,7 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 
 ## Fluxo
 
-1. Landing → Adquirir Cardápio ou Auto atendimento → `/cadastro?plano=…`
+1. Landing → Adquirir um SKU listado → `/cadastro?plano=…`
 2. Cria a conta. O **trial de 7 dias começa só depois** de confirmar o código do e-mail. O front abre `/confirmar-email`, não o painel.
 3. Nos últimos 3 dias do trial (ou com status `past_due`): banner no painel. Antes disso, **Configurações → Pagamento** ainda funciona. Cartão ou PIX; no stub (~2s) vira `active`. A vigência de 30 dias **começa no fim do que ainda resta** (trial ou mês pago), não no instante do pagamento. Upgrade mostra o valor com prorrata. Downgrade no meio da vigência é agendado. Cancelar assinatura para as próximas cobranças; o acesso continua até o fim do mês pago. No Asaas: [fatia 12](fatia-12-pagamento-asaas.md).
 4. Sem pagar após o trial: recursos do plano ficam bloqueados (`BILLING_INACTIVE`); o cardápio público continua leitura.

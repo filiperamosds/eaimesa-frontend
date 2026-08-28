@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { PLAN_FUTURE } from "@eaimesa/shared";
+import { effectivePriceCents, PLAN_FUTURE } from "@eaimesa/shared";
 import type { BillingPlan } from "../lib/load-billing-plans";
 import { PlanPrice, planCtaPrice } from "./plan-price";
 
@@ -16,13 +18,19 @@ export function PlanMarketingCards({
   trialDays: number;
 }) {
   const listed = plans.filter((p) => p.listed !== false);
+  const featuredId = listed.reduce<string | null>((best, p) => {
+    if (!best) return p.id;
+    const cur = listed.find((x) => x.id === best);
+    if (!cur) return p.id;
+    return effectivePriceCents(p) > effectivePriceCents(cur) ? p.id : best;
+  }, null);
   const cols = listed.length >= 3 ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2";
   return (
     <div>
       <div className={`grid gap-6 ${cols}`}>
         {listed.map((plan) => {
-          const featured = plan.kind === "auto_atendimento";
-          const demo = DEMOS[plan.id];
+          const featured = plan.id === featuredId;
+          const demo = DEMOS[plan.id] ?? (plan.kind ? DEMOS[plan.kind] : undefined);
           return (
             <article
               key={plan.id}

@@ -1,15 +1,15 @@
 "use client";
 
-import { ERROR_CODES, formatCpfCnpjInput, PLANS, registerSchema, SLUG_MIN, slugifyFromName, withSlugSuffix } from "@eaimesa/shared";
+import { ERROR_CODES, formatCpfCnpjInput, registerSchema, SLUG_MIN, slugifyFromName, withSlugSuffix } from "@eaimesa/shared";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { resolveOwnerLoginTarget } from "../lib/auth-redirect";
-import type { BillingPlan, BillingPlansPayload } from "../lib/load-billing-plans";
+import type { BillingPlan } from "../lib/load-billing-plans";
 import { useMenuSlugFromName } from "../lib/menu-slug";
 import type { LoginResponse, RegisterResponse, Session } from "../lib/types";
-import { PlanPrice } from "./plan-price";
+import { CadastroPlanPicker } from "./cadastro-plan-picker";
 
 export function LoginForm() {
   const router = useRouter();
@@ -100,34 +100,29 @@ export function LoginForm() {
   );
 }
 
-export function RegisterForm() {
+export function RegisterForm({
+  plans,
+  plan,
+  onPlanChange,
+  trialDays,
+  planPicker = "always",
+}: {
+  plans: BillingPlan[];
+  plan: string;
+  onPlanChange: (id: string) => void;
+  trialDays: number;
+  planPicker?: "always" | "mobile";
+}) {
   const router = useRouter();
-  const requested = useSearchParams().get("plano");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [venueName, setVenueName] = useState("");
   const [representativeName, setRepresentativeName] = useState("");
   const [representativeCpf, setRepresentativeCpf] = useState("");
-  const [plan, setPlan] = useState(requested && requested.length >= 3 ? requested : "cardapio");
-  const [plans, setPlans] = useState<BillingPlan[]>(Object.values(PLANS));
-  const [trialDays, setTrialDays] = useState(7);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const slug = useMenuSlugFromName(venueName);
-
-  useEffect(() => {
-    api<BillingPlansPayload>("/v1/billing/plans")
-      .then((data) => {
-        const listed = data.plans.filter((p) => p.listed !== false);
-        if (listed.length) setPlans(listed);
-        setTrialDays(data.trialDays);
-        setPlan((cur) => (listed.some((p) => p.id === cur) ? cur : (listed[0]?.id ?? cur)));
-      })
-      .catch(() => {
-        /* fallback PLANS */
-      });
-  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -228,38 +223,15 @@ export function RegisterForm() {
         onChange={setPasswordConfirmation}
         autoComplete="new-password"
       />
-      <fieldset>
-        <legend className="mb-2 text-sm font-medium">Plano (trial de {trialDays} dias após confirmar o e-mail)</legend>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {plans.map((p) => (
-            <label
-              key={p.id}
-              className={`cursor-pointer rounded-2xl border px-3 py-3 text-sm ${
-                plan === p.id ? "border-chili bg-chili/5" : "border-line"
-              }`}
-            >
-              <input
-                type="radio"
-                name="plan"
-                value={p.id}
-                checked={plan === p.id}
-                onChange={() => setPlan(p.id)}
-                className="sr-only"
-              />
-              <span className="block font-medium">{p.name}</span>
-              <span className="mt-1 block text-chili">
-                <PlanPrice
-                  priceCents={p.priceCents}
-                  promoPriceCents={p.promoPriceCents}
-                  suffix="/mês"
-                  className="text-base"
-                />
-              </span>
-              <span className="mt-1 block text-xs text-ink-soft">{p.blurb}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <div className={planPicker === "mobile" ? "lg:hidden" : undefined}>
+        <CadastroPlanPicker
+          plans={plans}
+          plan={plan}
+          onChange={onPlanChange}
+          trialDays={trialDays}
+          tone="paper"
+        />
+      </div>
       {error ? <p className="text-sm text-chili">{error}</p> : null}
       <button type="submit" disabled={pending || slug.length < SLUG_MIN} className="btn-primary w-full">
         {pending ? "Criando…" : "Criar cardápio"}
