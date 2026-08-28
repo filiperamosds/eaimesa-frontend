@@ -3,8 +3,10 @@
 import {
   ERROR_CODES,
   LOG_LEVELS,
-  LOG_LINE_OPTIONS,
-  LOG_LINES_DEFAULT,
+  LOG_PAGE_DEFAULT,
+  LOG_PER_PAGE_DEFAULT,
+  LOG_PER_PAGE_OPTIONS,
+  platformLogClearSchema,
   platformLogListSchema,
   platformLogViewSchema,
   type PlatformLogFile,
@@ -44,12 +46,15 @@ export function AdminLogs() {
   const [files, setFiles] = useState<PlatformLogFile[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<PlatformLogView | null>(null);
-  const [lines, setLines] = useState<number>(LOG_LINES_DEFAULT);
+  const [perPage, setPerPage] = useState<number>(LOG_PER_PAGE_DEFAULT);
+  const [page, setPage] = useState(LOG_PAGE_DEFAULT);
   const [level, setLevel] = useState("");
   const [q, setQ] = useState("");
   const [raw, setRaw] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingView, setLoadingView] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function handleError(err: unknown) {
@@ -70,9 +75,16 @@ export function AdminLogs() {
     return data.files;
   }
 
-  async function loadView(name: string, nextLines = lines, nextLevel = level, nextQ = q) {
+  async function loadView(
+    name: string,
+    nextPage = page,
+    nextPerPage = perPage,
+    nextLevel = level,
+    nextQ = q,
+  ) {
     const params = new URLSearchParams();
-    params.set("lines", String(nextLines));
+    params.set("page", String(nextPage));
+    params.set("perPage", String(nextPerPage));
     if (nextLevel) params.set("level", nextLevel);
     const query = nextQ.trim();
     if (query) params.set("q", query);
@@ -80,6 +92,7 @@ export function AdminLogs() {
       await api(`/v1/platform/logs/${encodeURIComponent(name)}?${params.toString()}`),
     );
     setView(data);
+    setPage(data.page);
   }
 
   useEffect(() => {
@@ -94,7 +107,7 @@ export function AdminLogs() {
         setSelected(name);
         if (name) {
           setLoadingView(true);
-          await loadView(name);
+          await loadView(name, LOG_PAGE_DEFAULT);
         }
       } catch (err) {
         if (!cancelled) handleError(err);
@@ -111,15 +124,16 @@ export function AdminLogs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function refresh(name = selected) {
+  async function refresh(name = selected, nextPage = page) {
     setError(null);
+    setNotice(null);
     setLoadingList(true);
     setLoadingView(Boolean(name));
     try {
       const list = await loadFiles();
       const next = name && list.some((f) => f.name === name) ? name : pickDefaultFile(list);
       setSelected(next);
-      if (next) await loadView(next);
+      if (next) await loadView(next, nextPage);
       else setView(null);
     } catch (err) {
       handleError(err);
@@ -131,10 +145,12 @@ export function AdminLogs() {
 
   async function selectFile(name: string) {
     setSelected(name);
+    setPage(LOG_PAGE_DEFAULT);
     setError(null);
+    setNotice(null);
     setLoadingView(true);
     try {
-      await loadView(name);
+      await loadView(name, LOG_PAGE_DEFAULT);
     } catch (err) {
       handleError(err);
       setView(null);
@@ -142,6 +158,51 @@ export function AdminLogs() {
       setLoadingView(false);
     }
   }
+
+  async function goToPage(nextPage: number) {
+    if (!selected) return;
+    setError(null);
+    setLoadingView(true);
+    try {
+      await loadView(selected, nextPage);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setLoadingView(false);
+    }
+  }
+
+  async function clearSelected() {
+    if (!selected) return;
+    const backupHint = selected.replace(/\.log$/, "2.log");
+    if (
+      !confirm(
+        `Limpar ${selected}? O conteúdo vai para ${backupHint} (não é apagado). Se esse backup já existir, o anterior ganha data no nome.`,
+      )
+    ) {
+      return;
+    }
+    setClearing(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = platformLogClearSchema.parse(
+        await api(`/v1/platform/logs/${encodeURIComponent(selected)}/clear`, { method: "POST" }),
+      );
+      const extra = result.archivedName ? ` O backup antigo foi para ${result.archivedName}.` : "";
+      setNotice(`${selected} limpo. Cópia em ${result.backupName}.${extra}`);
+      setPage(LOG_PAGE_DEFAULT);
+      await refresh(selected, LOG_PAGE_DEFAULT);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setClearing(false);
+    }
+  }
+
+  const lastPage = view?.lastPage ?? 1;
+  const currentPage = view?.page ?? page;
+  const total = view?.total ?? 0;
 
   const fileSelect = (
     <label className="block text-sm lg:hidden">
@@ -170,11 +231,12 @@ export function AdminLogs() {
         <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Operação</p>
         <h1 className="mt-2 font-serif text-3xl">Logs</h1>
         <p className="mt-2 text-sm text-white/55">
-          Tail dos ficheiros em storage/logs. Sem apagar, descarregar ou stream.
+          Ficheiros em storage/logs, paginados. Limpar copia para laravel2.log em vez de apagar.
         </p>
       </div>
 
       {error ? <p className="text-sm text-chili">{error}</p> : null}
+      {notice ? <p className="text-sm text-sage-soft">{notice}</p> : null}
 
       <div className="grid gap-4 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         <aside className="hidden lg:block">
@@ -213,17 +275,17 @@ export function AdminLogs() {
             className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end"
             onSubmit={(e) => {
               e.preventDefault();
-              void refresh();
+              void refresh(selected, LOG_PAGE_DEFAULT);
             }}
           >
             <label className="block text-sm sm:w-28">
-              <span className="mb-1 block text-white/60">Linhas</span>
+              <span className="mb-1 block text-white/60">Por página</span>
               <select
                 className="field-night"
-                value={lines}
-                onChange={(e) => setLines(Number(e.target.value))}
+                value={perPage}
+                onChange={(e) => setPerPage(Number(e.target.value))}
               >
-                {LOG_LINE_OPTIONS.map((n) => (
+                {LOG_PER_PAGE_OPTIONS.map((n) => (
                   <option key={n} value={n}>
                     {n}
                   </option>
@@ -254,6 +316,14 @@ export function AdminLogs() {
             <button type="submit" disabled={loadingView || loadingList} className="btn-secondary !bg-white/10 !text-white">
               Atualizar
             </button>
+            <button
+              type="button"
+              disabled={!selected || clearing || loadingList}
+              onClick={() => void clearSelected()}
+              className="btn-secondary !bg-white/10 !text-chili"
+            >
+              {clearing ? "A limpar…" : "Limpar"}
+            </button>
           </form>
 
           <label className="flex items-center gap-2 text-sm text-white/70">
@@ -262,7 +332,7 @@ export function AdminLogs() {
           </label>
 
           {view?.truncated ? (
-            <p className="text-sm text-amber">Mostrando só o final do ficheiro.</p>
+            <p className="text-sm text-amber">Ficheiro grande: a mostrar as entradas mais recentes (até 8 MiB).</p>
           ) : null}
 
           {loadingView ? (
@@ -295,6 +365,33 @@ export function AdminLogs() {
               ))}
             </ul>
           )}
+
+          {selected && lastPage >= 1 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-white/70">
+              <p>
+                Página {currentPage} de {lastPage}
+                {total ? ` · ${total} ${total === 1 ? "entrada" : "entradas"}` : ""}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn-secondary !bg-white/10 !px-3 !py-1.5 !text-white"
+                  disabled={loadingView || currentPage <= 1}
+                  onClick={() => void goToPage(currentPage - 1)}
+                >
+                  Mais recentes
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary !bg-white/10 !px-3 !py-1.5 !text-white"
+                  disabled={loadingView || currentPage >= lastPage}
+                  onClick={() => void goToPage(currentPage + 1)}
+                >
+                  Mais antigos
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
