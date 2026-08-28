@@ -34,6 +34,7 @@ Vigência paga: **30 dias** a partir do **fim da cobertura atual** (trial ou mê
 - **Trocar** SKUs do mesmo `kind`: a qualquer momento.
 - **Descer** (Auto atendimento → Cardápio): no meio da vigência paga, **agendar** para o fim do período. No trial, pode trocar na hora.
 - **Mesmo plano `active`**: não re-cobrar; gerenciar cartão.
+- **Cancelar**: para as próximas cobranças; o sistema segue até o fim da vigência paga. Sem reembolso do mês atual.
 
 ## Early adopters / anual
 
