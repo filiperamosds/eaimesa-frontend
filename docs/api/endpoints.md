@@ -88,7 +88,7 @@ Driver em `PAYMENT_GATEWAY`: `stub` (local, `success` após ~2s) ou `asaas`. **C
 }
 ```
 
-Stub: `checkoutMode: immediate`, `requiresPayer` / `requiresCreditCard` false. Asaas: `inline` (cartão no painel); PIX continua hosted. `/me` traz `pendingCheckout`, `savedCard` / `savedCards`, `upgradeQuotes` (prorrata), `canScheduleDowngrade`, `scheduledDowngrade`.
+Stub: `checkoutMode: immediate`, `requiresPayer` / `requiresCreditCard` false. Asaas: `inline` (cartão no painel); PIX continua hosted. `/me` traz `pendingCheckout`, `savedCard` / `savedCards`, `upgradeQuotes` (prorrata), `canScheduleDowngrade`, `scheduledDowngrade`, `canCancelSubscription`, `cancellation`.
 
 `GET /v1/billing/me` (recorte):
 
@@ -99,7 +99,9 @@ Stub: `checkoutMode: immediate`, `requiresPayer` / `requiresCreditCard` false. A
   "canUpgrade": true,
   "canDowngrade": true,
   "canScheduleDowngrade": true,
+  "canCancelSubscription": true,
   "scheduledDowngrade": { "plan": "cardapio", "planName": "Cardápio", "at": "2026-09-25T00:00:00.000Z" },
+  "cancellation": null,
   "upgradeQuotes": [
     {
       "plan": "auto_atendimento",
@@ -124,9 +126,10 @@ UI do cartão: `**** {last4}` (e brand se houver). Upgrade: “hoje R$ amount (c
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | GET | `/v1/billing/plans` | — | Catálogo + `gateway` + `stubDelayMs` |
-| GET | `/v1/billing/me` | Owner | Plano, quotes, cartões, `scheduledDowngrade`, `gateway`, `pendingCheckout` |
+| GET | `/v1/billing/me` | Owner | Plano, quotes, cartões, `scheduledDowngrade`, `canCancelSubscription`, `cancellation`, `gateway`, `pendingCheckout` |
 | POST | `/v1/billing/checkout` | Owner | Body `{ plan, method, payer?, creditCard? }`. Stub → `success`. Cartão Asaas → `success` + token. PIX → `pending` + `checkoutUrl`. Mesmo plano ativo → 409 `ALREADY_SUBSCRIBED`. Downgrade no meio da vigência → 409 `PLAN_DOWNGRADE_LOCKED` |
 | POST | `/v1/billing/schedule-downgrade` | Owner | `{ "plan": "cardapio" }` — agenda no fim da vigência |
+| POST | `/v1/billing/cancel-subscription` | Owner | Cancela recorrência no Asaas; acesso até `currentPeriodEndsAt`. Já cancelado → 409 `ALREADY_CANCELED`. Sem vigência → 400 `NOTHING_TO_CANCEL` |
 | GET | `/v1/billing/cards` | Owner | Lista cartões salvos (máx. 5) |
 | POST | `/v1/billing/cards` | Owner | `{ creditCard: { holderName, number, expiryMonth, expiryYear, ccv } }` |
 | POST | `/v1/billing/cards/{id}/default` | Owner | Marca padrão e sincroniza a subscription Asaas |

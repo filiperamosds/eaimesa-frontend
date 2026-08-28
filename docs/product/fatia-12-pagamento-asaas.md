@@ -6,7 +6,7 @@ Landing, `/preco` e `/cadastro` **não** pedem cartão. O cadastro pede nome e C
 
 ## Inclui
 
-- Ler `GET /v1/billing/plans` e `GET /v1/billing/me` → `gateway` (`provider`, `checkoutMode` `immediate` \| `hosted` \| `inline`, `methods`, `requiresPayer`, `requiresCreditCard`, `available`) + `upgradeQuotes`, `scheduledDowngrade`, `savedCard` / `savedCards`
+- Ler `GET /v1/billing/plans` e `GET /v1/billing/me` → `gateway` (`provider`, `checkoutMode` `immediate` \| `hosted` \| `inline`, `methods`, `requiresPayer`, `requiresCreditCard`, `available`) + `upgradeQuotes`, `scheduledDowngrade`, `canCancelSubscription`, `cancellation`, `savedCard` / `savedCards`
 - `checkoutMode === 'immediate'`: `{ plan, method, creditCard? }`, `status: success`. Stub ignora o cartão.
 - `method: card` + Asaas: nome, CPF/CNPJ, CEP, número do endereço + número/validade/CVV **ou** cartão salvo. `POST /v1/billing/checkout` com `{ plan, method, payer, creditCard? }`. API cobra no Asaas e grava `creditCardToken` (não o PAN)
 - `method: pix` + Asaas: pagador; `status: pending` + `checkoutUrl` → redirect. Copy: renovação exige **novo PIX** (não débito automático)
@@ -17,10 +17,11 @@ Landing, `/preco` e `/cadastro` **não** pedem cartão. O cadastro pede nome e C
 - Upgrade: UI mostra quote (`hoje R$ … (crédito …) · depois R$ …/mês`) antes de confirmar
 - Plano `active` + mesmo SKU: esconde checkout (`ALREADY_SUBSCRIBED`); CTA “Gerenciar cartão”
 - Downgrade no meio da vigência: `POST /v1/billing/schedule-downgrade`; banner “muda em {at}”; checkout → `PLAN_DOWNGRADE_LOCKED`
+- Cancelar assinatura: `POST /v1/billing/cancel-subscription`; banner “sem novas cobranças; acesso até {at}”; Asaas para de gerar o próximo ciclo ([ADR-033](../decisions/ADR-033-cancelar-assinatura-fim-vigencia.md))
 - Cartões: listar / adicionar / tornar padrão (feedback “assinatura atualizada”) / remover — até 5
 - `pendingCheckout.url` → botão “continuar pagamento” (PIX)
 - `gateway.available === false`: aviso e não chama checkout
-- Erros: `PAYER_REQUIRED` 400, `CREDIT_CARD_REQUIRED` / `CARD_REQUIRED` 400, `PAYMENT_UNAVAILABLE` 503, `PAYMENT_GATEWAY_ERROR` 502, `PLAN_DOWNGRADE_LOCKED` 409, `ALREADY_SUBSCRIBED` 409
+- Erros: `PAYER_REQUIRED` 400, `CREDIT_CARD_REQUIRED` / `CARD_REQUIRED` 400, `PAYMENT_UNAVAILABLE` 503, `PAYMENT_GATEWAY_ERROR` 502, `PLAN_DOWNGRADE_LOCKED` 409, `ALREADY_SUBSCRIBED` 409, `ALREADY_CANCELED` 409, `NOTHING_TO_CANCEL` 400
 - Painel: banner + item **Pagamento** nos últimos 3 dias do trial (`TRIAL_ENDING_SOON_DAYS`) ou `past_due`. Cadastro **não** redireciona ao checkout
 - Responsável completo ainda necessário para cartão ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md))
 
@@ -36,7 +37,7 @@ Landing, `/preco` e `/cadastro` **não** pedem cartão. O cadastro pede nome e C
 
 | Path | Quem | O que muda |
 |------|------|------------|
-| `/painel/pagamento` | Dono | Cartão no form ou salvo. PIX + redirect. Quote de upgrade. Downgrade agendado. Cartões salvos. Banner no fim do trial. Pré-fill do responsável |
+| `/painel/pagamento` | Dono | Cartão no form ou salvo. PIX + redirect. Quote de upgrade. Downgrade agendado. Cancelar assinatura. Cartões salvos. Banner no fim do trial. Pré-fill do responsável |
 | `/painel/configuracoes/responsavel` | Dono | Cadastro do pagador Asaas |
 | `/`, `/preco`, `/cadastro` | Visitante | Sem pagador; trial inalterado; cadastro vai ao produto |
 

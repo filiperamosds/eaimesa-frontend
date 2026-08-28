@@ -163,6 +163,7 @@ Não guardar CPF/CNPJ nem PAN. O front envia pagador + cartão no POST de checko
 - `customer_id`, `subscription_id`, `checkout_id` — ids do Asaas
 - `credit_card_token` (cifrado), `card_last4`, `card_brand` — espelho do método **default**; nunca PAN/CVV
 - `scheduled_plan`, `scheduled_plan_at` — downgrade agendado ([ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md))
+- `canceled_at` — cancelou a recorrência; acesso até `current_period_ends_at` ([ADR-033](../decisions/ADR-033-cancelar-assinatura-fim-vigencia.md))
 - `pending_plan`, `pending_method`, `pending_amount_cents`, `pending_event_id`, `checkout_url`
 
 Pendente some quando o webhook confirma.
