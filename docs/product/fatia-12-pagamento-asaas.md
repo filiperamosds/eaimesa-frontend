@@ -16,8 +16,9 @@ Landing, `/preco` e `/cadastro` **não** pedem cartão. O cadastro pede nome e C
 - Vigência: 30 dias a partir do fim da cobertura atual ([ADR-019](../decisions/ADR-019-vigencia-empilhada.md))
 - Upgrade: UI mostra quote (`hoje R$ … (crédito …) · depois R$ …/mês`) antes de confirmar
 - Plano `active` + mesmo SKU: esconde checkout (`ALREADY_SUBSCRIBED`); CTA “Gerenciar cartão”
+- Status na UI em português (`Ativo`, `Em trial`, `Inadimplente`, `Suspenso`) — nunca o raw `active`
 - Downgrade no meio da vigência: `POST /v1/billing/schedule-downgrade`; banner “muda em {at}”; checkout → `PLAN_DOWNGRADE_LOCKED`
-- Cancelar assinatura: `POST /v1/billing/cancel-subscription`; banner “sem novas cobranças; acesso até {at}”; Asaas para de gerar o próximo ciclo ([ADR-033](../decisions/ADR-033-cancelar-assinatura-fim-vigencia.md))
+- Cancelar assinatura: `POST /v1/billing/cancel-subscription`; banner “sem novas cobranças; acesso até {at}”; status na UI **Cancelada · disponível até {at}** (não o raw `active`); Asaas para de gerar o próximo ciclo ([ADR-033](../decisions/ADR-033-cancelar-assinatura-fim-vigencia.md))
 - Cartões: listar / adicionar / tornar padrão (feedback “assinatura atualizada”) / remover — até 5
 - `pendingCheckout.url` → botão “continuar pagamento” (PIX)
 - `gateway.available === false`: aviso e não chama checkout

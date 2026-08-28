@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { homeForSession } from "../lib/auth-redirect";
 import type { Session } from "../lib/types";
 import { AccountMenu, initialsFrom } from "./account-menu";
 import { Logo } from "./site-chrome";
@@ -70,7 +71,7 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-30 border-b border-line/80 bg-card/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[88rem] items-center justify-between px-5 py-3">
-          <Logo />
+          <Logo href={homeForSession(me)} />
           <div className="flex items-center gap-2 text-sm">
             <span className="hidden text-ink-soft sm:inline">{displayName}</span>
             {me.role === "owner" ? (

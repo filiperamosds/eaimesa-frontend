@@ -23,7 +23,7 @@ sequenceDiagram
   API-->>C: Cardápio (somente leitura)
 ```
 
-1. Dono cria conta + venue (nome; slug gerado a partir do nome).
+1. Dono cria conta + venue (nome; slug gerado a partir do nome). Depois de logado, a logo no header volta à **home do papel** (`/painel/pedidos`, cardápio no plano Cardápio, `/garcom` ou `/admin`) — não à landing `/`.
 2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor) em **Configurações → Cardápio**.
 3. Comparte `https://eaimesa.com.br/{slug}` (QR fixo na mesa, Instagram, balcão) — **só cardápio**.
 4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: **Configurações → Mesas**.
