@@ -47,7 +47,11 @@ export function LoginForm() {
       router.push(resolveOwnerLoginTarget(result, next));
       router.refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Falha no login.");
+      if (err instanceof ApiError && err.code === ERROR_CODES.STAFF_INACTIVE) {
+        setError("Seu usuário está inativo.");
+      } else {
+        setError(err instanceof ApiError ? err.message : "Falha no login.");
+      }
     } finally {
       setPending(false);
     }

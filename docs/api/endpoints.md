@@ -30,9 +30,9 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/auth/register` | — | Cria account + venue (role owner); Set-Cookie |
-| POST | `/v1/auth/login` | — | E-mail/senha; owner ou staff; Set-Cookie + `redirectPath` |
+| POST | `/v1/auth/login` | — | E-mail/senha; owner ou staff; Set-Cookie + `redirectPath`. Staff inativo → 403 `STAFF_INACTIVE` (“Seu usuário está inativo.”) |
 | POST | `/v1/auth/logout` | Cookie | Clear-Cookie |
-| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier` \| `panel`, `categoryIds` se painel) |
+| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`, `requireShiftOnOpenCash`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier` \| `panel`, `categoryIds` se painel). Staff inativo → 403 `STAFF_INACTIVE` |
 
 #### POST /v1/auth/register (body)
 
@@ -171,8 +171,8 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs` |
-| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, representative? }` |
+| GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs`, `requireShiftOnOpenCash` |
+| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, representative? }` |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |
@@ -281,7 +281,8 @@ Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier
 | Método | Path | Descrição |
 |--------|------|-----------|
 | GET | `/v1/staff/tabs/{tabId}/settlement` | Preview: subtotal, taxa, total devido |
-| POST | `/v1/staff/cash-sessions` | Abre caixa `{ openingFloatCents }`; resposta inclui `expectedByMethod` |
+| POST | `/v1/staff/cash-sessions` | Abre caixa `{ openingFloatCents, onShiftMemberIds? }`; com `requireShiftOnOpenCash` a escala é obrigatória (`400 SHIFT_REQUIRED`); resposta inclui `expectedByMethod` |
+| GET | `/v1/staff/cash-sessions/roster` | `{ required, members: [{ id, name, role }] }` — garçom e caixa (sem painel) |
 | GET | `/v1/staff/cash-sessions/current` | Caixa aberto + `expectedByMethod` ao vivo (vendas do turno + fundo + movimentações). 404 se nenhum |
 | POST | `/v1/staff/cash-sessions/{id}/movements` | `{ type: sangria\|suprimento\|ajuste, amountCents, reason }` |
 | POST | `/v1/staff/cash-sessions/{id}/close` | `{ countedByMethod }` — formas omitidas = esperado |
@@ -596,6 +597,7 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `STAFF_NOT_FOUND` | 404 |
 | `STAFF_LIMIT` | 409 |
 | `STAFF_INACTIVE` | 403 |
+| `SHIFT_REQUIRED` | 400 |
 | `CASHIER_REQUIRED` | 403 |
 | `CLAIM_INVALID` | 404 |
 | `TAB_CLOSED` | 409 |

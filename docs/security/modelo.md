@@ -15,7 +15,7 @@
 | Público | — | Ler cardápio por slug | Sim |
 | Owner | Cookie `eaimesa_owner` | Cardápio; resto conforme o plano | Sim |
 | Guest | Cookie `eaimesa_guest` | Mesa + comanda + pedidos (Auto atendimento) | Sim |
-| Staff | Cookie `eaimesa_owner` (`role: staff`; `member.role` `staff`, `cashier` ou `panel`) | Garçom/caixa: mesas, claims, fila; close só se caixa, dono, ou `staffCanCloseTabs`. Painel: só fila filtrada por categoria | Sim |
+| Staff | Cookie `eaimesa_owner` (`role: staff`; `member.role` `staff`, `cashier` ou `panel`) | Garçom/caixa: mesas, claims, fila; close só se caixa, dono, ou `staffCanCloseTabs`. Painel: só fila filtrada por categoria. Inativo → 403 `STAFF_INACTIVE` (ADR-031) | Sim |
 | Platform | Cookie `eaimesa_platform` | Tenants, catálogo, equipe de operadores, dashboard, logs, eventos de integração | Sim (senha; 2FA depois) |
 
 ## Ameaças SaaS
@@ -29,6 +29,7 @@
 | XSS no cardápio | Texto; escape no React; CSP depois |
 | Guest → admin | Cookies distintos; RBAC server-side |
 | Garçom encerra conta | 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false`; só caixa/dono |
+| Funcionário fora do turno | Escala na abertura do caixa; login inativo → 403 `STAFF_INACTIVE` (ADR-031) |
 | Painel acessa mesa/claim/close | 403 `PANEL_FORBIDDEN`; Kanban só com as categorias do membro |
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
 | PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React |

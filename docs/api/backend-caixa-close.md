@@ -80,13 +80,15 @@ Body — só campos que mudam; **ao menos um**:
 {
   "name": "Seu Estabelecimento",
   "slug": "seu-estabelecimento",
-  "staffCanCloseTabs": false
+  "staffCanCloseTabs": false,
+  "requireShiftOnOpenCash": true
 }
 ```
 
-Validação: se não vier `name`, `slug` nem `staffCanCloseTabs` → 400 `VALIDATION_ERROR` (`Envie name, slug e/ou staffCanCloseTabs.`).
+Validação: se não vier `name`, `slug`, `staffCanCloseTabs` nem `requireShiftOnOpenCash` → 400 `VALIDATION_ERROR`.
 
 `staffCanCloseTabs` → coluna `staff_can_close_tabs` (`$request->boolean('staffCanCloseTabs')`).
+`requireShiftOnOpenCash` → coluna `require_shift_on_open_cash` ([ADR-031](../decisions/ADR-031-escala-abrir-caixa.md)).
 
 Resposta: mesmo shape de `GET /v1/owner/venue` (já com `staffCanCloseTabs`).
 

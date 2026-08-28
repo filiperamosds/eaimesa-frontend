@@ -14,6 +14,7 @@ export function ConfigBarPanels() {
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [staffCanCloseTabs, setStaffCanCloseTabs] = useState(true);
+  const [requireShiftOnOpenCash, setRequireShiftOnOpenCash] = useState(false);
   const [thermalPrint, setThermalPrint] = useState(false);
   const [printerBusy, setPrinterBusy] = useState(false);
   const [printerReady, setPrinterReady] = useState(false);
@@ -31,6 +32,7 @@ export function ConfigBarPanels() {
         setVenue(v);
         setName(v.name);
         setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
+        setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Falha ao carregar."));
   }, []);
@@ -58,11 +60,19 @@ export function ConfigBarPanels() {
       let v: Venue | null = null;
       for (let attempt = 0; attempt < 8; attempt += 1) {
         try {
-          const body: { name: string; slug: string; staffCanCloseTabs?: boolean } = {
+          const body: {
+            name: string;
+            slug: string;
+            staffCanCloseTabs?: boolean;
+            requireShiftOnOpenCash?: boolean;
+          } = {
             name,
             slug: nextSlug,
           };
-          if (service) body.staffCanCloseTabs = staffCanCloseTabs;
+          if (service) {
+            body.staffCanCloseTabs = staffCanCloseTabs;
+            body.requireShiftOnOpenCash = requireShiftOnOpenCash;
+          }
           v = await api<Venue>("/v1/owner/venue", {
             method: "PATCH",
             body: JSON.stringify(body),
@@ -78,7 +88,10 @@ export function ConfigBarPanels() {
       setVenue(v);
       setName(v.name);
       setNameTouched(false);
-      if (service) setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
+      if (service) {
+        setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
+        setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
+      }
       if (service) setThermalAutoPrintEnabled(thermalPrint);
       if (service) setPrinterReady(await hasGrantedThermalPrinter());
       setMsg("Salvo.");
@@ -181,6 +194,24 @@ export function ConfigBarPanels() {
               <span className="block font-medium">Garçom pode encerrar comanda e mesa</span>
               <span className="mt-1 block text-sm text-ink-soft">
                 Regras do salão. O caixa não é afetado — ele sempre pode fechar comanda e mesa.
+              </span>
+            </span>
+          </label>
+        ) : null}
+
+        {service ? (
+          <label className="surface flex cursor-pointer items-start gap-3 p-4">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-chili"
+              checked={requireShiftOnOpenCash}
+              onChange={(e) => setRequireShiftOnOpenCash(e.target.checked)}
+            />
+            <span>
+              <span className="block font-medium">Exigir escala ao abrir o caixa</span>
+              <span className="mt-1 block text-sm text-ink-soft">
+                Na abertura do caixa, escolher quem está no turno (garçom e caixa). Quem ficar de fora
+                fica inativo e não consegue entrar. O painel Kanban não entra na escala.
               </span>
             </span>
           </label>
