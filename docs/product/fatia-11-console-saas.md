@@ -8,7 +8,7 @@ Login da **plataforma**, não do dono do estabelecimento. O operador vê vendas 
 - `/admin` — dashboard: estabelecimentos por status/plano, MRR estimado, checkouts stub (30 dias)
 - `/admin/bares` — busca, filtro, **expiração** (trial / vigência), suspender / reativar, **ajustar datas** (`PATCH /v1/platform/venues/{id}`)
 - `/admin/planos` — criar SKU, nome, tipo (`kind`), preço, **promo opcional**, blurb, features, listado; trial e vigência globais
-- `GET /v1/billing/plans` lê o **banco** (landing, cadastro e checkout usam isso). Com promo: `promoPriceCents` + `effectivePriceCents`
+- `GET /v1/billing/plans` lê o **banco** (landing, cadastro e checkout usam isso). Landing e `/preco` buscam no **cliente** porque o front é export estático. Com promo: `promoPriceCents` + `effectivePriceCents`
 - `POST /v1/platform/plans` cria plano (id = slug do nome; `kind` = o que o estabelecimento pode fazer)
 - Checkout cobra o preço **efetivo** (promo se preenchida e menor que o cheio) e grava `billing_events` (stub `success`; Asaas `pending` até o webhook)
 - Seed: `ops@eaimesa.local` / `Teste@123`. Operadores extras: `/admin/equipe` ([fatia 17](fatia-17-platform-equipe.md))

@@ -19,10 +19,18 @@ export function PlanPrice({
   suffix = "/mês",
   className = "",
   size = "md",
-}: PlanPriceFields & { suffix?: string; className?: string; size?: "sm" | "md" | "lg" }) {
+  mutedClassName = "text-ink-soft",
+}: PlanPriceFields & {
+  suffix?: string;
+  className?: string;
+  size?: "sm" | "md" | "lg";
+  mutedClassName?: string;
+}) {
   const effective = effectivePriceCents({ priceCents, promoPriceCents });
   const suffixClass =
-    size === "lg" ? "text-xl font-sans font-normal text-ink-soft" : "font-sans font-normal text-ink-soft";
+    size === "lg"
+      ? `text-xl font-sans font-normal ${mutedClassName}`
+      : `font-sans font-normal ${mutedClassName}`;
   if (!hasPromoPrice({ priceCents, promoPriceCents })) {
     return (
       <span className={className}>
@@ -33,9 +41,9 @@ export function PlanPrice({
   }
   return (
     <span className={className}>
-      <span className="text-[0.65em] font-sans font-normal text-ink-soft">de </span>
-      <s className="text-[0.7em] font-sans font-normal text-ink-soft">{formatBrlFromCents(priceCents)}</s>
-      <span className="text-[0.65em] font-sans font-normal text-ink-soft"> por </span>
+      <span className={`text-[0.65em] font-sans font-normal ${mutedClassName}`}>de </span>
+      <s className={`text-[0.7em] font-sans font-normal ${mutedClassName}`}>{formatBrlFromCents(priceCents)}</s>
+      <span className={`text-[0.65em] font-sans font-normal ${mutedClassName}`}> por </span>
       {formatBrlFromCents(effective)}
       {suffix ? <span className={suffixClass}>{suffix}</span> : null}
     </span>
