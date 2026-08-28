@@ -14,7 +14,7 @@
 1j. [Fatia 10 — Planos](product/fatia-10-planos.md) — Cardápio vs Auto atendimento, trial, checkout stub
 1k. [Fatia 11 — Console SaaS](product/fatia-11-console-saas.md) — login da plataforma, dashboard, estabelecimentos (expiração + suspender), catálogo (criar plano + promo)
 1l. [Fatia 12 — Pagamento Asaas](product/fatia-12-pagamento-asaas.md) — cartão no painel + token; PIX hosted; prorrata/upgrade; cartões salvos ([ADR-028](decisions/ADR-028-assinatura-recorrente-planos.md))
-1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, tail Laravel
+1m. [Fatia 13 — Log viewer](product/fatia-13-log-viewer.md) — `/admin/logs`, páginas + backup `laravel2.log`
 1n. [Fatia 14 — Painel Kanban](product/fatia-14-kanban-painel.md) — perfil Painel, categorias por monitor
 1o. [Fatia 15 — Chamar garçom](product/fatia-15-chamar-garcom-cardapio.md) — QR `?mesa=` + presença + fila (plano Cardápio)
 1p. [Fatia 16 — Eventos de integração](product/fatia-16-integration-events.md) — `/admin/integracoes`, webhooks Asaas

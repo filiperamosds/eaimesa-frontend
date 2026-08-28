@@ -6,14 +6,14 @@ Operador EaiMesa consulta os ficheiros de log do Laravel (`storage/logs`) em `/a
 
 - `/admin/logs` no console (nav **Logs**, junto de Dashboard / Estabelecimentos / Equipe / Planos / Integrações)
 - `GET /v1/platform/logs` — lista `*.log` (`name`, `sizeBytes`, `modifiedAt`)
-- `GET /v1/platform/logs/{name}` — tail + entries Monolog (`lines`, `level`, `q`)
-- Cookie `eaimesa_platform` (mesmo layout/proteção das outras `/admin/*`)
-- Lista de ficheiros + entries com nível colorido; toggle “Texto bruto” (`content`)
-- Sem apagar, download zip ou SSE
+- `GET /v1/platform/logs/{name}` — entries paginadas (`page`, `perPage`, `level`, `q`)
+- `POST /v1/platform/logs/{name}/clear` — rotaciona para `{stem}2.log` (ex. `laravel2.log`); não apaga
+- Cookie `eaimesa_platform`
+- Lista de ficheiros + entries com nível colorido; paginação; toggle “Texto bruto”; botão Limpar
 
 ## Não inclui
 
-- Apagar / truncar / editar logs
+- Apagar / truncar sem backup
 - Download binário / zip
 - Logs de outros hosts ou CloudWatch
 - Streaming SSE / websocket
@@ -29,12 +29,15 @@ Deslogado: o shell redireciona para `/admin/login` (401).
 
 ## Contrato
 
-Ver [endpoints](../api/endpoints.md). `{name}` = basename `*.log`. `lines` 1–2000 (UI: 100/200/500/1000, default 200). `level` opcional. `truncated: true` → aviso “Mostrando só o final do ficheiro”.
+Ver [endpoints](../api/endpoints.md). `{name}` = basename `*.log`. `page` 1 = mais recente. `perPage` 50/100/200 (default 50). `truncated: true` → aviso de ficheiro grande (até 8 MiB do fim).
 
-Erros: `401 UNAUTHORIZED`, `400 VALIDATION_ERROR`, `404 LOG_NOT_FOUND`, `500 LOG_READ_ERROR`.
+Limpar: confirmação no browser; conteúdo vai para `laravel2.log`; se esse backup já existir, o anterior vira `laravel2-YmdHis.log`.
+
+Erros: `401 UNAUTHORIZED`, `400 VALIDATION_ERROR`, `404 LOG_NOT_FOUND`, `403 FORBIDDEN`, `500 LOG_READ_ERROR`, `500 LOG_ROTATE_FAILED`.
 
 ## Fluxo
 
 1. Operador em `/admin` → **Logs**.
 2. Lista `laravel.log` (ou daily); default o `laravel.log` se existir.
-3. Filtra ERROR / texto; atualiza. Vê entries em monoespaçado.
+3. Página 1 = mais recente; **Mais antigos** avança. Filtra ERROR / texto.
+4. **Limpar** move para `laravel2.log` e esvazia o ativo.

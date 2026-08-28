@@ -32,7 +32,7 @@
 | Funcionário fora do turno | Escala na abertura do caixa; login inativo → 403 `STAFF_INACTIVE` (ADR-031) |
 | Painel acessa mesa/claim/close | 403 `PANEL_FORBIDDEN`; Kanban só com as categorias do membro |
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
-| PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React |
+| PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React; limpar rotaciona para `laravel2.log` (não apaga) |
 | Eventos de integração | Body em `integration_events`; `meta.headers` **sem** token/Authorization/Cookie; listagem `/admin/integracoes` só cookie platform |
 | Secret na URL | Cookie httpOnly após login |
 | Cadastro público de operador | Não existe rota pública. Só `POST /v1/platform/users` com cookie `eaimesa_platform` (`/admin/equipe`) |
