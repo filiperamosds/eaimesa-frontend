@@ -14,7 +14,7 @@ sequenceDiagram
   D->>W: /cadastro (nome do estabelecimento, responsável, e-mail, senha)
   W->>API: POST /v1/auth/register
   API-->>W: Set-Cookie eaimesa_owner
-  D->>W: /painel — Kanban de pedidos (abas: Pedidos, Mesas, Configurações)
+  D->>W: /painel — Kanban de pedidos (nav: Pedidos, Mesas, Chamados, Caixa, Financeiro)
   W->>API: GET /v1/owner/orders
   D->>W: /painel/configuracoes/cardapio — categorias e itens
   W->>API: CRUD /v1/owner/catalog/**

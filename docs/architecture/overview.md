@@ -50,6 +50,8 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/cadastro`, `/login` | Auth estabelecimento |
 | `/painel` | Redirect pedidos ou configurações/cardápio conforme o plano |
 | `/painel/pedidos` | Kanban do dono (tudo) ou do perfil Painel (filtrado por categoria) |
+| `/painel/caixa` | Caixa (abrir/fechar turno) — penúltimo item da nav do painel |
+| `/painel/financeiro` | Relatório financeiro — último item da nav do painel |
 | `/painel/mesas` | Redirect → `/painel/configuracoes/mesas` |
 | `/painel/configuracoes` | Hub: cardápio, bar, mesas, chamada, equipe, responsável |
 | `/painel/configuracoes/cardapio` | CRUD do cardápio |
