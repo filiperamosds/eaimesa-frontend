@@ -15,10 +15,10 @@ import { Logo } from "./site-chrome";
 // `venue.modules` não veio (compat) para módulos que existem em qualquer plano.
 const ALL_LINKS = [
   { href: "/painel/pedidos", label: "Pedidos", icon: "▣", module: "orders_kanban", always: false },
-  { href: "/painel/financeiro", label: "Financeiro", icon: "$", module: "finance", always: false },
   { href: "/painel/mesas", label: "Mesas", icon: "▦", module: "tables", always: true },
   { href: "/painel/chamados", label: "Chamados", icon: "◎", module: "waiter_call", always: true },
   { href: "/painel/caixa", label: "Caixa", icon: "▤", module: "finance", always: false },
+  { href: "/painel/financeiro", label: "Financeiro", icon: "$", module: "finance", always: false },
 ] as const;
 
 const COLS: Record<number, string> = {
