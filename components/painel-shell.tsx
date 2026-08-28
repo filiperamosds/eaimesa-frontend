@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isPanelMember, planAllowsService, shouldPromptSubscriptionPayment } from "@eaimesa/shared";
 import { api } from "../lib/api";
+import { homeForSession } from "../lib/auth-redirect";
 import { paymentPromptForVenue } from "../lib/billing-prompt";
 import type { Session } from "../lib/types";
 import { AccountMenu, initialsFrom } from "./account-menu";
@@ -108,7 +109,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
     <div className={`min-h-screen ${panel || links.length === 0 ? "pb-0" : "pb-24 sm:pb-0"}`}>
       <header className="sticky top-0 z-30 border-b border-line/80 bg-card/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[88rem] items-center justify-between px-5 py-3">
-          <Logo />
+          <Logo href={homeForSession(me)} />
           <div className="flex items-center gap-2 text-sm">
             {panel ? (
               <span className="hidden text-ink-soft sm:inline">

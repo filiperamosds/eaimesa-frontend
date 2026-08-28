@@ -50,7 +50,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
-            <Logo invert />
+            <Logo invert href="/admin" />
             <span className="rounded-full border border-white/15 px-2 py-0.5 text-[11px] uppercase tracking-wider text-amber">
               Console
             </span>

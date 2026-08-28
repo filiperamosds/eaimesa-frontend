@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { LogoMark } from "./logo-mark";
 
-export function Logo({ className = "", invert = false }: { className?: string; invert?: boolean }) {
+export function Logo({
+  className = "",
+  invert = false,
+  href = "/",
+}: {
+  className?: string;
+  invert?: boolean;
+  href?: string;
+}) {
   return (
     <Link
-      href="/"
+      href={href}
       className={`inline-flex items-center gap-2 tracking-tight ${invert ? "text-white" : "text-ink"} ${className}`}
     >
       <span

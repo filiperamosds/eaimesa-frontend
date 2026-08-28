@@ -25,6 +25,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { statusLabel } from "../lib/admin-copy";
 import { stackedPeriodCopy } from "../lib/billing-prompt";
 import type { BillingGateway, PendingCheckout } from "../lib/load-billing-plans";
 import type { Session, Venue } from "../lib/types";
@@ -465,11 +466,18 @@ export function BillingPanel() {
         <p className="eyebrow">Plano</p>
         <h2 className="mt-2 font-serif text-2xl">{data.venue.planName ?? current}</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          Status: {data.venue.subscriptionStatus}
-          {data.venue.subscriptionStatus === "trial" && data.venue.trialEndsAt
+          Status:{" "}
+          {data.cancellation?.canceledAt
+            ? `Cancelada${
+                data.cancellation.accessUntil
+                  ? ` · disponível até ${formatAt(data.cancellation.accessUntil)}`
+                  : ""
+              }`
+            : statusLabel(data.venue.subscriptionStatus)}
+          {!data.cancellation?.canceledAt && data.venue.subscriptionStatus === "trial" && data.venue.trialEndsAt
             ? ` · trial até ${formatAt(data.venue.trialEndsAt)}`
             : null}
-          {data.venue.currentPeriodEndsAt
+          {!data.cancellation?.canceledAt && data.venue.currentPeriodEndsAt
             ? ` · vigência até ${formatAt(data.venue.currentPeriodEndsAt)}`
             : null}
         </p>
