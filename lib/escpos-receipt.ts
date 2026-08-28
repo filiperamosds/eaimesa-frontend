@@ -202,11 +202,20 @@ export function encodeEscPosReceipt(venueName: string, tableLabel: string, tab: 
     }
   }
 
+  const feeOn = (tab.serviceFeePercent ?? 0) > 0;
+  const due = tab.dueCents ?? tab.totalCents + (tab.serviceFeeCents ?? 0);
+
+  chunks.push(text(dash()));
+  if (feeOn) {
+    chunks.push(
+      text(`${pair("Itens", money(tab.totalCents))}\n`),
+      text(`${pair(`Taxa de serviço (${tab.serviceFeePercent}%)`, money(tab.serviceFeeCents ?? 0))}\n`),
+    );
+  }
   chunks.push(
-    text(dash()),
     cmd(ESC, 0x61, 0x00),
     cmd(GS, 0x21, 0x10),
-    text(`${pair("TOTAL", money(tab.totalCents))}\n`),
+    text(`${pair("TOTAL", money(due))}\n`),
     cmd(GS, 0x21, 0x00),
     cmd(ESC, 0x61, 0x01),
     text("\nDocumento de conferência\nnão é cupom fiscal.\n"),

@@ -12,7 +12,8 @@ export type Venue = {
   acceptsOrders: boolean;
   trialEndsAt?: string | null;
   currentPeriodEndsAt?: string | null;
-  staffCanCloseTabs?: boolean;
+    staffCanCloseTabs?: boolean;
+    requireShiftOnOpenCash?: boolean;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
   /** Fatia 16 — módulos efetivos do venue (ADR-029). */
@@ -190,6 +191,9 @@ export type StaffTableTab = {
   status: "open" | "closed";
   createdAt: string;
   totalCents: number;
+  serviceFeePercent?: number;
+  serviceFeeCents?: number;
+  dueCents?: number;
   orders: StaffTabOrder[];
 };
 
@@ -233,4 +237,7 @@ export type GuestOrder = StaffOrder;
 export type GuestOrdersPayload = {
   orders: GuestOrder[];
   totalCents: number;
+  serviceFeePercent?: number;
+  serviceFeeCents?: number;
+  dueCents?: number;
 };

@@ -43,3 +43,13 @@ export const GUEST_ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 export function tabPartialCents(orders: { status: string; totalCents: number }[]): number {
   return orders.filter((o) => o.status !== "cancelled").reduce((sum, o) => sum + o.totalCents, 0);
 }
+
+/** Mesma regra do Laravel: round(subtotal * percent / 100) se a taxa estiver ligada. */
+export function serviceFeeCents(subtotalCents: number, percent: number): number {
+  if (percent <= 0 || subtotalCents <= 0) return 0;
+  return Math.round((subtotalCents * percent) / 100);
+}
+
+export function tabDueCents(subtotalCents: number, percent: number): number {
+  return subtotalCents + serviceFeeCents(subtotalCents, percent);
+}

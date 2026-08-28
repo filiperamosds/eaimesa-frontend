@@ -25,6 +25,14 @@ const COUNT_LABEL: Record<CountMethod, string> = {
 };
 const ALWAYS_COUNT: CountMethod[] = ["cash", "debit", "credit", "pix"];
 
+type RosterMember = { id: string; name: string; role: "staff" | "cashier" };
+type Roster = { required: boolean; members: RosterMember[] };
+
+const ROLE_LABEL: Record<RosterMember["role"], string> = {
+  staff: "Garçom",
+  cashier: "Caixa",
+};
+
 type CashSession = {
   id: string;
   status: string;
@@ -79,6 +87,8 @@ export function CashRegisterPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [roster, setRoster] = useState<Roster | null>(null);
+  const [onShift, setOnShift] = useState<Record<string, boolean>>({});
 
   function store(id: string | null) {
     setSessionId(id);
@@ -93,6 +103,18 @@ export function CashRegisterPanel() {
     if (fillCounted) setCounted(next);
   }
 
+  const loadRoster = useCallback(async () => {
+    try {
+      const r = await api<Roster>("/v1/staff/cash-sessions/roster");
+      setRoster(r);
+      const next: Record<string, boolean> = {};
+      for (const m of r.members) next[m.id] = true;
+      setOnShift(next);
+    } catch {
+      setRoster(null);
+    }
+  }, []);
+
   const loadCurrent = useCallback(async (fillCounted = true) => {
     try {
       const s = await api<CashSession>("/v1/staff/cash-sessions/current");
@@ -103,11 +125,12 @@ export function CashRegisterPanel() {
       if (err instanceof ApiError && err.status === 404) {
         store(null);
         applyExpected(null, true);
+        await loadRoster();
         return;
       }
       setError(err instanceof ApiError ? err.message : "Não foi possível carregar o caixa.");
     }
-  }, []);
+  }, [loadRoster]);
 
   useEffect(() => {
     setLoading(true);
@@ -119,9 +142,15 @@ export function CashRegisterPanel() {
     setError(null);
     setMsg(null);
     try {
+      const body: { openingFloatCents: number; onShiftMemberIds?: string[] } = {
+        openingFloatCents: openingFloat,
+      };
+      if (roster?.required) {
+        body.onShiftMemberIds = roster.members.filter((m) => onShift[m.id]).map((m) => m.id);
+      }
       const s = await api<CashSession>("/v1/staff/cash-sessions", {
         method: "POST",
-        body: JSON.stringify({ openingFloatCents: openingFloat }),
+        body: JSON.stringify(body),
       });
       store(s.id);
       applyExpected(s.expectedByMethod, true);
@@ -174,6 +203,7 @@ export function CashRegisterPanel() {
       store(null);
       applyExpected(null, true);
       setMsg("Caixa fechado.");
+      await loadRoster();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível fechar o caixa.");
     } finally {
@@ -203,6 +233,39 @@ export function CashRegisterPanel() {
             <span className="mb-1 block text-ink-soft">Fundo de troco</span>
             <MoneyField className="field max-w-[10rem]" cents={openingFloat} onCentsChange={(c) => setOpeningFloat(c ?? 0)} />
           </label>
+          {roster?.required ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Quem está na escala</p>
+              <p className="text-xs text-ink-soft">
+                Todos começam marcados. Desmarque quem não está no turno — esses usuários ficam
+                inativos e não entram até a próxima abertura. O painel Kanban não entra nesta lista.
+              </p>
+              {roster.members.length === 0 ? (
+                <p className="text-sm text-ink-soft">Nenhum garçom ou caixa cadastrado.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {roster.members.map((m) => (
+                    <li key={m.id}>
+                      <label className="flex cursor-pointer items-start gap-3 rounded-md border border-line px-3 py-2">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-4 w-4 accent-chili"
+                          checked={onShift[m.id] === true}
+                          onChange={(e) =>
+                            setOnShift((cur) => ({ ...cur, [m.id]: e.target.checked }))
+                          }
+                        />
+                        <span>
+                          <span className="block text-sm font-medium">{m.name}</span>
+                          <span className="text-xs text-ink-soft">{ROLE_LABEL[m.role]}</span>
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : null}
           <button type="button" onClick={() => void openCash()} disabled={busy} className="btn-primary !py-2 text-sm">
             {busy ? "Abrindo…" : "Abrir caixa"}
           </button>

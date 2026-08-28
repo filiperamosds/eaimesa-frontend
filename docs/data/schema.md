@@ -19,6 +19,7 @@ Login do dono.
 - `subscription_status`: `trial` | `active` | `past_due` | `suspended`
 - `accepts_orders`: true só no Auto atendimento com assinatura válida
 - `staff_can_close_tabs` (default true): se false, garçom não fecha comanda/mesa (caixa e dono sim)
+- `require_shift_on_open_cash` / API `requireShiftOnOpenCash` (default false): se true, abrir o caixa exige a escala (garçom/caixa; painel de fora) ([ADR-031](../decisions/ADR-031-escala-abrir-caixa.md))
 - `representative` (JSON/API camelCase): responsável / pagador Asaas — `name`, `cpfCnpj`, `email`, `phone`, `postalCode`, `addressNumber` ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)). No cadastro entram só `name` + `cpfCnpj`; o restante pode faltar até Configurações → Responsável.
 - `trial_ends_at`, `current_period_ends_at` (vigência paga)
 - Sem tabela de períodos: um pagamento soma `paid_period_days` (default 30) no **fim da cobertura atual** — `max(agora, trial_ends_at, current_period_ends_at)` — ver [ADR-019](../decisions/ADR-019-vigencia-empilhada.md).
@@ -88,6 +89,7 @@ Máximo **5 membros ativos** (garçom + caixa + painel) por venue no plano Auto 
 Ocupação da mesa + PIN do grupo.
 
 - `id`, `venue_id`, `table_id` → VenueTable
+- `waiter_member_id` nullable → VenueMember: quem abriu a ocupação (taxa de serviço no financeiro — [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md))
 - `pin_hash` (bcrypt) e `pin_display` (criptografado, para mostrar o PIN a quem já está na mesa)
 - `status`: `open` | `closed`
 - `closed_at`, timestamps

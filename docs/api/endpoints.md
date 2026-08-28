@@ -30,9 +30,9 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/auth/register` | — | Cria account + venue (role owner); Set-Cookie |
-| POST | `/v1/auth/login` | — | E-mail/senha; owner ou staff; Set-Cookie + `redirectPath` |
+| POST | `/v1/auth/login` | — | E-mail/senha; owner ou staff; Set-Cookie + `redirectPath`. Staff inativo → 403 `STAFF_INACTIVE` (“Seu usuário está inativo.”) |
 | POST | `/v1/auth/logout` | Cookie | Clear-Cookie |
-| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier` \| `panel`, `categoryIds` se painel) |
+| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue (`staffCanCloseTabs`, `requireShiftOnOpenCash`); `member` se staff (`id`, `name`, `role`: `staff` \| `cashier` \| `panel`, `categoryIds` se painel). Staff inativo → 403 `STAFF_INACTIVE` |
 
 #### POST /v1/auth/register (body)
 
@@ -171,8 +171,8 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs` |
-| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, representative? }` |
+| GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs`, `requireShiftOnOpenCash` |
+| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, representative? }` |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |
@@ -269,7 +269,7 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 |--------|------|-----------|
 | GET | `/v1/staff/tables` | Mesas ativas + `canCloseTabs` + `requireOpenCash` + `cashSessionOpen` + `sessionOpen`, `claimPending`, `openTabCount`, `openTabs`, `pinDisplay` |
 | POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Sem caixa e `requireOpenCash` → 409 `CASH_SESSION_REQUIRED` |
-| GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
+| GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial (`totalCents`, `serviceFeePercent`, `serviceFeeCents`, `dueCents`) + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
 | POST | `/v1/staff/tables/{tableId}/tabs` | Garçom abre comanda `{ name, phone }` (mesmo contrato do guest). Cria sessão/PIN se faltar |
 | POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
 | POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta). Mesma regra de close |
@@ -281,12 +281,15 @@ Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier
 | Método | Path | Descrição |
 |--------|------|-----------|
 | GET | `/v1/staff/tabs/{tabId}/settlement` | Preview: subtotal, taxa, total devido |
-| POST | `/v1/staff/cash-sessions` | Abre caixa `{ openingFloatCents }`; resposta inclui `expectedByMethod` |
+| POST | `/v1/staff/cash-sessions` | Abre caixa `{ openingFloatCents, onShiftMemberIds? }`; com `requireShiftOnOpenCash` a escala é obrigatória (`400 SHIFT_REQUIRED`); resposta inclui `expectedByMethod` |
+| GET | `/v1/staff/cash-sessions/roster` | `{ required, members: [{ id, name, role }] }` — garçom e caixa (sem painel) |
 | GET | `/v1/staff/cash-sessions/current` | Caixa aberto + `expectedByMethod` ao vivo (vendas do turno + fundo + movimentações). 404 se nenhum |
 | POST | `/v1/staff/cash-sessions/{id}/movements` | `{ type: sangria\|suprimento\|ajuste, amountCents, reason }` |
 | POST | `/v1/staff/cash-sessions/{id}/close` | `{ countedByMethod }` — formas omitidas = esperado |
 
 O conferido no fechar caixa **já nasce preenchido** com o esperado. O caixa corrige se a gaveta/maquininha diferir.
+
+`GET /v1/owner/finance/summary?groupBy=waiter`: taxa de serviço por quem abriu a mesa (`serviceFeeCents`, `salesCents`, `tabs`). KPI `serviceFeeCents` no summary. [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md).
 
 `PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
 
@@ -397,7 +400,7 @@ Cookie `eaimesa_guest` com **tab** `open`. Preço **não** vai no body.
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
 | POST | `/v1/guest/orders` | Cookie guest | Carrinho → pedido `pending`, `source=guest` |
-| GET | `/v1/guest/orders` | Cookie guest | Pedidos da comanda (48h) + `totalCents` (sem cancelados) |
+| GET | `/v1/guest/orders` | Cookie guest | Pedidos da comanda (48h) + `totalCents` (sem cancelados) + taxa (`serviceFeePercent`, `serviceFeeCents`, `dueCents`) |
 | GET | `/v1/guest/orders/{id}` | Cookie guest | Um pedido da comanda |
 
 Header obrigatório no POST: `Idempotency-Key` (UUID). Mesma chave no venue devolve o mesmo pedido.
@@ -407,6 +410,9 @@ Header obrigatório no POST: `Idempotency-Key` (UUID). Mesma chave no venue devo
 ```json
 {
   "totalCents": 3890,
+  "serviceFeePercent": 10,
+  "serviceFeeCents": 389,
+  "dueCents": 4279,
   "orders": [
     {
       "id": "uuid",
@@ -421,7 +427,7 @@ Header obrigatório no POST: `Idempotency-Key` (UUID). Mesma chave no venue devo
 }
 ```
 
-Só a comanda do cookie. Cancelados aparecem na lista e **não** somam em `totalCents`.
+Só a comanda do cookie. Cancelados aparecem na lista e **não** somam em `totalCents`. Se `service_fee` estiver desligada, `serviceFeePercent` e `serviceFeeCents` são 0 e `dueCents = totalCents`.
 
 #### POST /v1/guest/orders (body)
 
@@ -591,6 +597,7 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `STAFF_NOT_FOUND` | 404 |
 | `STAFF_LIMIT` | 409 |
 | `STAFF_INACTIVE` | 403 |
+| `SHIFT_REQUIRED` | 400 |
 | `CASHIER_REQUIRED` | 403 |
 | `CLAIM_INVALID` | 404 |
 | `TAB_CLOSED` | 409 |
