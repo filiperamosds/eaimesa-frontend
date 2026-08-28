@@ -38,19 +38,55 @@ export const registerRepresentativeSchema = z.object({
     .refine((d) => d.length === 11, { message: "Informe um CPF válido." }),
 });
 
-export const registerSchema = z.object({
+export const passwordWithConfirmationSchema = z
+  .object({
+    password: z.string().min(8, "Senha: mínimo 8 caracteres."),
+    passwordConfirmation: z.string().min(1, "Confirme a senha."),
+  })
+  .refine((d) => d.password === d.passwordConfirmation, {
+    message: "As senhas não coincidem.",
+    path: ["passwordConfirmation"],
+  });
+
+export const emailCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, "Informe o código de 6 dígitos.");
+
+export const registerSchema = z
+  .object({
+    email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
+    venueName: z.string().trim().min(2, "Nome do estabelecimento: mínimo 2 caracteres.").max(80),
+    slug: slugSchema,
+    plan: z
+      .string()
+      .trim()
+      .min(PLAN_ID_MIN, "Escolha um plano.")
+      .max(PLAN_ID_MAX)
+      .regex(PLAN_ID_REGEX, "Plano inválido."),
+    representative: registerRepresentativeSchema,
+  })
+  .and(passwordWithConfirmationSchema);
+
+export const verifyEmailSchema = z.object({
   email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
-  password: z.string().min(8, "Senha: mínimo 8 caracteres."),
-  venueName: z.string().trim().min(2, "Nome do estabelecimento: mínimo 2 caracteres.").max(80),
-  slug: slugSchema,
-  plan: z
-    .string()
-    .trim()
-    .min(PLAN_ID_MIN, "Escolha um plano.")
-    .max(PLAN_ID_MAX)
-    .regex(PLAN_ID_REGEX, "Plano inválido."),
-  representative: registerRepresentativeSchema,
+  code: emailCodeSchema,
 });
+
+export const resendVerificationSchema = z.object({
+  email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
+});
+
+export const forgotPasswordSchema = resendVerificationSchema;
+
+export const resetPasswordSchema = z
+  .object({
+    email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
+    code: emailCodeSchema,
+  })
+  .and(passwordWithConfirmationSchema);
+
+export const acceptStaffInviteSchema = passwordWithConfirmationSchema;
 
 export const payerSchema = z.object({
   name: z
@@ -308,7 +344,6 @@ export const createStaffSchema = z
   .object({
     name: z.string().trim().min(2, "Nome: mínimo 2 caracteres.").max(80),
     email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
-    password: z.string().min(8, "Senha: mínimo 8 caracteres."),
     role: memberRoleSchema.optional(),
     categoryIds: categoryIdsSchema.optional(),
   })

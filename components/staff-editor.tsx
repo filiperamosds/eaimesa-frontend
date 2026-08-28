@@ -67,7 +67,6 @@ export function StaffEditor() {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<MemberRole>("staff");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
@@ -101,19 +100,27 @@ export function StaffEditor() {
         body: JSON.stringify({
           name,
           email,
-          password,
           role,
           categoryIds: role === "panel" ? categoryIds : undefined,
         }),
       });
       setName("");
       setEmail("");
-      setPassword("");
       setRole("staff");
       setCategoryIds([]);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível criar.");
+    }
+  }
+
+  async function resendInvite(row: StaffMember) {
+    setError(null);
+    try {
+      await api(`/v1/owner/staff/${row.id}/resend-invite`, { method: "POST" });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível reenviar o convite.");
     }
   }
 
@@ -186,8 +193,9 @@ export function StaffEditor() {
       <div className="surface mb-6 border-sage/20 bg-sage-soft/40 p-4 text-sm text-ink-soft">
         <p className="font-medium text-ink">A equipe entra pelo mesmo login do painel.</p>
         <p className="mt-1">
-          Garçom e caixa vão para a tela da equipe. Painel abre a fila da cozinha ou do bar, só com
-          as categorias escolhidas. Máximo {maxActive} ativos no plano Auto atendimento.
+          Informe nome, e-mail e perfil. Enviamos um link para a pessoa criar a senha. Garçom e
+          caixa vão para a tela da equipe. Painel abre a fila da cozinha ou do bar, só com as
+          categorias escolhidas. Máximo {maxActive} ativos no plano Auto atendimento.
         </p>
       </div>
       <p className="mb-6 text-sm text-ink-soft">
@@ -225,15 +233,6 @@ export function StaffEditor() {
             className="field"
             required
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Senha (mín. 8)"
-            className="field"
-            required
-            minLength={8}
-          />
         </div>
         {role === "panel" ? (
           <div className="space-y-2">
@@ -249,7 +248,7 @@ export function StaffEditor() {
           </div>
         ) : null}
         <button type="submit" className="btn-primary !py-2 text-sm">
-          Cadastrar
+          Enviar convite
         </button>
       </form>
       {error ? <p className="mb-4 text-sm text-chili">{error}</p> : null}
@@ -263,6 +262,9 @@ export function StaffEditor() {
                 <div>
                   <p className="font-medium">{row.name}</p>
                   <p className="text-sm text-ink-soft">{row.email}</p>
+                  {row.invitePending ? (
+                    <p className="mt-1 text-xs text-amber">Aguardando criar senha pelo e-mail</p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
@@ -284,6 +286,15 @@ export function StaffEditor() {
                   <button type="button" onClick={() => void toggleActive(row)} className="btn-ghost text-sm">
                     {row.active ? "Desativar" : "Ativar"}
                   </button>
+                  {row.invitePending ? (
+                    <button
+                      type="button"
+                      onClick={() => void resendInvite(row)}
+                      className="btn-ghost text-sm"
+                    >
+                      Reenviar convite
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => void remove(row.id)}

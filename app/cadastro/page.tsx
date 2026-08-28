@@ -13,8 +13,8 @@ export default function CadastroPage() {
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Começar</p>
           <h1 className="mt-3 font-serif text-4xl leading-tight">Sua URL, no ar em minutos.</h1>
           <p className="mt-4 max-w-sm text-white/65">
-            Escolha o plano — o preço (e a promo, se houver) aparece no cadastro. 7 dias de trial; a
-            cobrança entra depois.
+            Escolha o plano — o preço (e a promo, se houver) aparece no cadastro. Trial depois de
+            confirmar o e-mail; a cobrança entra depois.
           </p>
         </div>
         <p className="text-sm text-white/40">eaimesa.com.br/sua-casa</p>
@@ -23,7 +23,7 @@ export default function CadastroPage() {
         <Logo className="mb-8 lg:hidden" />
         <h1 className="font-serif text-3xl">Cadastrar o estabelecimento</h1>
         <p className="mt-2 mb-8 text-ink-soft">
-          Nome do estabelecimento, responsável e plano. Trial de 7 dias, sem cartão no cadastro.
+          Nome do estabelecimento, responsável e plano. O trial começa depois de confirmar o e-mail.
         </p>
         <Suspense fallback={<p className="text-ink-soft">Carregando…</p>}>
           <RegisterForm />

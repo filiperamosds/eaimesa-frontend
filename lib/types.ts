@@ -44,6 +44,23 @@ export type LoginResponse = Session & {
   redirectPath: string;
 };
 
+export type RegisterResponse =
+  | (LoginResponse & { needsEmailVerification?: false })
+  | {
+      needsEmailVerification: true;
+      email: string;
+      message?: string;
+    };
+
+export type StaffInvitePreview = {
+  email: string;
+  name: string;
+  venueName: string;
+  role: "staff" | "cashier" | "panel";
+  roleLabel?: string;
+  expiresAt?: string | null;
+};
+
 export type CatalogItem = {
   id: string;
   categoryId: string;
@@ -121,6 +138,7 @@ export type StaffMember = {
   role?: "staff" | "cashier" | "panel";
   categoryIds?: string[];
   active: boolean;
+  invitePending?: boolean;
   createdAt: string;
   updatedAt: string;
 };

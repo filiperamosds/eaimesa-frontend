@@ -39,7 +39,7 @@ SKUs extras, `kind` e preço promocional: [fatia 11](fatia-11-console-saas.md) e
 ## Fluxo
 
 1. Landing → Adquirir Cardápio ou Auto atendimento → `/cadastro?plano=…`
-2. Cria a conta em `trial` (7 dias) naquele plano. O front abre o produto, não o checkout.
+2. Cria a conta. O **trial de 7 dias começa só depois** de confirmar o código do e-mail. O front abre `/confirmar-email`, não o painel.
 3. Nos últimos 3 dias do trial (ou com status `past_due`): banner no painel. Antes disso, **Configurações → Pagamento** ainda funciona. Cartão ou PIX; no stub (~2s) vira `active`. A vigência de 30 dias **começa no fim do que ainda resta** (trial ou mês pago), não no instante do pagamento. Upgrade mostra o valor com prorrata. Downgrade no meio da vigência é agendado. Cancelar assinatura para as próximas cobranças; o acesso continua até o fim do mês pago. No Asaas: [fatia 12](fatia-12-pagamento-asaas.md).
 4. Sem pagar após o trial: recursos do plano ficam bloqueados (`BILLING_INACTIVE`); o cardápio público continua leitura.
 
