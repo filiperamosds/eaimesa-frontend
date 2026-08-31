@@ -6,7 +6,8 @@ import { api, ApiError } from "../lib/api";
 import { useMenuSlugFromName } from "../lib/menu-slug";
 import { configureThermalPrinter, connectThermalPrinter, hasGrantedThermalPrinter } from "../lib/print-escpos";
 import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
-import type { Session, Venue } from "../lib/types";
+import type { CatalogCategory, Session, Venue } from "../lib/types";
+import { PrintGroupsEditor, type DraftPrintGroup } from "./print-groups-editor";
 
 export function ConfigBarPanels() {
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -16,6 +17,8 @@ export function ConfigBarPanels() {
   const [staffCanCloseTabs, setStaffCanCloseTabs] = useState(true);
   const [requireShiftOnOpenCash, setRequireShiftOnOpenCash] = useState(false);
   const [thermalPrint, setThermalPrint] = useState(false);
+  const [printGroups, setPrintGroups] = useState<DraftPrintGroup[]>([]);
+  const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [printerBusy, setPrinterBusy] = useState(false);
   const [printerReady, setPrinterReady] = useState(false);
   const [printerMsg, setPrinterMsg] = useState<string | null>(null);
@@ -26,13 +29,25 @@ export function ConfigBarPanels() {
   const slug = venue && !nameTouched ? venue.slug : derivedSlug;
 
   useEffect(() => {
-    void Promise.all([api<Session>("/v1/auth/me"), api<Venue>("/v1/owner/venue")])
-      .then(([session, v]) => {
+    void Promise.all([
+      api<Session>("/v1/auth/me"),
+      api<Venue>("/v1/owner/venue"),
+      api<{ categories: CatalogCategory[] }>("/v1/owner/catalog").catch(() => ({ categories: [] })),
+    ])
+      .then(([session, v, catalog]) => {
         setService(planAllowsService(session.venue.planKind ?? session.venue.plan));
         setVenue(v);
         setName(v.name);
         setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
         setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
+        setCategories(catalog.categories);
+        setPrintGroups(
+          (v.printGroups ?? []).map((g) => ({
+            key: g.id,
+            name: g.name,
+            categoryIds: g.categoryIds,
+          })),
+        );
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Falha ao carregar."));
   }, []);
@@ -54,6 +69,16 @@ export function ConfigBarPanels() {
     try {
       if (service && thermalPrint) {
         await connectThermalPrinter();
+      }
+      if (service) {
+        for (const group of printGroups) {
+          if (!group.name.trim()) {
+            throw new Error("Dê um nome a cada grupo de impressão.");
+          }
+          if (group.categoryIds.length === 0) {
+            throw new Error("Cada grupo de impressão precisa de ao menos uma categoria.");
+          }
+        }
       }
 
       let nextSlug = slug;
@@ -85,6 +110,25 @@ export function ConfigBarPanels() {
         }
       }
       if (!v) throw new Error("Não foi possível salvar.");
+      if (service) {
+        const saved = await api<{ groups: NonNullable<Venue["printGroups"]> }>("/v1/owner/print-groups", {
+          method: "PUT",
+          body: JSON.stringify({
+            groups: printGroups.map((g) => ({
+              name: g.name.trim(),
+              categoryIds: g.categoryIds,
+            })),
+          }),
+        });
+        v = { ...v, printGroups: saved.groups };
+        setPrintGroups(
+          saved.groups.map((g) => ({
+            key: g.id,
+            name: g.name,
+            categoryIds: g.categoryIds,
+          })),
+        );
+      }
       setVenue(v);
       setName(v.name);
       setNameTouched(false);
@@ -180,6 +224,10 @@ export function ConfigBarPanels() {
             </div>
             {printerMsg ? <p className="text-sm text-sage sm:pl-7">{printerMsg}</p> : null}
           </div>
+        ) : null}
+
+        {service ? (
+          <PrintGroupsEditor categories={categories} groups={printGroups} onChange={setPrintGroups} />
         ) : null}
 
         {service ? (

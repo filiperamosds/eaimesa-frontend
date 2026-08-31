@@ -28,7 +28,7 @@ O dono vê o Kanban completo. Cozinha e bar precisam de **monitores separados**:
 
 ## Consequências
 
-- Equipe: `role` + `categoryIds` no POST/PATCH `/v1/owner/staff`.
+- Equipe: `role` + `categoryIds` no POST/PATCH `/v1/owner/staff`. Painel pode mandar `printViaGroups` ([ADR-035](ADR-035-grupos-impressao.md)).
 - Auth: `redirectPath` `/painel/pedidos`; `member.categoryIds` no `/v1/auth/me`.
 - Limite de 5 ativos **inclui** Painel.
 - Brief Laravel: [backend-kanban-painel.md](../api/backend-kanban-painel.md).

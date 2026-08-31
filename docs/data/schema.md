@@ -78,11 +78,20 @@ Garçom vinculado ao venue (mesmo login do painel).
 
 - `id`, `venue_id` → Venue, `account_id` → Account
 - `role`: `staff` (garçom) | `cashier` (caixa) | `panel` (Kanban da estação). Owner continua via `venues.owner_account_id`. JWT do cookie é `staff` para os três.
+- `print_via_groups` / API `printViaGroups` (default false): só no perfil Painel. Se true, a térmica aplica os grupos do estabelecimento sobre os itens da estação ([ADR-035](../decisions/ADR-035-grupos-impressao.md)).
 - `name`, `active`, timestamps
 
 ### VenueMemberCategory (fatia 14)
 
 Pivot `venue_member_id` + `catalog_category_id`. Só faz sentido quando `role = panel`. O Kanban daquele login mostra itens dessas categorias.
+
+### VenuePrintGroup (fatia 19)
+
+Vias da térmica por categoria, uma impressora ([ADR-035](../decisions/ADR-035-grupos-impressao.md)).
+
+- `id`, `venue_id` → Venue, `name` (1–40), `sort_order`, timestamps
+- Pivot `venue_print_group_categories`: `print_group_id` + `catalog_category_id` (unique no par)
+- Máximo **12** grupos por venue. Cada grupo exige ≥1 categoria deste cardápio. A mesma categoria pode estar em vários grupos.
 
 Máximo **5 membros ativos** (garçom + caixa + painel) por venue no plano Auto atendimento. Caixa usa `/garcom` e sempre encerra comanda/mesa. Garçom só encerra se `venues.staff_can_close_tabs` for true ([ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md)). Painel nunca encerra; só o Kanban filtrado ([ADR-024](../decisions/ADR-024-kanban-painel-categorias.md)).
 
@@ -265,6 +274,8 @@ erDiagram
   Account ||--o{ VenueMember : staff
   Venue ||--o{ VenueMember : has
   Venue ||--o{ CatalogCategory : has
+  Venue ||--o{ VenuePrintGroup : print_groups
+  VenuePrintGroup ||--o{ CatalogCategory : categories
   CatalogCategory ||--o{ CatalogItem : contains
   Venue ||--o{ VenueTable : has
   VenueTable ||--o{ TableSession : occupancy

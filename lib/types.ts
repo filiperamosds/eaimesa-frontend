@@ -1,4 +1,4 @@
-import type { VenueModules } from "@eaimesa/shared";
+import type { PrintGroup, VenueModules } from "@eaimesa/shared";
 
 export type Venue = {
   id: string;
@@ -18,6 +18,8 @@ export type Venue = {
   waiterCallTtlMinutes?: number;
   /** Fatia 16 — módulos efetivos do venue (ADR-029). */
   modules?: VenueModules;
+  /** Fatia 19 — vias da térmica por categoria (ADR-035). */
+  printGroups?: PrintGroup[];
   representative?: {
     name: string;
     cpfCnpj: string;
@@ -37,6 +39,7 @@ export type Session = {
     name: string;
     role?: "staff" | "cashier" | "panel";
     categoryIds?: string[];
+    printViaGroups?: boolean;
   };
 };
 
@@ -137,6 +140,7 @@ export type StaffMember = {
   email: string;
   role?: "staff" | "cashier" | "panel";
   categoryIds?: string[];
+  printViaGroups?: boolean;
   active: boolean;
   invitePending?: boolean;
   createdAt: string;

@@ -11,6 +11,7 @@ import {
   PLAN_KINDS,
 } from "./plans";
 import { TABLE_LABEL_MAX } from "./tables";
+import { PRINT_GROUP_MAX, PRINT_GROUP_NAME_MAX } from "./print-groups";
 
 export const slugSchema = z
   .string()
@@ -322,9 +323,18 @@ export const patchTableSchema = z
     message: "Envie label, sortOrder e/ou active.",
   });
 
-export const memberRoleSchema = z.enum(["staff", "cashier", "panel"]);
+import { PRINT_GROUP_CATEGORIES_MAX, PRINT_GROUP_MAX, PRINT_GROUP_NAME_MAX } from "./print-groups";
 
 export const categoryIdsSchema = z.array(z.string().uuid()).max(40);
+
+export const printGroupInputSchema = z.object({
+  name: z.string().trim().min(1, "Informe o nome do grupo.").max(PRINT_GROUP_NAME_MAX),
+  categoryIds: categoryIdsSchema.min(1, "Selecione ao menos uma categoria."),
+});
+
+export const putPrintGroupsSchema = z.object({
+  groups: z.array(printGroupInputSchema).max(PRINT_GROUP_MAX, "No máximo 12 grupos de impressão."),
+});
 
 function assertPanelCategories(
   role: "staff" | "cashier" | "panel" | undefined,
@@ -346,6 +356,7 @@ export const createStaffSchema = z
     email: z.string().trim().email("E-mail inválido.").transform((e) => e.toLowerCase()),
     role: memberRoleSchema.optional(),
     categoryIds: categoryIdsSchema.optional(),
+    printViaGroups: z.boolean().optional(),
   })
   .superRefine((b, ctx) => assertPanelCategories(b.role, b.categoryIds, ctx));
 
@@ -356,6 +367,7 @@ export const patchStaffSchema = z
     password: z.string().min(8).optional(),
     role: memberRoleSchema.optional(),
     categoryIds: categoryIdsSchema.optional(),
+    printViaGroups: z.boolean().optional(),
   })
   .superRefine((b, ctx) => {
     if (
@@ -363,11 +375,12 @@ export const patchStaffSchema = z
       b.active === undefined &&
       b.password === undefined &&
       b.role === undefined &&
-      b.categoryIds === undefined
+      b.categoryIds === undefined &&
+      b.printViaGroups === undefined
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Envie name, active, password, role e/ou categoryIds.",
+        message: "Envie name, active, password, role, categoryIds e/ou printViaGroups.",
       });
     }
     assertPanelCategories(b.role, b.categoryIds, ctx);
