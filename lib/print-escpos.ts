@@ -1,4 +1,5 @@
-import { encodeEscPosKitchenTicket, encodeEscPosReceipt } from "./escpos-receipt";
+import { kitchenTicketsForPrintGroups } from "@eaimesa/shared";
+import { encodeEscPosKitchenTicket, encodeEscPosKitchenTickets, encodeEscPosReceipt } from "./escpos-receipt";
 import type { StaffOrder, StaffTableTab } from "./types";
 
 type UsbEndpoint = { direction: string; endpointNumber: number; packetSize: number };
@@ -303,7 +304,16 @@ export async function printEscPosReceipt(venueName: string, tableLabel: string, 
   await sendEscPos(encodeEscPosReceipt(venueName, tableLabel, tab), true);
 }
 
-/** Via da cozinha: um pedido. Sem prompt se a POS80 já estiver autorizada. */
-export async function printEscPosOrder(order: StaffOrder, promptIfNeeded = true) {
-  await sendEscPos(encodeEscPosKitchenTicket(order), promptIfNeeded);
+/** Via da cozinha: um pedido (ou N vias por grupo, cada uma com corte). */
+export async function printEscPosOrder(
+  order: StaffOrder,
+  promptIfNeeded = true,
+  groups?: readonly { name: string; categoryIds: readonly string[] }[] | null,
+) {
+  const jobs = kitchenTicketsForPrintGroups(order, groups);
+  const payload =
+    jobs.length === 1
+      ? encodeEscPosKitchenTicket(jobs[0]!.order, jobs[0]!.groupName)
+      : encodeEscPosKitchenTickets(jobs);
+  await sendEscPos(payload, promptIfNeeded);
 }

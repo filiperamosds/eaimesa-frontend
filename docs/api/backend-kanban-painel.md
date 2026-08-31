@@ -11,7 +11,7 @@ Produto: [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md). Contrato: 
 - `POST /v1/owner/staff` `{ name, email, password, role: "panel", categoryIds: ["uuid", ...] }` — `categoryIds` obrigatório se `role=panel` (mínimo 1 UUID do cardápio do venue).
 - `PATCH /v1/owner/staff/{id}` `{ role?, categoryIds? }`. Mudar para `panel` exige categorias. Sair de `panel` pode mandar `categoryIds: []`.
 - `GET /v1/owner/staff` cada membro: `role` + `categoryIds` (array; vazio se não for painel).
-- `POST /v1/auth/login` e `GET /v1/auth/me`: `member.role` pode ser `panel`; `member.categoryIds`; `redirectPath: "/painel/pedidos"`.
+- `POST /v1/auth/login` e `GET /v1/auth/me`: `member.role` pode ser `panel`; `member.categoryIds`; `member.printViaGroups`; `redirectPath: "/painel/pedidos"`.
 - `GET /v1/staff/orders` (e o PATCH de status): usuário Painel **só** vê pedidos que tenham **ao menos um** item cuja categoria está em `categoryIds`. Na resposta, **só esses itens**. `totalCents` = soma dos itens visíveis. Dono e garçom/caixa **não** filtram.
 - Cada item de pedido: `categoryId` (UUID da categoria no snapshot).
 - Painel **não** chama mesas, claim, close, `POST /v1/staff/orders`, `GET /v1/staff/catalog`. Se chamar → 403 `PANEL_FORBIDDEN`.
@@ -76,7 +76,8 @@ Validação:
     "id": "...",
     "name": "Cozinha",
     "role": "panel",
-    "categoryIds": ["uuid-pratos", "uuid-porcoes"]
+    "categoryIds": ["uuid-pratos", "uuid-porcoes"],
+    "printViaGroups": false
   },
   "venue": { "staffCanCloseTabs": true }
 }
@@ -92,7 +93,8 @@ JWT **não** ganha claim `panel`. Continua `role: staff` + `memberId`.
   "email": "bar@bar.com",
   "password": "mínimo 8",
   "role": "panel",
-  "categoryIds": ["uuid-bebidas"]
+  "categoryIds": ["uuid-bebidas"],
+  "printViaGroups": false
 }
 ```
 

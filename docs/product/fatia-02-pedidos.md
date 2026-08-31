@@ -44,7 +44,7 @@ Não há coluna Aceitos. `accepted` permanece no banco e na API; no board entra 
 - Tempo desde a criação
 - Itens (qty × nome) e total
 - Nota do pedido, se houver
-- **Imprimir** (ESC/POS USB). Auto-print liga no card em Configurações → Estabelecimento; **Configurar impressora** autoriza a POS80 neste Chrome (não depende do Salvar).
+- **Imprimir** (ESC/POS USB). Auto-print liga no card em Configurações → Estabelecimento; **Configurar impressora** autoriza a POS80 neste Chrome (não depende do Salvar). Com **grupos de impressão**, cada grupo sai numa via com corte ([fatia 19](fatia-19-grupos-impressao.md)).
 
 Toque no card expande os itens. Botões avançam o status (mais confiável no celular que arrastar).
 

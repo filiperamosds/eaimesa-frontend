@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–18)
+## Implementado (fatias 1–19)
 
 ### Saúde
 
@@ -25,7 +25,7 @@ CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
 ### Auth estabelecimento (dono e garçom)
 
-Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`. Garçom, caixa e painel compartilham JWT `staff`; o perfil está em `member.role` (`staff` | `cashier` | `panel`). Painel: `redirectPath` `/painel/pedidos` e `member.categoryIds`.
+Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`. Garçom, caixa e painel compartilham JWT `staff`; o perfil está em `member.role` (`staff` | `cashier` | `panel`). Painel: `redirectPath` `/painel/pedidos`, `member.categoryIds` e `member.printViaGroups`.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
@@ -181,7 +181,7 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs`, `requireShiftOnOpenCash` |
+| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `printGroups`, …) |
 | PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, representative? }` |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
@@ -192,6 +192,31 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 | POST | `/v1/owner/catalog/items/{id}/image` | multipart `file` (JPG/PNG/WebP, máx. 2 MB) |
 | DELETE | `/v1/owner/catalog/items/{id}` | remove item |
 | GET | `/v1/uploads/{file}` | — | Foto enviada (público, nome UUID) |
+
+### Owner — grupos de impressão (fatia 19)
+
+Auth: cookie `eaimesa_owner`. Plano Auto atendimento (`service.plan`). [ADR-035](../decisions/ADR-035-grupos-impressao.md).
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/owner/print-groups` | `{ groups: [{ id, name, sortOrder, categoryIds }] }` |
+| PUT | `/v1/owner/print-groups` | Substitui a lista. `{ groups: [{ name, categoryIds }] }` (0–12) |
+
+`printGroups` também entra no venue serializado (`GET /v1/owner/venue`, `GET /v1/auth/me`). PUT vazio (`{ "groups": [] }`) volta à via única. Cada grupo: nome 1–40, ≥1 categoria **deste** venue. Categoria pode repetir em grupos. Grupo sem categorias / UUID de outro bar → 400 `VALIDATION_ERROR`. Máximo 12 → 400.
+
+#### PUT /v1/owner/print-groups (body)
+
+```json
+{
+  "groups": [
+    { "name": "Cozinha", "categoryIds": ["uuid-petiscos", "uuid-porcoes"] },
+    { "name": "Drinks", "categoryIds": ["uuid-drinks"] },
+    { "name": "Bebidas", "categoryIds": ["uuid-bebidas"] }
+  ]
+}
+```
+
+No Kanban que não é Painel, cada grupo com itens vira uma via ESC/POS com corte. Item fora dos grupos → via **Outros**.
 
 #### POST /v1/owner/catalog/items (body)
 
@@ -258,14 +283,14 @@ Rótulo único por venue. `TABLE_LIMIT` se já houver 15 ativas. `TABLE_LABEL_TA
 
 ### Owner — equipe (fatia 4)
 
-Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
+Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). Painel pode ligar `printViaGroups` para a térmica usar os grupos do estabelecimento. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md), [ADR-035](../decisions/ADR-035-grupos-impressao.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/staff` | Lista equipe + `role` + `categoryIds` + `invitePending` |
-| POST | `/v1/owner/staff` | `{ name, email, role?, categoryIds? }` — sem senha; envia convite |
+| GET | `/v1/owner/staff` | Lista equipe + `role` + `categoryIds` + `printViaGroups` + `invitePending` |
+| POST | `/v1/owner/staff` | `{ name, email, role?, categoryIds?, printViaGroups? }` — sem senha; envia convite |
 | POST | `/v1/owner/staff/{id}/resend-invite` | Reenvia o link |
-| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role?, categoryIds? }` |
+| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role?, categoryIds?, printViaGroups? }` |
 | DELETE | `/v1/owner/staff/{id}` | Remove o membro |
 
 ### Auth garçom

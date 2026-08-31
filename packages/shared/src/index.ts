@@ -5,6 +5,7 @@ export * from "./money";
 export * from "./orders";
 export * from "./tables";
 export * from "./staff";
+export * from "./print-groups";
 export * from "./phone";
 export * from "./payer";
 export * from "./uuid";

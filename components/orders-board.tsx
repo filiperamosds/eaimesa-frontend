@@ -3,6 +3,7 @@
 import {
   filterOrdersByCategories,
   formatBrlFromCents,
+  isPanelMember,
   KANBAN_COLUMNS,
   kanbanColumnFor,
   ORDER_NEXT,
@@ -15,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { hasGrantedThermalPrinter, printEscPosOrder } from "../lib/print-escpos";
 import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
-import type { StaffOrder } from "../lib/types";
+import type { Session, StaffOrder } from "../lib/types";
 
 function timeAgo(iso: string) {
   const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -66,12 +67,15 @@ export function OrdersBoard({
   const [fNome, setFNome] = useState("");
   const [autoPrint, setAutoPrint] = useState(false);
   const [printingId, setPrintingId] = useState<string | null>(null);
+  const [printGroups, setPrintGroups] = useState<{ name: string; categoryIds: string[] }[]>([]);
   const primedRef = useRef(false);
   const seenRef = useRef(new Set<string>());
   const autoPrintRef = useRef(false);
   const printChain = useRef(Promise.resolve());
 
   autoPrintRef.current = autoPrint;
+  const printGroupsRef = useRef(printGroups);
+  printGroupsRef.current = printGroups;
 
   const load = useCallback(async () => {
     const data = await api<{ orders: StaffOrder[] }>(endpoints.list);
@@ -88,7 +92,7 @@ export function OrdersBoard({
     if (!autoPrintRef.current) return;
     for (const order of fresh) {
       printChain.current = printChain.current
-        .then(() => printEscPosOrder(order, false))
+        .then(() => printEscPosOrder(order, false, printGroupsRef.current))
         .catch((err) => {
           setError(err instanceof Error ? err.message : "Falha ao imprimir na térmica.");
         });
@@ -102,6 +106,16 @@ export function OrdersBoard({
     }, 5000);
     return () => clearInterval(t);
   }, [load]);
+
+  useEffect(() => {
+    void api<Session>("/v1/auth/me")
+      .then((session) => {
+        const panel = isPanelMember(session);
+        const viaGroups = !panel || session.member?.printViaGroups === true;
+        setPrintGroups(viaGroups ? (session.venue.printGroups ?? []) : []);
+      })
+      .catch(() => setPrintGroups([]));
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -142,7 +156,7 @@ export function OrdersBoard({
     setError(null);
     setPrintingId(order.id);
     try {
-      await printEscPosOrder(order, true);
+      await printEscPosOrder(order, true, printGroups);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível imprimir na térmica.");
     } finally {
