@@ -99,7 +99,7 @@ sequenceDiagram
   API-->>C: pinDisplay → /{slug}/bem-vindo (PIN + nome/telefone)
 ```
 
-1. Dono convida garçons, caixas e painéis em **Configurações → Equipe**. A pessoa cria a senha pelo **link** do e-mail. Equipe já cadastrada permanece com senha. Reset: `/esqueci-senha` (código).
+1. Dono convida garçons, caixas e painéis em **Configurações → Equipe**. A pessoa cria a senha pelo **link** do e-mail. Equipe já cadastrada permanece com senha. Reset: `/esqueci-senha` (código). No Painel, **Imprimir via grupos** trava as categorias.
 2. Garçom entra em `/login` → `/garcom`, escolhe mesa, mostra QR (countdown ~3 min). Painel entra no mesmo `/login` → `/painel/pedidos` (só o Kanban das categorias marcadas).
 3. Cliente escaneia → redeem → PIN da mesa + **nome e telefone** (comanda pessoal).
 4. O quadro do garçom lista os nomes na mesa e, ao toque, abre a parcial. Não gera outro QR se a mesa já está ocupada.

@@ -49,7 +49,7 @@ export function StaffEditor() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (role === "panel" && categoryIds.length === 0) {
+    if (role === "panel" && !printViaGroups && categoryIds.length === 0) {
       setError("Selecione ao menos uma categoria para o Kanban deste painel.");
       return;
     }
@@ -60,7 +60,7 @@ export function StaffEditor() {
           name,
           email,
           role,
-          categoryIds: role === "panel" ? categoryIds : undefined,
+          categoryIds: role === "panel" ? (printViaGroups ? categories.map((c) => c.id) : categoryIds) : undefined,
           printViaGroups: role === "panel" ? printViaGroups : undefined,
         }),
       });
@@ -139,9 +139,13 @@ export function StaffEditor() {
   async function changePrintViaGroups(row: StaffMember, next: boolean) {
     setError(null);
     try {
+      const body: { printViaGroups: boolean; categoryIds?: string[] } = { printViaGroups: next };
+      if (next) {
+        body.categoryIds = categories.map((c) => c.id);
+      }
       await api(`/v1/owner/staff/${row.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ printViaGroups: next }),
+        body: JSON.stringify(body),
       });
       await load();
     } catch (err) {
@@ -215,12 +219,15 @@ export function StaffEditor() {
           <div className="space-y-2">
             <p className="text-sm font-medium">Categorias deste Kanban</p>
             <p className="text-sm text-ink-soft">
-              Cozinha e bar são monitores separados: marque só o que esta tela deve receber.
+              {printViaGroups
+                ? "Impressão via grupos: as categorias ficam travadas. A térmica usa os grupos do estabelecimento."
+                : "Cozinha e bar são monitores separados: marque só o que esta tela deve receber."}
             </p>
             <CategoryChecklist
               categories={categories}
-              selected={categoryIds}
+              selected={printViaGroups ? categories.map((c) => c.id) : categoryIds}
               onChange={setCategoryIds}
+              disabled={printViaGroups}
               emptyHint="Cadastre categorias no cardápio para escolher o que chega neste Kanban."
             />
             <label className="flex cursor-pointer items-start gap-2 pt-1 text-sm">
@@ -228,7 +235,11 @@ export function StaffEditor() {
                 type="checkbox"
                 className="mt-0.5 h-4 w-4 accent-chili"
                 checked={printViaGroups}
-                onChange={(e) => setPrintViaGroups(e.target.checked)}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setPrintViaGroups(on);
+                  if (on) setCategoryIds(categories.map((c) => c.id));
+                }}
               />
               <span>
                 <span className="font-medium">Imprimir via grupos</span>
@@ -300,10 +311,20 @@ export function StaffEditor() {
               {memberRoleValue(row.role) === "panel" ? (
                 <div className="border-t border-line/70 pt-3">
                   <p className="mb-2 text-sm font-medium">Categorias deste Kanban</p>
+                  {row.printViaGroups ? (
+                    <p className="mb-2 text-sm text-ink-soft">
+                      Travadas enquanto a impressão via grupos estiver ligada.
+                    </p>
+                  ) : null}
                   <CategoryChecklist
                     categories={categories}
-                    selected={row.categoryIds ?? []}
+                    selected={
+                      row.printViaGroups === true
+                        ? categories.map((c) => c.id)
+                        : (row.categoryIds ?? [])
+                    }
                     onChange={(ids) => void changeCategories(row, ids)}
+                    disabled={row.printViaGroups === true}
                     emptyHint="Cadastre categorias no cardápio para escolher o que chega neste Kanban."
                   />
                   <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm">

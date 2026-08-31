@@ -283,7 +283,7 @@ Rótulo único por venue. `TABLE_LIMIT` se já houver 15 ativas. `TABLE_LABEL_TA
 
 ### Owner — equipe (fatia 4)
 
-Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). Painel pode ligar `printViaGroups` para a térmica usar os grupos do estabelecimento. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md), [ADR-035](../decisions/ADR-035-grupos-impressao.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
+Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). Painel pode ligar `printViaGroups` para a térmica usar os grupos do estabelecimento; no cadastro, isso trava o checklist de categorias. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md), [ADR-035](../decisions/ADR-035-grupos-impressao.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
