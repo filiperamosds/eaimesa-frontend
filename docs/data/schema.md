@@ -49,6 +49,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 - `table_id` (nullable → VenueTable)
 - `table_label` (snapshot)
 - `tab_id` nullable → Tab (obrigatório quando `source = guest`; no `counter`, preenchido quando o staff lança na comanda)
+- Kanban (`GET /v1/owner/orders`, `GET /v1/staff/orders`): 48 h + caixa aberto (ou sem caixa). Pedidos cuja **mesa foi encerrada** saem do board.
 - `idempotency_key` (nullable; único por venue quando preenchido)
 - `note`
 - timestamps
@@ -104,7 +105,7 @@ Ocupação da mesa + PIN do grupo.
 - `id`, `venue_id`, `table_id` → VenueTable
 - `waiter_member_id` nullable → VenueMember: quem abriu a ocupação (taxa de serviço no financeiro — [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md))
 - `pin_hash` (bcrypt) e `pin_display` (criptografado, para mostrar o PIN a quem já está na mesa)
-- `status`: `open` | `closed`
+- `status`: `open` | `closed` — ao encerrar a mesa, os pedidos dessa ocupação saem do Kanban
 - `closed_at`, timestamps
 
 No máximo **uma** sessão `open` por mesa.

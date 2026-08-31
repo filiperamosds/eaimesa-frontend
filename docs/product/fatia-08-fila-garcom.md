@@ -5,7 +5,7 @@ O dono já tem o Kanban em `/painel/pedidos`. O **garçom** precisa da mesma fil
 ## Inclui
 
 - App `/garcom/pedidos` — Kanban (Mesas | Pedidos)
-- `GET /v1/staff/orders` — fila 48h (dono ou garçom)
+- `GET /v1/staff/orders` — fila 48h (dono ou garçom); some se a mesa foi encerrada
 - `PATCH /v1/staff/orders/{id}` — `{ status }`
 - Poll curto (já existe no board). Sem SSE.
 

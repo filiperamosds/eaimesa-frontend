@@ -15,7 +15,7 @@ O perfil Painel (Kanban por categoria) já filtra a tela. Quem imprime no Kanban
 - Grupos de impressão pertencem ao **estabelecimento** (`venue_print_groups` + categorias). Ex.: Cozinha → Petiscos e Porções; Drinks → Drinks; Bebidas → Bebidas.
 - Uma categoria **pode** entrar em mais de um grupo (via duplicada). Item que não cai em nenhum grupo sai numa via **Outros**.
 - No Kanban que **não** é usuário Painel (dono e garçom/caixa): se houver grupos, cada pedido gera **uma via por grupo com itens**, com **guilhotina** ESC/POS entre elas (`GS V A`). Sem grupos, permanece a via única.
-- Usuário **Painel**: imprime só os itens da estação, numa via — salvo **Imprimir via grupos** no cadastro da equipe (`printViaGroups`). Aí aplica os mesmos grupos do estabelecimento sobre os itens visíveis.
+- Usuário **Painel**: imprime só os itens da estação, numa via — salvo **Imprimir via grupos** no cadastro da equipe (`printViaGroups`). Aí o checklist de categorias fica **desabilitado** (todas) e a térmica aplica os mesmos grupos do estabelecimento.
 - A configuração vive em **Configurações → Estabelecimento**. Equipe só liga/desliga o modo no perfil Painel.
 - O corte continua no Chrome USB/serial (ADR-029). Agente local segue fora do MVP.
 

@@ -187,8 +187,8 @@ export function OrdersBoard({
             {station
               ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
               : compact
-                ? "Avance os pedidos. Para lançar itens, abra a mesa em Mesas."
-                : "Kanban do turno. Lançar pedido: abra a mesa em Mesas e comandas."}
+                ? "Avance os pedidos. Encerrar a mesa tira os cards da fila. Para lançar itens, abra a mesa em Mesas."
+                : "Kanban do turno. Encerrar a mesa tira os pedidos da fila. Lançar pedido: abra a mesa em Mesas e comandas."}
           </p>
         </div>
         {compact && !station ? (

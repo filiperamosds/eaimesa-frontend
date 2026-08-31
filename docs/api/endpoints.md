@@ -242,7 +242,7 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`) |
+| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`; some se a mesa foi encerrada) |
 | POST | `/v1/owner/orders` | Pedido de balcão (opcional `tabId`); snapshot de preço |
 | PATCH | `/v1/owner/orders/{id}` | `{ status }` |
 
@@ -283,7 +283,7 @@ Rótulo único por venue. `TABLE_LIMIT` se já houver 15 ativas. `TABLE_LABEL_TA
 
 ### Owner — equipe (fatia 4)
 
-Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). Painel pode ligar `printViaGroups` para a térmica usar os grupos do estabelecimento. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md), [ADR-035](../decisions/ADR-035-grupos-impressao.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
+Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). Painel pode ligar `printViaGroups` para a térmica usar os grupos do estabelecimento; no cadastro, isso trava o checklist de categorias. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md), [ADR-035](../decisions/ADR-035-grupos-impressao.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
@@ -335,7 +335,7 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); painel filtra por categoria |
+| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); some se a mesa foi encerrada; painel filtra por categoria |
 | POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor. Painel: 403 |
 | PATCH | `/v1/staff/orders/{id}` | `{ status }` (pedido inteiro; painel só se o pedido tiver item da estação) |
 | GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda. Painel: 403 |

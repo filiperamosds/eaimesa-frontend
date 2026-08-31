@@ -5,7 +5,7 @@ Monitor na parede da cozinha ou do bar: só a fila, só os itens daquela estaç�
 ## Inclui
 
 - Perfil **Painel** na equipe (`member.role = panel`)
-- Cadastro: o dono marca **uma ou mais categorias** do cardápio para aquele usuário. Opcional: **Imprimir via grupos** (`printViaGroups`) para a térmica usar os grupos do estabelecimento ([fatia 19](fatia-19-grupos-impressao.md)).
+- Cadastro: o dono marca **uma ou mais categorias** do cardápio para aquele usuário. Opcional: **Imprimir via grupos** (`printViaGroups`) para a térmica usar os grupos do estabelecimento ([fatia 19](fatia-19-grupos-impressao.md)). Com o flag ligado, as categorias ficam travadas (todas) — o recorte do papel vem dos grupos, não do checklist.
 - Login → `/painel/pedidos` (Kanban cheio de tela). Sem mesas, cardápio, Estabelecimento
 - Pedido com item da categoria chega nesse Kanban; o outro monitor não vê esse item
 - `GET /v1/staff/orders` filtrado; itens com `categoryId`
