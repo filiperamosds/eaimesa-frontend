@@ -166,7 +166,7 @@ Detalhe em [fatia-08-fila-garcom.md](fatia-08-fila-garcom.md).
 Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 
 1. Caixa, dono ou garçom (se `staffCanCloseTabs`): confere o total (**A receber** / cupom) e `POST /v1/staff/tabs/{id}/close` — fecha **uma** comanda (revoga sessões daquela conta). Garçom sem permissão → 403 `CASHIER_REQUIRED`.
-2. Mesma regra: `POST /v1/staff/tables/{id}/close` — encerra a **mesa** só se todas as comandas estão `closed`.
+2. Mesma regra: `POST /v1/staff/tables/{id}/close` — encerra a **mesa** só se todas as comandas estão `closed`. Os pedidos daquela ocupação **saem do Kanban**.
 3. Próxima rodada na mesa = novo claim (novo PIN).
 4. Fechar **caixa** (`/painel/caixa`, `/garcom/caixa`): `GET /v1/staff/cash-sessions/current` traz o esperado do turno (vendas + fundo + movimentações). Os campos já vêm preenchidos; o caixa corrige e `POST .../close`.
 5. Config **Exigir caixa aberto** em Configurações → Financeiro (`finance.config.requireOpenCash`): sem turno aberto, QR e pedidos são recusados (`CASH_SESSION_REQUIRED`).

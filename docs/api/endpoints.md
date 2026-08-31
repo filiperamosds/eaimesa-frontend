@@ -242,7 +242,7 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`) |
+| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`; some se a mesa foi encerrada) |
 | POST | `/v1/owner/orders` | Pedido de balcão (opcional `tabId`); snapshot de preço |
 | PATCH | `/v1/owner/orders/{id}` | `{ status }` |
 
@@ -335,7 +335,7 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); painel filtra por categoria |
+| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); some se a mesa foi encerrada; painel filtra por categoria |
 | POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor. Painel: 403 |
 | PATCH | `/v1/staff/orders/{id}` | `{ status }` (pedido inteiro; painel só se o pedido tiver item da estação) |
 | GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda. Painel: 403 |

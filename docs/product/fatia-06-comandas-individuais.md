@@ -16,7 +16,7 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 - `POST /v1/staff/tables/{id}/tabs` — garçom abre comanda `{ name, phone }`
 - `POST /v1/staff/orders` com `tabId` — garçom lança itens na comanda (dialog)
 - `POST /v1/staff/tabs/{id}/close` — fecha uma comanda (UI destaca o valor a receber)
-- `POST /v1/staff/tables/{id}/close` — encerra a mesa; **409** se ainda houver comanda aberta
+- `POST /v1/staff/tables/{id}/close` — encerra a mesa; **409** se ainda houver comanda aberta. Os pedidos da ocupação saem do Kanban.
 - Telefone mascarado no painel do garçom (últimos 4 dígitos)
 
 ## Não inclui
