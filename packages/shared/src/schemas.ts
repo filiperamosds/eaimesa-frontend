@@ -323,7 +323,7 @@ export const patchTableSchema = z
     message: "Envie label, sortOrder e/ou active.",
   });
 
-import { PRINT_GROUP_CATEGORIES_MAX, PRINT_GROUP_MAX, PRINT_GROUP_NAME_MAX } from "./print-groups";
+export const memberRoleSchema = z.enum(["staff", "cashier", "panel"]);
 
 export const categoryIdsSchema = z.array(z.string().uuid()).max(40);
 
