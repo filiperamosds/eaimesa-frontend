@@ -44,7 +44,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 17 — equipe de operadores](fatia-17-platform-equipe.md).
+Implementação **agora**: [fatia 20 — relatórios do estabelecimento](fatia-20-relatorios.md).
 
 ### MVP (quando as fatias somarem)
 

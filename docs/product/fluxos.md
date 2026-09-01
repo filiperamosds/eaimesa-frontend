@@ -171,7 +171,7 @@ Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 4. Fechar **caixa** (`/painel/caixa`, `/garcom/caixa`): `GET /v1/staff/cash-sessions/current` traz o esperado do turno (vendas + fundo + movimentações). Os campos já vêm preenchidos; o caixa corrige e `POST .../close`.
 5. Config **Exigir caixa aberto** em Configurações → Financeiro (`finance.config.requireOpenCash`): sem turno aberto, QR e pedidos são recusados (`CASH_SESSION_REQUIRED`).
 6. Config **Exigir escala ao abrir o caixa** em Estabelecimento (`requireShiftOnOpenCash`): na abertura, lista garçom e caixa (todos marcados); desmarcar inativa o membro. Login inativo mostra “Seu usuário está inativo.” ([ADR-031](../decisions/ADR-031-escala-abrir-caixa.md)).
-7. Quem abre a mesa fica com a taxa de serviço daquela ocupação. `/painel/financeiro` lista o valor por funcionário ([ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md)).
+7. Quem abre a mesa fica com a taxa de serviço daquela ocupação. `/painel/financeiro` (Faturamento) lista o valor por funcionário ([ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md)). Relatórios (pedidos, comandas, caixa): [fatia 20](fatia-20-relatorios.md).
 8. **Imprimir na térmica** (Chrome USB/serial, ESC/POS) manda o cupom direto na POS80 — não passa pelo diálogo A4. Se a taxa de serviço estiver ligada, o cupom traz o % e o total com taxa. Se o Mac já tiver a POS80 como impressora do sistema, pause essa fila para o Chrome usar o USB. **Impressora do sistema** fica para laser/PDF. Agente local de cozinha continua fora do MVP ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)).
 
 ## 5b. Fatia 10 — planos e checkout stub
@@ -239,3 +239,7 @@ Na fatia 1, `suspended` ainda mostra o cardápio (read-only) com aviso, se o sta
 ## Impressora
 
 No Kanban (`/painel/pedidos`, `/garcom/pedidos`): auto-print liga em **Configurações → Estabelecimento**. O botão **Configurar impressora** no card abre o picker USB/serial deste Chrome ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Pedido novo em `pending` gera via ESC/POS; se o estabelecimento tiver **grupos de impressão**, cada grupo com itens vira uma via e a térmica corta entre elas ([ADR-035](../decisions/ADR-035-grupos-impressao.md)). Falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
+
+## 5c. Relatórios (fatia 20)
+
+Em `/painel/financeiro`: **Faturamento** (dinheiro) e **Relatórios** (pedidos, comandas, itens, turnos, equipe). O período De/Até fica na URL. [fatia 20](fatia-20-relatorios.md).

@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–19)
+## Implementado (fatias 1–20)
 
 ### Saúde
 
@@ -326,6 +326,22 @@ Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier
 O conferido no fechar caixa **já nasce preenchido** com o esperado. O caixa corrige se a gaveta/maquininha diferir.
 
 `GET /v1/owner/finance/summary?groupBy=waiter`: taxa de serviço por quem abriu a mesa (`serviceFeeCents`, `salesCents`, `tabs`). KPI `serviceFeeCents` no summary. [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md).
+
+### Owner — financeiro e relatórios (fatias 17 e 20)
+
+Auth: cookie `eaimesa_owner`. Gate `module:finance`. UI: `/painel/financeiro` (Faturamento + Relatórios). [ADR-036](../decisions/ADR-036-relatorios-estabelecimento.md).
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/owner/finance/summary` | `?from&to&groupBy=day\|method\|table\|waiter` |
+| GET | `/v1/owner/finance/top-items` | `?from&to&limit` |
+| GET | `/v1/owner/finance/export` | `?from&to` — CSV dos recebimentos |
+| GET | `/v1/owner/cash-sessions` | `?from&to` — turnos + `movementsCents` |
+| GET | `/v1/owner/reports/overview` | KPIs operacionais + período anterior |
+| GET | `/v1/owner/reports/orders` | Histórico de pedidos (`status`, `source`, `tableId`, página) |
+| GET | `/v1/owner/reports/tabs` | Comandas fechadas (`hasBalance`, `method`, página) |
+| GET | `/v1/owner/reports/categories` | Venda por categoria |
+| GET | `/v1/owner/reports/export` | `?kind=orders\|tabs\|items\|payments` |
 
 `PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
 

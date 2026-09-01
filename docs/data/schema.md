@@ -214,6 +214,8 @@ Lista no console (`GET /v1/platform/integration-events`) **não** devolve `paylo
 
 - **AuditLog** — `venue_id`, `actor_type`, `actor_id`, `action`, `metadata_json`
 
+Relatórios (fatia 20) não criam tabela: leem `orders`, `tab_settlements`, `cash_sessions` no `venue_id` da sessão.
+
 ## Índices críticos
 
 - `venues(slug)` UNIQUE
