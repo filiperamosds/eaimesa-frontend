@@ -8,9 +8,9 @@ Spec: [ADR-037](../decisions/ADR-037-estoque.md). Módulo `inventory` no plano A
 
 ## Inclui
 
-- Cadastro de insumos em `/painel/estoque`: nome, unidade canônica (`g` | `ml` | `un`), saldo, alerta
+- Cadastro de insumos em **Configurações → Estoque** (`/painel/configuracoes/estoque`): nome, unidade canônica (`g` | `ml` | `un`), saldo, alerta. `/painel/estoque` redireciona para cá.
 - Entrada por **pacotes** (2 × 1000 g) ou quantidade já na unidade
-- Receita no item do cardápio (Configurações → Cardápio): linhas `{ insumo, quantidade por 1 unidade do prato }`
+- Receita no item do cardápio (Configurações → Cardápio → **Editar**): no mesmo dialog de foto e detalhes, linhas `{ insumo, quantidade por 1 unidade do prato }`; um único **Salvar**
 - Baixa na **criação** do pedido (`pending`); estorno se o status for `cancelled`
 - Banner de alerta quando `quantity <= alertQuantity` (e o alerta está preenchido)
 - API `GET/POST/PATCH/DELETE /v1/owner/stock/items`, movimentos, receitas; gate `module:inventory`
@@ -22,12 +22,12 @@ Spec: [ADR-037](../decisions/ADR-037-estoque.md). Módulo `inventory` no plano A
 - Bloquear pedido sem estoque
 - Produção, ficha com rendimento, desperdício como tipo separado (ajuste cobre)
 - Contas a pagar
-- Estoque no garçom, no Painel ou no cardápio público
+- Estoque no garçom ou no cardápio público
 
 ## Fluxo
 
-1. Dono abre **Estoque**, cadastra Arroz (`g`), entra 2 pacotes de 1000 g, alerta 400 g.
-2. No cardápio, no Risoto, receita: 100 g arroz + 100 g carne.
+1. Dono abre **Configurações → Estoque**, cadastra Arroz (`g`), entra 2 pacotes de 1000 g, alerta 400 g.
+2. No cardápio, **Editar** no Risoto: receita 100 g arroz + 100 g carne (mesmo Salvar da foto e dos detalhes).
 3. Cliente pede 1 risoto → arroz 2000 → 1900; carne idem.
 4. Saldo ≤ alerta → banner no Estoque e em Pedidos.
 5. Pedido cancelado → quantidades voltam.

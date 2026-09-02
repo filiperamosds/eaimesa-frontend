@@ -17,9 +17,9 @@ sequenceDiagram
   D->>W: /confirmar-email (código 6 dígitos)
   W->>API: POST /v1/auth/verify-email
   API-->>W: Set-Cookie eaimesa_owner + inicia trial
-  D->>W: /painel — Kanban de pedidos (nav: Pedidos, Mesas, Chamados, Caixa, Financeiro, Estoque)
+  D->>W: /painel — Kanban de pedidos (nav: Pedidos, Mesas, Chamados, Caixa, Financeiro)
   W->>API: GET /v1/owner/orders
-  D->>W: /painel/configuracoes/cardapio — categorias e itens
+  D->>W: /painel/configuracoes/cardapio — categorias e itens (Editar = dialog)
   W->>API: CRUD /v1/owner/catalog/**
   C->>W: GET /seu-estabelecimento
   W->>API: GET /v1/public/venues/seu-estabelecimento
@@ -27,7 +27,7 @@ sequenceDiagram
 ```
 
 1. Dono cria conta + venue (nome; slug gerado a partir do nome) e **confirma o e-mail**. Sem confirmar, não entra no painel e o trial não começa. Depois de logado, a logo no header volta à **home do papel** (`/painel/pedidos`, cardápio no plano Cardápio, `/garcom` ou `/admin`) — não à landing `/`.
-2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor) em **Configurações → Cardápio**.
+2. Monta categorias e itens (preço mascarado **R$** no painel; centavos no servidor) em **Configurações → Cardápio**. **Editar** abre dialog (foto, detalhes, receita) com um Salvar.
 3. Comparte `https://eaimesa.com.br/{slug}` (QR fixo na mesa, Instagram, balcão) — **só cardápio**.
 4. Cliente abre `/{slug}`: navega por **grupos**, toca o item para ver **foto** e descrição. **Não pede pelo link** (comanda exige QR do garçom). Pedidos lançados pelo staff: mesa em `/garcom` → comanda. Mesas + export do QR fixo: **Configurações → Mesas**.
 
@@ -246,7 +246,7 @@ Em `/painel/financeiro`: **Faturamento** (dinheiro) e **Relatórios** (pedidos, 
 
 ## 5d. Estoque (fatia 21)
 
-1. Dono em `/painel/estoque` cadastra o insumo (unidade `g`/`ml`/`un`) e entra pacotes (2 × 1000 g = 2000 g) com alerta.
-2. No cardápio, em cada item, a receita lista quanto aquele prato usa.
+1. Dono em **Configurações → Estoque** (`/painel/configuracoes/estoque`) cadastra o insumo (unidade `g`/`ml`/`un`) e entra pacotes (2 × 1000 g = 2000 g) com alerta.
+2. No cardápio, **Editar** o item: a receita lista quanto aquele prato usa (mesmo Salvar que foto e detalhes).
 3. Pedido (QR ou garçom) baixa `qty da receita × qty do pedido`. Cancelar devolve o que foi baixado.
-4. Saldo ≤ alerta → banner em Pedidos e em Estoque. Venda não trava. [ADR-037](../decisions/ADR-037-estoque.md).
+4. Saldo ≤ alerta → banner em Pedidos e em Configurações → Estoque. Venda não trava. [ADR-037](../decisions/ADR-037-estoque.md).

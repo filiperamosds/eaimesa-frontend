@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError, apiUpload } from "../lib/api";
 import { mediaSrc } from "../lib/media";
 import type { CatalogCategory, Session } from "../lib/types";
-import { ItemRecipeEditor } from "./item-recipe-editor";
+import { ItemEditDialog } from "./item-edit-dialog";
 import { MoneyField } from "./masked-fields";
 
 export function CatalogEditor() {
@@ -270,40 +270,7 @@ function ItemRow({
   recipe: RecipeLine[];
 }) {
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(item.name);
-  const [description, setDescription] = useState(item.description ?? "");
-  const [priceCents, setPriceCents] = useState<number | null>(item.priceCents);
   const photo = mediaSrc(item.imageUrl);
-
-  async function save() {
-    const cents = priceCents;
-    if (cents === null) {
-      onError("Informe o preço (ex. R$ 12,50).");
-      return;
-    }
-    onError(null);
-    try {
-      await api(`/v1/owner/catalog/items/${item.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ name, description: description || null, priceCents: cents }),
-      });
-      setEditing(false);
-      await onChange();
-    } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao salvar item.");
-    }
-  }
-
-  async function onPhoto(file: File | undefined) {
-    if (!file) return;
-    onError(null);
-    try {
-      await apiUpload(`/v1/owner/catalog/items/${item.id}/image`, file);
-      await onChange();
-    } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao enviar foto.");
-    }
-  }
 
   async function toggle() {
     onError(null);
@@ -329,86 +296,46 @@ function ItemRow({
     }
   }
 
-  if (editing) {
-    return (
-      <li className="grid gap-2 py-3">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="field"
-        />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Descrição"
-          rows={4}
-          maxLength={280}
-          className="field"
-        />
-        <MoneyField cents={priceCents} onCentsChange={setPriceCents} className="field" required />
-        <div className="flex gap-2">
-          <button type="button" onClick={save} className="text-sm font-medium text-sage">
-            Salvar
-          </button>
-          <button type="button" onClick={() => setEditing(false)} className="text-sm text-ink-soft">
-            Cancelar
-          </button>
-        </div>
-      </li>
-    );
-  }
-
   return (
-    <li className="grid gap-2 py-3">
+    <li className="py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="flex min-w-0 items-center gap-3">
-        {photo ? (
-          <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
-        ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-paper-2 text-[10px] text-ink-soft">
-            sem foto
-          </span>
-        )}
-        <div>
-          <p className={item.active ? "" : "text-ink-soft line-through"}>
-            {item.name}
-            {!item.active ? <span className="ml-2 text-xs">oculto</span> : null}
-          </p>
-          {item.description ? <p className="text-sm text-ink-soft">{item.description}</p> : null}
+        <div className="flex min-w-0 items-center gap-3">
+          {photo ? (
+            <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+          ) : (
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-paper-2 text-[10px] text-ink-soft">
+              sem foto
+            </span>
+          )}
+          <div>
+            <p className={item.active ? "" : "text-ink-soft line-through"}>
+              {item.name}
+              {!item.active ? <span className="ml-2 text-xs">oculto</span> : null}
+            </p>
+            {item.description ? <p className="text-sm text-ink-soft">{item.description}</p> : null}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="tabular-nums font-medium">{formatBrlFromCents(item.priceCents)}</span>
+          <button type="button" onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink">
+            Editar
+          </button>
+          <button type="button" onClick={toggle} className="text-ink-soft hover:text-ink">
+            {item.active ? "Ocultar" : "Mostrar"}
+          </button>
+          <button type="button" onClick={remove} className="text-chili">
+            Excluir
+          </button>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="tabular-nums font-medium">{formatBrlFromCents(item.priceCents)}</span>
-        <label className="cursor-pointer text-ink-soft hover:text-ink">
-          Foto
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={(e) => {
-              void onPhoto(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
-        </label>
-        <button type="button" onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink">
-          Editar
-        </button>
-        <button type="button" onClick={toggle} className="text-ink-soft hover:text-ink">
-          {item.active ? "Ocultar" : "Mostrar"}
-        </button>
-        <button type="button" onClick={remove} className="text-chili">
-          Excluir
-        </button>
-      </div>
-      </div>
-      {inventoryOn ? (
-        <ItemRecipeEditor
-          catalogItemId={item.id}
+      {editing ? (
+        <ItemEditDialog
+          item={item}
+          inventoryOn={inventoryOn}
           stockItems={stockItems}
-          lines={recipe}
+          recipe={recipe}
           onSaved={onChange}
-          onError={onError}
+          onClose={() => setEditing(false)}
         />
       ) : null}
     </li>

@@ -38,7 +38,7 @@ export function StockAlertBanner() {
           .join(" · ")}
         {items.length > 4 ? ` · +${items.length - 4}` : ""}
         .{" "}
-        <Link href="/painel/estoque" className="font-medium text-chili underline">
+        <Link href="/painel/configuracoes/estoque" className="font-medium text-chili underline">
           Ver estoque
         </Link>
       </p>

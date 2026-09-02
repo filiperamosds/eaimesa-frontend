@@ -61,10 +61,12 @@ export function StockPanel() {
         <h2 className="font-serif text-2xl">Estoque</h2>
         <p className="mt-2 text-ink-soft">
           Cadastre o insumo na unidade de uso (g, ml ou un). Dois pacotes de 1 kg de arroz entram
-          como 2000 g. A receita de cada prato fica no{" "}
+          como 2000 g.           A receita de cada prato fica no{" "}
           <Link href="/painel/configuracoes/cardapio" className="font-medium text-chili underline">
-            cardápio
+            Cardápio
           </Link>
+          {" "}
+          (Editar item)
           .
         </p>
       </div>

@@ -25,10 +25,10 @@ O estabelecimento precisa saber se o insumo vai acabar. O cardápio vende **prat
 | Unidade livre (kg, L) no banco | Conversão confusa; UI formata 2000 g → 2 kg |
 | Baixa só em `delivered` | Pedido na fila já comprometeu o insumo |
 | Bloquear venda | O salão continua servindo; o dono precisa do aviso, não do 409 |
-| Item na nav de Configurações só | Alerta é operação do dia, como o caixa |
+| Estoque na nav principal do Painel | Cadastro de insumo é configuração; o alerta do dia fica no banner de Pedidos |
 
 ## Consequências
 
-- Front: `/painel/estoque`; receita no editor do cardápio; banner em Pedidos.
+- Front: **Configurações → Estoque** (`/painel/configuracoes/estoque`; `/painel/estoque` redireciona). Receita no dialog de editar o item do cardápio, no mesmo Salvar que foto e detalhes. Banner em Pedidos.
 - Contrato: [endpoints.md](../api/endpoints.md). Produto: [fatia 21](../product/fatia-21-estoque.md).
 - Seed demo: Risoto + arroz 2000 g + carne 1500 g.
