@@ -49,6 +49,7 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 - `table_id` (nullable → VenueTable)
 - `table_label` (snapshot)
 - `tab_id` nullable → Tab (obrigatório quando `source = guest`; no `counter`, preenchido quando o staff lança na comanda)
+- Kanban (`GET /v1/owner/orders`, `GET /v1/staff/orders`): 48 h + caixa aberto (ou sem caixa). Pedidos cuja **mesa foi encerrada** saem do board.
 - `idempotency_key` (nullable; único por venue quando preenchido)
 - `note`
 - timestamps
@@ -78,11 +79,20 @@ Garçom vinculado ao venue (mesmo login do painel).
 
 - `id`, `venue_id` → Venue, `account_id` → Account
 - `role`: `staff` (garçom) | `cashier` (caixa) | `panel` (Kanban da estação). Owner continua via `venues.owner_account_id`. JWT do cookie é `staff` para os três.
+- `print_via_groups` / API `printViaGroups` (default false): só no perfil Painel. Se true, a térmica aplica os grupos do estabelecimento sobre os itens da estação ([ADR-035](../decisions/ADR-035-grupos-impressao.md)).
 - `name`, `active`, timestamps
 
 ### VenueMemberCategory (fatia 14)
 
 Pivot `venue_member_id` + `catalog_category_id`. Só faz sentido quando `role = panel`. O Kanban daquele login mostra itens dessas categorias.
+
+### VenuePrintGroup (fatia 19)
+
+Vias da térmica por categoria, uma impressora ([ADR-035](../decisions/ADR-035-grupos-impressao.md)).
+
+- `id`, `venue_id` → Venue, `name` (1–40), `sort_order`, timestamps
+- Pivot `venue_print_group_categories`: `print_group_id` + `catalog_category_id` (unique no par)
+- Máximo **12** grupos por venue. Cada grupo exige ≥1 categoria deste cardápio. A mesma categoria pode estar em vários grupos.
 
 Máximo **5 membros ativos** (garçom + caixa + painel) por venue no plano Auto atendimento. Caixa usa `/garcom` e sempre encerra comanda/mesa. Garçom só encerra se `venues.staff_can_close_tabs` for true ([ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md)). Painel nunca encerra; só o Kanban filtrado ([ADR-024](../decisions/ADR-024-kanban-painel-categorias.md)).
 
@@ -95,7 +105,7 @@ Ocupação da mesa + PIN do grupo.
 - `id`, `venue_id`, `table_id` → VenueTable
 - `waiter_member_id` nullable → VenueMember: quem abriu a ocupação (taxa de serviço no financeiro — [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md))
 - `pin_hash` (bcrypt) e `pin_display` (criptografado, para mostrar o PIN a quem já está na mesa)
-- `status`: `open` | `closed`
+- `status`: `open` | `closed` — ao encerrar a mesa, os pedidos dessa ocupação saem do Kanban
 - `closed_at`, timestamps
 
 No máximo **uma** sessão `open` por mesa.
@@ -200,9 +210,35 @@ Auditoria genérica de integrações (webhooks inbound primeiro). [ADR-027](../d
 
 Lista no console (`GET /v1/platform/integration-events`) **não** devolve `payload`/`meta`. Front: `/admin/integracoes`.
 
+## Entidades — fatia 21 (estoque)
+
+### StockItem (insumo)
+
+- `id`, `venue_id` → Venue
+- `name` (único no venue), `unit`: `g` | `ml` | `un`
+- `quantity` inteiro na unidade (pode ser negativo)
+- `alert_quantity` nullable — alerta se `quantity <= alert_quantity`
+- `archived_at` nullable, timestamps
+- Pacote (2 × 1000 g) só na entrada; o banco guarda 2000 g. [ADR-037](../decisions/ADR-037-estoque.md)
+
+### CatalogItemRecipe
+
+- `id`, `venue_id`, `catalog_item_id` → CatalogItem, `stock_item_id` → StockItem
+- `qty` — consumo por **1** unidade vendida, unique `(catalog_item_id, stock_item_id)`
+
+### StockMovement
+
+- `id`, `venue_id`, `stock_item_id`
+- `type`: `in` | `adjust` | `sale` | `sale_void`
+- `qty_delta` assinado; `note` nullable
+- `order_id`, `order_item_id` nullable; `created_by` nullable; `created_at`
+- Baixa na criação do pedido; cancelar gera `sale_void` com o que foi baixado
+
 ## Entidades — planejadas
 
 - **AuditLog** — `venue_id`, `actor_type`, `actor_id`, `action`, `metadata_json`
+
+Relatórios (fatia 20) não criam tabela: leem `orders`, `tab_settlements`, `cash_sessions` no `venue_id` da sessão.
 
 ## Índices críticos
 
@@ -231,6 +267,10 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 - `integration_events(integration, event, created_at DESC)`
 - `integration_events(external_id)`
 - `integration_events(status, created_at DESC)`
+- `stock_items(venue_id, name)` UNIQUE
+- `catalog_item_recipes(catalog_item_id, stock_item_id)` UNIQUE
+- `stock_movements(venue_id, stock_item_id, created_at)`
+- `stock_movements(order_item_id, stock_item_id)`
 
 ## Regras de negócio
 
@@ -248,6 +288,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
 13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado) e em `venue_payment_methods` (até 5).
 14. Webhook autenticado grava `integration_events` (body + meta sanitizado); token nunca entra em `meta`.
+15. Estoque (módulo `inventory`): baixa na criação do pedido; cancelar estorna o `qty_delta` já gravado. Pedido não é recusado por saldo negativo.
 
 ## Planejado — fatia 15 (chamar garçom)
 
@@ -265,7 +306,14 @@ erDiagram
   Account ||--o{ VenueMember : staff
   Venue ||--o{ VenueMember : has
   Venue ||--o{ CatalogCategory : has
+  Venue ||--o{ VenuePrintGroup : print_groups
+  VenuePrintGroup ||--o{ CatalogCategory : categories
   CatalogCategory ||--o{ CatalogItem : contains
+  CatalogItem ||--o{ CatalogItemRecipe : recipe
+  Venue ||--o{ StockItem : inventory
+  StockItem ||--o{ CatalogItemRecipe : used_in
+  StockItem ||--o{ StockMovement : moves
+  OrderItem ||--o{ StockMovement : sale
   Venue ||--o{ VenueTable : has
   VenueTable ||--o{ TableSession : occupancy
   VenueTable ||--o{ PresenceSession : menu_scan

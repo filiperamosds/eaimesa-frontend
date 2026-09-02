@@ -239,8 +239,8 @@ function qtyLine(qty: number, name: string, note: string | null): string {
   return `${lines.join("\n")}\n`;
 }
 
-/** Via da cozinha/bar — um pedido, sem total a receber. */
-export function encodeEscPosKitchenTicket(order: StaffOrder): Uint8Array {
+/** Via da cozinha/bar — um pedido (ou um grupo), sem total a receber. */
+export function encodeEscPosKitchenTicket(order: StaffOrder, groupName?: string | null): Uint8Array {
   const who = [order.tableLabel, order.guestName].filter(Boolean).join(" - ");
   const source = order.source === "guest" ? "Cardápio" : "Balcão";
   const chunks: Uint8Array[] = [
@@ -250,13 +250,18 @@ export function encodeEscPosKitchenTicket(order: StaffOrder): Uint8Array {
     cmd(GS, 0x21, 0x11),
     text(`${centerW("NOVO PEDIDO", 24)}\n`),
     text(`${centerW(order.tableLabel || "Mesa", 24)}\n`),
+  ];
+  if (groupName) {
+    chunks.push(text(`${centerW(groupName.toUpperCase(), 24)}\n`));
+  }
+  chunks.push(
     cmd(GS, 0x21, 0x00),
     cmd(ESC, 0x61, 0x00),
     text(dash()),
     text(`${center(who)}\n`),
     text(`${center(`${source}  ${when(order.createdAt)}`)}\n`),
     text(dash()),
-  ];
+  );
 
   if (order.items.length === 0) {
     chunks.push(cmd(ESC, 0x61, 0x01), text("Nenhum item.\n"), cmd(ESC, 0x61, 0x00));
@@ -272,4 +277,11 @@ export function encodeEscPosKitchenTicket(order: StaffOrder): Uint8Array {
 
   chunks.push(text("\n\n"), cmd(GS, 0x56, 0x41, 0x03));
   return concat(chunks);
+}
+
+/** Várias vias na mesma transferência — cada uma já termina com corte. */
+export function encodeEscPosKitchenTickets(
+  jobs: Array<{ order: StaffOrder; groupName: string | null }>,
+): Uint8Array {
+  return concat(jobs.map((job) => encodeEscPosKitchenTicket(job.order, job.groupName)));
 }

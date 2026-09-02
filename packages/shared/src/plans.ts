@@ -62,6 +62,7 @@ export const PLANS: Record<
       "Tudo do Cardápio",
       "Equipe (até 5) + QR do garçom + PIN",
       "Pedido, parcial e Kanban",
+      "Estoque, receita e alerta de quantidade",
     ],
   },
 };

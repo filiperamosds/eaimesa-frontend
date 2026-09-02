@@ -31,6 +31,8 @@
 | Garçom encerra conta | 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false`; só caixa/dono |
 | Funcionário fora do turno | Escala na abertura do caixa; login inativo → 403 `STAFF_INACTIVE` (ADR-031) |
 | Painel acessa mesa/claim/close | 403 `PANEL_FORBIDDEN`; Kanban só com as categorias do membro |
+| Relatórios financeiros | Só dono + módulo `finance`; `venue_id` da sessão |
+| Estoque / receita | Só dono + módulo `inventory`; `venue_id` da sessão; pedido não é recusado por saldo |
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
 | PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React; limpar rotaciona para `laravel2.log` (não apaga) |
 | Eventos de integração | Body em `integration_events`; `meta.headers` **sem** token/Authorization/Cookie; listagem `/admin/integracoes` só cookie platform |
@@ -80,9 +82,9 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 
 ## CI / deploy
 
-- Senha FTP e demais secrets só em **GitHub Actions secrets**, nunca no git nem no `out/`.
-- `NEXT_PUBLIC_*` vai para o HTML no `pnpm build` (não é secret). Staging usa Variables do GitHub; ver [dev-setup](../ops/dev-setup.md) e [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
-- O job de `develop` apaga o diretório FTP de destino: o usuário FTP deve enxergar **somente** o `public_html` deste front.
+- Chave SSH e demais secrets só em **GitHub Actions secrets**, nunca no git nem no `out/`. Mesmos nomes da API (`SSH_PRIVATE_KEY`, `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_PORT`).
+- `NEXT_PUBLIC_*` vai para o HTML no `pnpm build` (não é secret). Staging usa Variables do GitHub; ver [dev-setup](../ops/dev-setup.md) e [ADR-038](../decisions/ADR-038-front-deploy-tarball-ssh.md).
+- O extract faz `rsync --delete` só na pasta do front (`REMOTE_TARGET_FRONT_*` / `FTP_SERVER_DIR_*`), não no home SSH inteiro.
 
 ## Nunca
 
@@ -94,4 +96,4 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - Tratar `?checkout=ok` como pagamento confirmado
 - Expor `/admin/logs`, `/admin/equipe` ou `/admin/integracoes` sem cookie `eaimesa_platform`
 - Impressora do estabelecimento exposta na internet (fase 2: agente outbound)
-- Commitar senha FTP, `.env` de staging ou `out/`
+- Commitar chave SSH, senha FTP, `.env` de staging ou `out/`

@@ -1,6 +1,6 @@
 "use client";
 
-import { planAllowsService } from "@eaimesa/shared";
+import { planAllowsService, venueHasModule } from "@eaimesa/shared";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import type { Session } from "../lib/types";
 
 const LINKS = [
   { href: "/painel/configuracoes/cardapio", label: "Cardápio", service: false, module: null },
+  { href: "/painel/configuracoes/estoque", label: "Estoque", service: true, module: "inventory" },
   { href: "/painel/configuracoes/bar", label: "Estabelecimento", service: false, module: null },
   { href: "/painel/configuracoes/mesas", label: "Mesas", service: false, module: null },
   { href: "/painel/configuracoes/chamada", label: "Chamada", service: false, module: null },
@@ -22,6 +23,7 @@ export function ConfiguracoesNav() {
   const path = usePathname();
   const [service, setService] = useState(true);
   const [financeOn, setFinanceOn] = useState(true);
+  const [inventoryOn, setInventoryOn] = useState(false);
 
   useEffect(() => {
     api<Session>("/v1/auth/me")
@@ -30,6 +32,7 @@ export function ConfiguracoesNav() {
         setService(svc);
         const mods = s.venue.modules;
         setFinanceOn(mods ? Boolean(mods.finance || mods.service_fee) : svc);
+        setInventoryOn(venueHasModule(s.venue, "inventory"));
       })
       .catch(() => undefined);
   }, []);
@@ -37,6 +40,7 @@ export function ConfiguracoesNav() {
   const links = LINKS.filter((l) => {
     if (l.service && !service) return false;
     if (l.module === "finance" && !financeOn) return false;
+    if (l.module === "inventory" && !inventoryOn) return false;
     return true;
   });
 

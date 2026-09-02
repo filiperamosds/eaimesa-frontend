@@ -28,6 +28,7 @@ const COLS: Record<number, string> = {
   3: "grid-cols-3",
   4: "grid-cols-4",
   5: "grid-cols-5",
+  6: "grid-cols-3",
 };
 
 /** Rotas só do Auto atendimento — Cardápio é redirecionado. */
@@ -35,6 +36,8 @@ const SERVICE_ONLY_PREFIXES = [
   "/painel/pedidos",
   "/painel/financeiro",
   "/painel/caixa",
+  "/painel/estoque",
+  "/painel/configuracoes/estoque",
   "/painel/equipe",
   "/painel/configuracoes/equipe",
   "/painel/bar/equipe",
@@ -106,7 +109,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
       });
 
   return (
-    <div className={`min-h-screen ${panel || links.length === 0 ? "pb-0" : "pb-24 sm:pb-0"}`}>
+    <div className={`min-h-screen ${panel || links.length === 0 ? "pb-0" : links.length > 5 ? "pb-32 sm:pb-0" : "pb-24 sm:pb-0"}`}>
       <header className="sticky top-0 z-30 border-b border-line/80 bg-card/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[88rem] items-center justify-between px-5 py-3">
           <Logo href={homeForSession(me)} />

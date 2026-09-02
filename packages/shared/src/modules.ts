@@ -12,6 +12,7 @@ export const MODULE_KEYS = [
   "tabs_closing",
   "finance",
   "service_fee",
+  "inventory",
 ] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
@@ -37,6 +38,7 @@ export const MODULES: Record<ModuleKey, ModuleMeta> = {
   tabs_closing: { key: "tabs_closing", label: "Encerramento de comanda", type: "config", group: "config" },
   finance: { key: "finance", label: "Financeiro", type: "use", group: "operacao" },
   service_fee: { key: "service_fee", label: "Taxa de serviço", type: "config", group: "config" },
+  inventory: { key: "inventory", label: "Estoque", type: "use", group: "operacao" },
 };
 
 export const MODULE_GROUP_LABEL: Record<ModuleGroup, string> = {

@@ -4,6 +4,7 @@ import { memberRoleLabel, PLAN_BAR_MAX_STAFF, type MemberRole } from "@eaimesa/s
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { CatalogCategory, StaffMember } from "../lib/types";
+import { CategoryChecklist } from "./category-checklist";
 
 type StaffPayload = {
   staff: StaffMember[];
@@ -13,49 +14,6 @@ type StaffPayload = {
 
 function memberRoleValue(role: StaffMember["role"]): MemberRole {
   return role === "cashier" || role === "panel" ? role : "staff";
-}
-
-function CategoryChecklist({
-  categories,
-  selected,
-  onChange,
-}: {
-  categories: CatalogCategory[];
-  selected: string[];
-  onChange: (ids: string[]) => void;
-}) {
-  if (categories.length === 0) {
-    return (
-      <p className="text-sm text-ink-soft">
-        Cadastre categorias no cardápio para escolher o que chega neste Kanban.
-      </p>
-    );
-  }
-  return (
-    <ul className="grid gap-2 sm:grid-cols-2">
-      {categories.map((cat) => {
-        const checked = selected.includes(cat.id);
-        return (
-          <li key={cat.id}>
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-chili"
-                checked={checked}
-                onChange={() => {
-                  onChange(checked ? selected.filter((id) => id !== cat.id) : [...selected, cat.id]);
-                }}
-              />
-              <span>
-                {cat.name}
-                {cat.active ? null : <span className="text-ink-soft"> (oculta)</span>}
-              </span>
-            </label>
-          </li>
-        );
-      })}
-    </ul>
-  );
 }
 
 export function StaffEditor() {
@@ -69,6 +27,7 @@ export function StaffEditor() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MemberRole>("staff");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [printViaGroups, setPrintViaGroups] = useState(false);
 
   async function load() {
     const [team, catalog] = await Promise.all([
@@ -90,7 +49,7 @@ export function StaffEditor() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (role === "panel" && categoryIds.length === 0) {
+    if (role === "panel" && !printViaGroups && categoryIds.length === 0) {
       setError("Selecione ao menos uma categoria para o Kanban deste painel.");
       return;
     }
@@ -101,13 +60,15 @@ export function StaffEditor() {
           name,
           email,
           role,
-          categoryIds: role === "panel" ? categoryIds : undefined,
+          categoryIds: role === "panel" ? (printViaGroups ? categories.map((c) => c.id) : categoryIds) : undefined,
+          printViaGroups: role === "panel" ? printViaGroups : undefined,
         }),
       });
       setName("");
       setEmail("");
       setRole("staff");
       setCategoryIds([]);
+      setPrintViaGroups(false);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível criar.");
@@ -175,6 +136,23 @@ export function StaffEditor() {
     }
   }
 
+  async function changePrintViaGroups(row: StaffMember, next: boolean) {
+    setError(null);
+    try {
+      const body: { printViaGroups: boolean; categoryIds?: string[] } = { printViaGroups: next };
+      if (next) {
+        body.categoryIds = categories.map((c) => c.id);
+      }
+      await api(`/v1/owner/staff/${row.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível atualizar a impressão.");
+    }
+  }
+
   async function remove(id: string) {
     if (!confirm("Remover esta pessoa? Ela não poderá mais entrar.")) return;
     setError(null);
@@ -218,7 +196,10 @@ export function StaffEditor() {
             onChange={(e) => {
               const next = e.target.value as MemberRole;
               setRole(next);
-              if (next !== "panel") setCategoryIds([]);
+              if (next !== "panel") {
+                setCategoryIds([]);
+                setPrintViaGroups(false);
+              }
             }}
           >
             <option value="staff">Garçom</option>
@@ -238,13 +219,36 @@ export function StaffEditor() {
           <div className="space-y-2">
             <p className="text-sm font-medium">Categorias deste Kanban</p>
             <p className="text-sm text-ink-soft">
-              Cozinha e bar são monitores separados: marque só o que esta tela deve receber.
+              {printViaGroups
+                ? "Impressão via grupos: as categorias ficam travadas. A térmica usa os grupos do estabelecimento."
+                : "Cozinha e bar são monitores separados: marque só o que esta tela deve receber."}
             </p>
             <CategoryChecklist
               categories={categories}
-              selected={categoryIds}
+              selected={printViaGroups ? categories.map((c) => c.id) : categoryIds}
               onChange={setCategoryIds}
+              disabled={printViaGroups}
+              emptyHint="Cadastre categorias no cardápio para escolher o que chega neste Kanban."
             />
+            <label className="flex cursor-pointer items-start gap-2 pt-1 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-chili"
+                checked={printViaGroups}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setPrintViaGroups(on);
+                  if (on) setCategoryIds(categories.map((c) => c.id));
+                }}
+              />
+              <span>
+                <span className="font-medium">Imprimir via grupos</span>
+                <span className="mt-0.5 block text-ink-soft">
+                  Usa os grupos de impressão do estabelecimento (via + corte). Sem isso, imprime
+                  só os itens deste Kanban numa via só.
+                </span>
+              </span>
+            </label>
           </div>
         ) : null}
         <button type="submit" className="btn-primary !py-2 text-sm">
@@ -307,11 +311,36 @@ export function StaffEditor() {
               {memberRoleValue(row.role) === "panel" ? (
                 <div className="border-t border-line/70 pt-3">
                   <p className="mb-2 text-sm font-medium">Categorias deste Kanban</p>
+                  {row.printViaGroups ? (
+                    <p className="mb-2 text-sm text-ink-soft">
+                      Travadas enquanto a impressão via grupos estiver ligada.
+                    </p>
+                  ) : null}
                   <CategoryChecklist
                     categories={categories}
-                    selected={row.categoryIds ?? []}
+                    selected={
+                      row.printViaGroups === true
+                        ? categories.map((c) => c.id)
+                        : (row.categoryIds ?? [])
+                    }
                     onChange={(ids) => void changeCategories(row, ids)}
+                    disabled={row.printViaGroups === true}
+                    emptyHint="Cadastre categorias no cardápio para escolher o que chega neste Kanban."
                   />
+                  <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-chili"
+                      checked={row.printViaGroups === true}
+                      onChange={() => void changePrintViaGroups(row, !(row.printViaGroups === true))}
+                    />
+                    <span>
+                      <span className="font-medium">Imprimir via grupos</span>
+                      <span className="mt-0.5 block text-ink-soft">
+                        A térmica aplica os grupos do estabelecimento sobre os itens desta estação.
+                      </span>
+                    </span>
+                  </label>
                 </div>
               ) : null}
             </li>

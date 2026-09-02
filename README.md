@@ -18,7 +18,7 @@ Site: http://localhost:3000 — o browser chama `NEXT_PUBLIC_API_URL` (Laravel).
 
 ## Estático (Hostinger)
 
-Staging: push em `develop` → `FTP_SERVER_DIR_DEV`. Produção: push em `main` → `FTP_SERVER_DIR_PRD`. Setup: [`docs/ops/dev-setup.md`](docs/ops/dev-setup.md). ADR: [`docs/decisions/ADR-017-github-actions-hostinger.md`](docs/decisions/ADR-017-github-actions-hostinger.md).
+Staging: push em `develop` → tarball SSH na pasta DEV. Produção: push em `main` → pasta PRD. Setup: [`docs/ops/dev-setup.md`](docs/ops/dev-setup.md). ADR: [`docs/decisions/ADR-038-front-deploy-tarball-ssh.md`](docs/decisions/ADR-038-front-deploy-tarball-ssh.md).
 
 Branch padrão **`develop`**. `main` só com PR explícito.
 
@@ -28,7 +28,7 @@ Branch padrão **`develop`**. `main` (prod) só com PR explícito.
 pnpm build
 ```
 
-Sai em `out/`. O `.htaccess` é copiado do `public/` no build. No FileZilla, se o upload for manual, ative “mostrar arquivos ocultos”, senão o QR `/{slug}/c/{token}` cai no 404 da Hostinger.
+Sai em `out/`. O `.htaccess` é copiado do `public/` no build. O Actions empacota `out/` e extrai por SSH; se o upload for manual no FileZilla, ative “mostrar arquivos ocultos”, senão o QR `/{slug}/c/{token}` cai no 404 da Hostinger.
 
 No painel Hostinger, desative página de erro 404 personalizada (a do skate) se ela sobrescrever o `.htaccess`.
 

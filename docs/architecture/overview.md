@@ -51,10 +51,13 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel` | Redirect pedidos ou configurações/cardápio conforme o plano |
 | `/painel/pedidos` | Kanban do dono (tudo) ou do perfil Painel (filtrado por categoria) |
 | `/painel/caixa` | Caixa (abrir/fechar turno) — penúltimo item da nav do painel |
-| `/painel/financeiro` | Relatório financeiro — último item da nav do painel |
+| `/painel/financeiro` | Faturamento + Relatórios (fatia 20) |
+| `/painel/estoque` | Redirect → `/painel/configuracoes/estoque` |
+| `/painel/financeiro/relatorios` | Dashboard operacional, pedidos, comandas, itens, turnos, equipe |
 | `/painel/mesas` | Redirect → `/painel/configuracoes/mesas` |
-| `/painel/configuracoes` | Hub: cardápio, bar, mesas, chamada, equipe, responsável |
-| `/painel/configuracoes/cardapio` | CRUD do cardápio |
+| `/painel/configuracoes` | Hub: cardápio, estoque, bar, mesas, chamada, equipe, responsável |
+| `/painel/configuracoes/cardapio` | CRUD do cardápio; **Editar** abre dialog (foto, detalhes, receita) com um Salvar |
+| `/painel/configuracoes/estoque` | Insumos, saldo e alerta (fatia 21) — módulo `inventory` |
 | `/painel/configuracoes/bar` | Nome, slug, térmica (checkbox + configurar impressora) e encerramento; um Salvar |
 | `/painel/configuracoes/mesas` | Mesas (CRUD + QR fixo) — Cardápio e Auto |
 | `/painel/configuracoes/chamada` | Ligar/desligar “Chamar garçom” + TTL (ADR-026) |
@@ -87,8 +90,8 @@ Não existem `apps/guest` nem `apps/staff`.
 |-----|-----|-------|
 | `local` | MySQL 8 + **dois terminais**: backend `:8000`, frontend `:3000` | `pnpm dev` |
 | `cursor-cloud` | MySQL nativo (apt) via `.cursor/environment.json`; sem Docker | `pnpm dev` |
-| `staging` | Piloto 1 bar | GitHub Actions em `develop` → `FTP_SERVER_DIR_DEV` ([ADR-017](../decisions/ADR-017-github-actions-hostinger.md)) |
-| `prod` | SaaS | GitHub Actions em `main` → `FTP_SERVER_DIR_PRD`. Só PR explícito |
+| `staging` | Piloto 1 bar | GitHub Actions em `develop` → tarball SSH na pasta DEV ([ADR-038](../decisions/ADR-038-front-deploy-tarball-ssh.md)) |
+| `prod` | SaaS | GitHub Actions em `main` → pasta PRD. Só PR explícito |
 
 Setup: [docs/ops/dev-setup.md](../ops/dev-setup.md).
 

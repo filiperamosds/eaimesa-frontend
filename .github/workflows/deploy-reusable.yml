@@ -1,14 +1,14 @@
 # Reuso interno. Não dispara sozinho.
 # Callers: deploy-develop.yml, deploy-main.yml
-# Ver docs/ops/dev-setup.md e docs/decisions/ADR-017-github-actions-hostinger.md
+# Ver docs/ops/dev-setup.md e docs/decisions/ADR-038-front-deploy-tarball-ssh.md
 
 name: Deploy Hostinger (reusable)
 
 on:
   workflow_call:
     inputs:
-      ftp_dir:
-        description: Destino FTP (variable FTP_SERVER_DIR_DEV ou _PRD)
+      remote_dir:
+        description: Pasta no servidor (REMOTE_TARGET_FRONT_* ou FTP_SERVER_DIR_*)
         required: true
         type: string
       app_url:
@@ -22,14 +22,15 @@ on:
 
 concurrency:
   group: deploy-${{ github.ref_name }}
-  cancel-in-progress: true
+  # Extract a meio deixa HTML a meio; não cancelar.
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
   build-and-deploy:
-    name: Build e FTP (${{ github.ref_name }})
+    name: Build e SSH (${{ github.ref_name }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -37,6 +38,10 @@ jobs:
       NEXT_PUBLIC_API_URL: ${{ inputs.api_url }}
       API_URL: ${{ inputs.api_url }}
       STATIC_SLUGS: ${{ vars.STATIC_SLUGS }}
+      DEPLOY_HOST: ${{ vars.REMOTE_HOST }}
+      DEPLOY_USER: ${{ vars.REMOTE_USER }}
+      DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,25 +53,45 @@ jobs:
           [ -n "$NEXT_PUBLIC_API_URL" ] || { echo "Falta API_URL deste ambiente"; missing=1; }
           exit "$missing"
 
-      - name: Conferir secrets FTP
+      - name: Validar SSH e pasta remota
         env:
-          FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_SERVER_DIR: ${{ inputs.ftp_dir }}
+          H: ${{ env.DEPLOY_HOST }}
+          U: ${{ env.DEPLOY_USER }}
+          K: ${{ env.DEPLOY_KEY }}
+          D: ${{ inputs.remote_dir }}
         run: |
           missing=0
-          [ -n "$FTP_SERVER" ] || { echo "Falta secret/variable FTP_SERVER"; missing=1; }
-          [ -n "$FTP_USERNAME" ] || { echo "Falta secret FTP_USERNAME"; missing=1; }
-          [ -n "$FTP_PASSWORD" ] || { echo "Falta secret FTP_PASSWORD"; missing=1; }
-          [ -n "$FTP_SERVER_DIR" ] || { echo "Falta FTP_SERVER_DIR deste ambiente"; missing=1; }
+          if [ -z "$H" ] || [ -z "$U" ] || [ -z "$K" ]; then
+            echo "::error::Defina SSH_PRIVATE_KEY, REMOTE_HOST (ou FTP_SERVER) e REMOTE_USER — os mesmos do repo da API."
+            missing=1
+          fi
+          if [ -n "$K" ]; then
+            case "$K" in
+              *BEGIN*OPENSSH*PRIVATE*KEY*) ok=1 ;;
+              *BEGIN*RSA*PRIVATE*KEY*) ok=1 ;;
+              *BEGIN*EC*PRIVATE*KEY*) ok=1 ;;
+              *) ok=0 ;;
+            esac
+            if [ "${ok:-0}" != 1 ]; then
+              echo "::error::SSH_PRIVATE_KEY deve incluir o bloco PEM (BEGIN … PRIVATE KEY até END …)."
+              missing=1
+            fi
+          fi
+          if [ -z "$D" ]; then
+            echo "::error::Falta a pasta remota (REMOTE_TARGET_FRONT_* ou FTP_SERVER_DIR_*)."
+            missing=1
+          fi
+          if [[ "$H" == *://* ]] || [[ "$H" == */* ]]; then
+            echo "::error::REMOTE_HOST deve ser só IP ou hostname (sem caminho)."
+            missing=1
+          fi
           [ "$missing" -eq 0 ] || exit 1
-          d="${FTP_SERVER_DIR}"
+          d="$D"
           d="${d%"${d##*[![:space:]]}"}"
           d="${d#"${d%%[![:space:]]*}"}"
-          d="${d%/}/"
-          echo "FTP_REMOTE_DIR=$d" >> "$GITHUB_ENV"
-          echo "FTP destino: $d"
+          d="${d%/}"
+          echo "REMOTE_TARGET_FRONT=$d" >> "$GITHUB_ENV"
+          echo "Deploy SSH → $H:$d (branch ${GITHUB_REF_NAME})"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -91,22 +116,63 @@ jobs:
           test -f out/index.html
           test -f out/.htaccess
 
-      - name: Preparar pastas FTP
-        env:
-          FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-        run: python3 scripts/ftp-prepare.py
+      - name: Pack out/
+        run: |
+          tar -czf "$RUNNER_TEMP/front-deploy.tgz" -C out .
+          cp "$RUNNER_TEMP/front-deploy.tgz" "$GITHUB_WORKSPACE/front-deploy.tgz"
+          ls -lh "$GITHUB_WORKSPACE/front-deploy.tgz"
 
-      - name: Deploy FTP (Hostinger)
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+      - name: Upload bundle
+        uses: appleboy/scp-action@v0.1.7
         with:
-          server: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          local-dir: ./out/
-          server-dir: ${{ env.FTP_REMOTE_DIR }}
-          dangerous-clean-slate: false
-          timeout: 1200000
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          port: ${{ vars.REMOTE_PORT }}
+          timeout: 5m
+          source: front-deploy.tgz
+          target: ${{ env.REMOTE_TARGET_FRONT }}
+
+      - name: Extract on server
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          REMOTE_PATH: ${{ env.REMOTE_TARGET_FRONT }}
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          port: ${{ vars.REMOTE_PORT }}
+          timeout: 2m
+          command_timeout: 10m
+          envs: REMOTE_PATH
+          script: |
+            set -euo pipefail
+            if [ -d "$REMOTE_PATH" ]; then
+              cd "$REMOTE_PATH"
+            elif [ -d "$HOME/$REMOTE_PATH" ]; then
+              cd "$HOME/$REMOTE_PATH"
+            else
+              mkdir -p "$HOME/$REMOTE_PATH"
+              cd "$HOME/$REMOTE_PATH"
+            fi
+            DEST="$(pwd)"
+            test -f front-deploy.tgz || { echo "Falta front-deploy.tgz em $DEST"; ls -la; exit 1; }
+
+            RELEASE="$DEST/.release-front"
+            rm -rf "$RELEASE"
+            mkdir -p "$RELEASE"
+            tar -xzf front-deploy.tgz -C "$RELEASE"
+            rm -f front-deploy.tgz
+
+            if command -v rsync >/dev/null 2>&1; then
+              rsync -a --delete \
+                --exclude '.release-front' \
+                --exclude 'cgi-bin' \
+                --exclude '.well-known' \
+                "$RELEASE"/ "$DEST"/
+            else
+              cp -a "$RELEASE"/. "$DEST"/
+            fi
+            rm -rf "$RELEASE"
+            test -f "$DEST/index.html"
+            echo "Front extraído em $DEST"

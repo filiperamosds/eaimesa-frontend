@@ -1,10 +1,11 @@
 "use client";
 
-import { formatBrlFromCents } from "@eaimesa/shared";
+import { formatBrlFromCents, venueHasModule, type RecipeLine, type StockItem } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError, apiUpload } from "../lib/api";
 import { mediaSrc } from "../lib/media";
-import type { CatalogCategory } from "../lib/types";
+import type { CatalogCategory, Session } from "../lib/types";
+import { ItemEditDialog } from "./item-edit-dialog";
 import { MoneyField } from "./masked-fields";
 
 export function CatalogEditor() {
@@ -12,10 +13,31 @@ export function CatalogEditor() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newCat, setNewCat] = useState("");
+  const [inventoryOn, setInventoryOn] = useState(false);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [recipes, setRecipes] = useState<Record<string, RecipeLine[]>>({});
+
+  async function loadInventory() {
+    const me = await api<Session>("/v1/auth/me");
+    if (!venueHasModule(me.venue, "inventory")) {
+      setInventoryOn(false);
+      return;
+    }
+    setInventoryOn(true);
+    const [stock, rec] = await Promise.all([
+      api<{ items: StockItem[] }>("/v1/owner/stock/items"),
+      api<{ recipes: { catalogItemId: string; lines: RecipeLine[] }[] }>("/v1/owner/stock/recipes"),
+    ]);
+    setStockItems(stock.items);
+    const map: Record<string, RecipeLine[]> = {};
+    for (const r of rec.recipes) map[r.catalogItemId] = r.lines;
+    setRecipes(map);
+  }
 
   async function load() {
     const data = await api<{ categories: CatalogCategory[] }>("/v1/owner/catalog");
     setCategories(data.categories);
+    await loadInventory().catch(() => undefined);
   }
 
   useEffect(() => {
@@ -65,6 +87,9 @@ export function CatalogEditor() {
           category={cat}
           onChange={load}
           onError={setError}
+          inventoryOn={inventoryOn}
+          stockItems={stockItems}
+          recipes={recipes}
         />
       ))}
     </div>
@@ -75,10 +100,16 @@ function CategoryBlock({
   category,
   onChange,
   onError,
+  inventoryOn,
+  stockItems,
+  recipes,
 }: {
   category: CatalogCategory;
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
+  inventoryOn: boolean;
+  stockItems: StockItem[];
+  recipes: Record<string, RecipeLine[]>;
 }) {
   const [name, setName] = useState(category.name);
   const [itemName, setItemName] = useState("");
@@ -176,7 +207,15 @@ function CategoryBlock({
       </div>
       <ul className="mt-4 divide-y divide-line">
         {category.items.map((item) => (
-          <ItemRow key={item.id} item={item} onChange={onChange} onError={onError} />
+          <ItemRow
+            key={item.id}
+            item={item}
+            onChange={onChange}
+            onError={onError}
+            inventoryOn={inventoryOn}
+            stockItems={stockItems}
+            recipe={recipes[item.id] ?? []}
+          />
         ))}
       </ul>
       <form onSubmit={addItem} className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -219,46 +258,19 @@ function ItemRow({
   item,
   onChange,
   onError,
+  inventoryOn,
+  stockItems,
+  recipe,
 }: {
   item: CatalogCategory["items"][number];
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
+  inventoryOn: boolean;
+  stockItems: StockItem[];
+  recipe: RecipeLine[];
 }) {
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(item.name);
-  const [description, setDescription] = useState(item.description ?? "");
-  const [priceCents, setPriceCents] = useState<number | null>(item.priceCents);
   const photo = mediaSrc(item.imageUrl);
-
-  async function save() {
-    const cents = priceCents;
-    if (cents === null) {
-      onError("Informe o preço (ex. R$ 12,50).");
-      return;
-    }
-    onError(null);
-    try {
-      await api(`/v1/owner/catalog/items/${item.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ name, description: description || null, priceCents: cents }),
-      });
-      setEditing(false);
-      await onChange();
-    } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao salvar item.");
-    }
-  }
-
-  async function onPhoto(file: File | undefined) {
-    if (!file) return;
-    onError(null);
-    try {
-      await apiUpload(`/v1/owner/catalog/items/${item.id}/image`, file);
-      await onChange();
-    } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao enviar foto.");
-    }
-  }
 
   async function toggle() {
     onError(null);
@@ -284,77 +296,48 @@ function ItemRow({
     }
   }
 
-  if (editing) {
-    return (
-      <li className="grid gap-2 py-3">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="field"
-        />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Descrição"
-          rows={4}
-          maxLength={280}
-          className="field"
-        />
-        <MoneyField cents={priceCents} onCentsChange={setPriceCents} className="field" required />
-        <div className="flex gap-2">
-          <button type="button" onClick={save} className="text-sm font-medium text-sage">
-            Salvar
-          </button>
-          <button type="button" onClick={() => setEditing(false)} className="text-sm text-ink-soft">
-            Cancelar
-          </button>
-        </div>
-      </li>
-    );
-  }
-
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        {photo ? (
-          <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
-        ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-paper-2 text-[10px] text-ink-soft">
-            sem foto
-          </span>
-        )}
-        <div>
-          <p className={item.active ? "" : "text-ink-soft line-through"}>
-            {item.name}
-            {!item.active ? <span className="ml-2 text-xs">oculto</span> : null}
-          </p>
-          {item.description ? <p className="text-sm text-ink-soft">{item.description}</p> : null}
+    <li className="py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-3">
+          {photo ? (
+            <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+          ) : (
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-paper-2 text-[10px] text-ink-soft">
+              sem foto
+            </span>
+          )}
+          <div>
+            <p className={item.active ? "" : "text-ink-soft line-through"}>
+              {item.name}
+              {!item.active ? <span className="ml-2 text-xs">oculto</span> : null}
+            </p>
+            {item.description ? <p className="text-sm text-ink-soft">{item.description}</p> : null}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="tabular-nums font-medium">{formatBrlFromCents(item.priceCents)}</span>
+          <button type="button" onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink">
+            Editar
+          </button>
+          <button type="button" onClick={toggle} className="text-ink-soft hover:text-ink">
+            {item.active ? "Ocultar" : "Mostrar"}
+          </button>
+          <button type="button" onClick={remove} className="text-chili">
+            Excluir
+          </button>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="tabular-nums font-medium">{formatBrlFromCents(item.priceCents)}</span>
-        <label className="cursor-pointer text-ink-soft hover:text-ink">
-          Foto
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={(e) => {
-              void onPhoto(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
-        </label>
-        <button type="button" onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink">
-          Editar
-        </button>
-        <button type="button" onClick={toggle} className="text-ink-soft hover:text-ink">
-          {item.active ? "Ocultar" : "Mostrar"}
-        </button>
-        <button type="button" onClick={remove} className="text-chili">
-          Excluir
-        </button>
-      </div>
+      {editing ? (
+        <ItemEditDialog
+          item={item}
+          inventoryOn={inventoryOn}
+          stockItems={stockItems}
+          recipe={recipe}
+          onSaved={onChange}
+          onClose={() => setEditing(false)}
+        />
+      ) : null}
     </li>
   );
 }

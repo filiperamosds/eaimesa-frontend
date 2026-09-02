@@ -8,7 +8,7 @@ Fila do estabelecimento na tela. O dono (depois o garçom) vê os pedidos em col
 - Abas visíveis no topo: Pedidos | Configurações (plano Cardápio: só Configurações). Mesas ficam em Configurações → Mesas.
 - Pedido de **balcão** na comanda da mesa (`/garcom`; preço snapshot no servidor)
 - Mudança de status: `pending` → `preparing` → `delivered` (e `cancelled`; `accepted` legado cai em Preparando)
-- API `GET/POST /v1/owner/orders` e `PATCH /v1/owner/orders/{id}`
+- API `GET/POST /v1/owner/orders` e `PATCH /v1/owner/orders/{id}`. O GET some pedidos cuja mesa já foi encerrada.
 - Seed local: **Seu Estabelecimento** (plano Cardápio) — sem pedidos demo
 
 O cardápio público `/{slug}` **não** tem pedidos — só o painel autenticado.
@@ -44,7 +44,7 @@ Não há coluna Aceitos. `accepted` permanece no banco e na API; no board entra 
 - Tempo desde a criação
 - Itens (qty × nome) e total
 - Nota do pedido, se houver
-- **Imprimir** (ESC/POS USB). Auto-print liga no card em Configurações → Estabelecimento; **Configurar impressora** autoriza a POS80 neste Chrome (não depende do Salvar).
+- **Imprimir** (ESC/POS USB). Auto-print liga no card em Configurações → Estabelecimento; **Configurar impressora** autoriza a POS80 neste Chrome (não depende do Salvar). Com **grupos de impressão**, cada grupo sai numa via com corte ([fatia 19](fatia-19-grupos-impressao.md)).
 
 Toque no card expande os itens. Botões avançam o status (mais confiável no celular que arrastar).
 

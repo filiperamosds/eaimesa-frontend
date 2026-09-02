@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–18)
+## Implementado (fatias 1–21)
 
 ### Saúde
 
@@ -25,7 +25,7 @@ CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
 ### Auth estabelecimento (dono e garçom)
 
-Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`. Garçom, caixa e painel compartilham JWT `staff`; o perfil está em `member.role` (`staff` | `cashier` | `panel`). Painel: `redirectPath` `/painel/pedidos` e `member.categoryIds`.
+Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owner | staff`. Garçom, caixa e painel compartilham JWT `staff`; o perfil está em `member.role` (`staff` | `cashier` | `panel`). Painel: `redirectPath` `/painel/pedidos`, `member.categoryIds` e `member.printViaGroups`.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
@@ -181,7 +181,7 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Nome, slug, public_id, status, `staffCanCloseTabs`, `requireShiftOnOpenCash` |
+| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `printGroups`, …) |
 | PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, representative? }` |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
@@ -192,6 +192,31 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 | POST | `/v1/owner/catalog/items/{id}/image` | multipart `file` (JPG/PNG/WebP, máx. 2 MB) |
 | DELETE | `/v1/owner/catalog/items/{id}` | remove item |
 | GET | `/v1/uploads/{file}` | — | Foto enviada (público, nome UUID) |
+
+### Owner — grupos de impressão (fatia 19)
+
+Auth: cookie `eaimesa_owner`. Plano Auto atendimento (`service.plan`). [ADR-035](../decisions/ADR-035-grupos-impressao.md).
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/owner/print-groups` | `{ groups: [{ id, name, sortOrder, categoryIds }] }` |
+| PUT | `/v1/owner/print-groups` | Substitui a lista. `{ groups: [{ name, categoryIds }] }` (0–12) |
+
+`printGroups` também entra no venue serializado (`GET /v1/owner/venue`, `GET /v1/auth/me`). PUT vazio (`{ "groups": [] }`) volta à via única. Cada grupo: nome 1–40, ≥1 categoria **deste** venue. Categoria pode repetir em grupos. Grupo sem categorias / UUID de outro bar → 400 `VALIDATION_ERROR`. Máximo 12 → 400.
+
+#### PUT /v1/owner/print-groups (body)
+
+```json
+{
+  "groups": [
+    { "name": "Cozinha", "categoryIds": ["uuid-petiscos", "uuid-porcoes"] },
+    { "name": "Drinks", "categoryIds": ["uuid-drinks"] },
+    { "name": "Bebidas", "categoryIds": ["uuid-bebidas"] }
+  ]
+}
+```
+
+No Kanban que não é Painel, cada grupo com itens vira uma via ESC/POS com corte. Item fora dos grupos → via **Outros**.
 
 #### POST /v1/owner/catalog/items (body)
 
@@ -217,7 +242,7 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`) |
+| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`; some se a mesa foi encerrada) |
 | POST | `/v1/owner/orders` | Pedido de balcão (opcional `tabId`); snapshot de preço |
 | PATCH | `/v1/owner/orders/{id}` | `{ status }` |
 
@@ -258,14 +283,14 @@ Rótulo único por venue. `TABLE_LIMIT` se já houver 15 ativas. `TABLE_LABEL_TA
 
 ### Owner — equipe (fatia 4)
 
-Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
+Auth: cookie `eaimesa_owner`. Limite: **5 membros ativos** (garçom + caixa + painel). `role`: `staff` (garçom, default) | `cashier` (caixa) | `panel` (Kanban da estação). Caixa vê `/garcom` e sempre encerra. Painel vê só `/painel/pedidos` filtrado por `categoryIds` (mínimo 1 categoria do cardápio). Painel pode ligar `printViaGroups` para a térmica usar os grupos do estabelecimento; no cadastro, isso trava o checklist de categorias. [ADR-021](../decisions/ADR-021-caixa-encerra-comanda.md), [ADR-024](../decisions/ADR-024-kanban-painel-categorias.md), [ADR-035](../decisions/ADR-035-grupos-impressao.md). Brief Laravel: [backend-kanban-painel.md](backend-kanban-painel.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/staff` | Lista equipe + `role` + `categoryIds` + `invitePending` |
-| POST | `/v1/owner/staff` | `{ name, email, role?, categoryIds? }` — sem senha; envia convite |
+| GET | `/v1/owner/staff` | Lista equipe + `role` + `categoryIds` + `printViaGroups` + `invitePending` |
+| POST | `/v1/owner/staff` | `{ name, email, role?, categoryIds?, printViaGroups? }` — sem senha; envia convite |
 | POST | `/v1/owner/staff/{id}/resend-invite` | Reenvia o link |
-| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role?, categoryIds? }` |
+| PATCH | `/v1/owner/staff/{id}` | `{ name?, active?, password?, role?, categoryIds?, printViaGroups? }` |
 | DELETE | `/v1/owner/staff/{id}` | Remove o membro |
 
 ### Auth garçom
@@ -302,7 +327,41 @@ O conferido no fechar caixa **já nasce preenchido** com o esperado. O caixa cor
 
 `GET /v1/owner/finance/summary?groupBy=waiter`: taxa de serviço por quem abriu a mesa (`serviceFeeCents`, `salesCents`, `tabs`). KPI `serviceFeeCents` no summary. [ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md).
 
+### Owner — financeiro e relatórios (fatias 17 e 20)
+
+Auth: cookie `eaimesa_owner`. Gate `module:finance`. UI: `/painel/financeiro` (Faturamento + Relatórios). [ADR-036](../decisions/ADR-036-relatorios-estabelecimento.md).
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/owner/finance/summary` | `?from&to&groupBy=day\|method\|table\|waiter` — KPIs incluem `courtesyCents`, `discountCents`, `netCents` |
+| GET | `/v1/owner/finance/top-items` | `?from&to&limit` |
+| GET | `/v1/owner/finance/export` | `?from&to` — CSV dos recebimentos |
+| GET | `/v1/owner/cash-sessions` | `?from&to` — turnos + `movementsCents` |
+| GET | `/v1/owner/reports/overview` | KPIs operacionais + período anterior + `byHour` (pico, Brasília) |
+| GET | `/v1/owner/reports/orders` | Histórico de pedidos (`status`, `source`, `tableId`, página) |
+| GET | `/v1/owner/reports/tabs` | Comandas fechadas (`hasBalance`, `method`, página) |
+| GET | `/v1/owner/reports/categories` | Venda por categoria |
+| GET | `/v1/owner/reports/export` | `?kind=orders\|tabs\|items\|payments` |
+
 `PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
+
+### Owner — estoque (fatia 21)
+
+Auth: cookie `eaimesa_owner`. Gate `module:inventory`. UI: Configurações → Estoque (`/painel/configuracoes/estoque`) + receita no dialog de editar o item do cardápio. [ADR-037](../decisions/ADR-037-estoque.md).
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/owner/stock/items` | Insumos (`?archived=1` inclui arquivados). Cada um: `quantity`, `alertQuantity`, `low`, `unit` |
+| POST | `/v1/owner/stock/items` | `{ name, unit, qty? \| packages+packageSize, alertQuantity? }` — 2×1000 g = 2000 |
+| PATCH | `/v1/owner/stock/items/{id}` | `{ name?, alertQuantity?, archived? }` |
+| DELETE | `/v1/owner/stock/items/{id}` | Só sem receita e sem movimento; senão 409 `STOCK_IN_USE` |
+| POST | `/v1/owner/stock/items/{id}/movements` | `{ type: in\|adjust, qty? \| packages+packageSize \| qtyDelta, note? }` |
+| GET | `/v1/owner/stock/alerts` | Insumos com `low`. `{ items, count }` |
+| GET | `/v1/owner/stock/recipes` | Todas as receitas do venue |
+| GET | `/v1/owner/catalog/items/{id}/recipe` | Linhas `{ stockItemId, name, unit, qty }` |
+| PUT | `/v1/owner/catalog/items/{id}/recipe` | `{ lines: [{ stockItemId, qty }] }` — vazio limpa |
+
+Pedido (guest/counter) baixa na criação; `cancelled` gera `sale_void`. Não há 409 por saldo. `STOCK_LIMIT` (200), `STOCK_NAME_TAKEN`, `STOCK_ITEM_NOT_FOUND`.
 
 ### Staff — fila (fatia 8)
 
@@ -310,7 +369,7 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); painel filtra por categoria |
+| GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); some se a mesa foi encerrada; painel filtra por categoria |
 | POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor. Painel: 403 |
 | PATCH | `/v1/staff/orders/{id}` | `{ status }` (pedido inteiro; painel só se o pedido tiver item da estação) |
 | GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda. Painel: 403 |
