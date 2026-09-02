@@ -38,9 +38,9 @@ jobs:
       NEXT_PUBLIC_API_URL: ${{ inputs.api_url }}
       API_URL: ${{ inputs.api_url }}
       STATIC_SLUGS: ${{ vars.STATIC_SLUGS }}
-      DEPLOY_HOST: ${{ secrets.REMOTE_HOST || vars.REMOTE_HOST || vars.FTP_SERVER || secrets.FTP_SERVER }}
-      DEPLOY_USER: ${{ secrets.REMOTE_USER || vars.REMOTE_USER }}
-      DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY || vars.SSH_PRIVATE_KEY }}
+      DEPLOY_HOST: ${{ vars.REMOTE_HOST }}
+      DEPLOY_USER: ${{ vars.REMOTE_USER }}
+      DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
     steps:
       - name: Checkout
@@ -128,7 +128,7 @@ jobs:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          port: ${{ vars.REMOTE_PORT == '' && 22 || vars.REMOTE_PORT }}
+          port: ${{ vars.REMOTE_PORT }}
           timeout: 5m
           source: front-deploy.tgz
           target: ${{ env.REMOTE_TARGET_FRONT }}
@@ -141,7 +141,7 @@ jobs:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          port: ${{ vars.REMOTE_PORT == '' && 22 || vars.REMOTE_PORT }}
+          port: ${{ vars.REMOTE_PORT }}
           timeout: 2m
           command_timeout: 10m
           envs: REMOTE_PATH
