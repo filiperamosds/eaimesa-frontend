@@ -44,7 +44,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 20 — relatórios do estabelecimento](fatia-20-relatorios.md).
+Implementação **agora**: [fatia 21 — estoque e receita](fatia-21-estoque.md).
 
 ### MVP (quando as fatias somarem)
 
@@ -52,6 +52,7 @@ Implementação **agora**: [fatia 20 — relatórios do estabelecimento](fatia-2
 - Planos com `kind` Cardápio ou Auto atendimento (SKUs extras no console); trial 7 dias
 - Cardápio CRUD (texto, preço no servidor)
 - Auto atendimento: mesas + claim + PIN + pedido guest + fila staff
+- Estoque: insumos, receita no item, alerta ([fatia 21](fatia-21-estoque.md))
 - Multi-tenant com `venue_id` em toda query
 - Billing: trial/vigência/suspensão; catálogo no banco; cartão no painel (token Asaas) ou PIX hosted
 

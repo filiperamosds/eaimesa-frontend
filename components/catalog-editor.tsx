@@ -1,10 +1,11 @@
 "use client";
 
-import { formatBrlFromCents } from "@eaimesa/shared";
+import { formatBrlFromCents, venueHasModule, type RecipeLine, type StockItem } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError, apiUpload } from "../lib/api";
 import { mediaSrc } from "../lib/media";
-import type { CatalogCategory } from "../lib/types";
+import type { CatalogCategory, Session } from "../lib/types";
+import { ItemRecipeEditor } from "./item-recipe-editor";
 import { MoneyField } from "./masked-fields";
 
 export function CatalogEditor() {
@@ -12,10 +13,31 @@ export function CatalogEditor() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newCat, setNewCat] = useState("");
+  const [inventoryOn, setInventoryOn] = useState(false);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [recipes, setRecipes] = useState<Record<string, RecipeLine[]>>({});
+
+  async function loadInventory() {
+    const me = await api<Session>("/v1/auth/me");
+    if (!venueHasModule(me.venue, "inventory")) {
+      setInventoryOn(false);
+      return;
+    }
+    setInventoryOn(true);
+    const [stock, rec] = await Promise.all([
+      api<{ items: StockItem[] }>("/v1/owner/stock/items"),
+      api<{ recipes: { catalogItemId: string; lines: RecipeLine[] }[] }>("/v1/owner/stock/recipes"),
+    ]);
+    setStockItems(stock.items);
+    const map: Record<string, RecipeLine[]> = {};
+    for (const r of rec.recipes) map[r.catalogItemId] = r.lines;
+    setRecipes(map);
+  }
 
   async function load() {
     const data = await api<{ categories: CatalogCategory[] }>("/v1/owner/catalog");
     setCategories(data.categories);
+    await loadInventory().catch(() => undefined);
   }
 
   useEffect(() => {
@@ -65,6 +87,9 @@ export function CatalogEditor() {
           category={cat}
           onChange={load}
           onError={setError}
+          inventoryOn={inventoryOn}
+          stockItems={stockItems}
+          recipes={recipes}
         />
       ))}
     </div>
@@ -75,10 +100,16 @@ function CategoryBlock({
   category,
   onChange,
   onError,
+  inventoryOn,
+  stockItems,
+  recipes,
 }: {
   category: CatalogCategory;
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
+  inventoryOn: boolean;
+  stockItems: StockItem[];
+  recipes: Record<string, RecipeLine[]>;
 }) {
   const [name, setName] = useState(category.name);
   const [itemName, setItemName] = useState("");
@@ -176,7 +207,15 @@ function CategoryBlock({
       </div>
       <ul className="mt-4 divide-y divide-line">
         {category.items.map((item) => (
-          <ItemRow key={item.id} item={item} onChange={onChange} onError={onError} />
+          <ItemRow
+            key={item.id}
+            item={item}
+            onChange={onChange}
+            onError={onError}
+            inventoryOn={inventoryOn}
+            stockItems={stockItems}
+            recipe={recipes[item.id] ?? []}
+          />
         ))}
       </ul>
       <form onSubmit={addItem} className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -219,10 +258,16 @@ function ItemRow({
   item,
   onChange,
   onError,
+  inventoryOn,
+  stockItems,
+  recipe,
 }: {
   item: CatalogCategory["items"][number];
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
+  inventoryOn: boolean;
+  stockItems: StockItem[];
+  recipe: RecipeLine[];
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(item.name);
@@ -314,7 +359,8 @@ function ItemRow({
   }
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-3">
+    <li className="grid gap-2 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-3">
         {photo ? (
           <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
@@ -355,6 +401,16 @@ function ItemRow({
           Excluir
         </button>
       </div>
+      </div>
+      {inventoryOn ? (
+        <ItemRecipeEditor
+          catalogItemId={item.id}
+          stockItems={stockItems}
+          lines={recipe}
+          onSaved={onChange}
+          onError={onError}
+        />
+      ) : null}
     </li>
   );
 }
