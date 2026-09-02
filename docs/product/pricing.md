@@ -18,6 +18,7 @@ O catálogo não está mais limitado a dois ids. Os seed:
 | Pedido no celular / comanda / Kanban | Não | Sim |
 | Staff | — | Até **5** |
 | Pedidos | — | Ilimitados |
+| Estoque / receita / alerta | Não | Sim ([fatia 21](fatia-21-estoque.md)) |
 | Térmica | Não | Não |
 
 SKUs extras no `/admin/planos` herdam o que o `kind` libera. Máximo **12** planos. Sem DELETE: unlist esconde da vitrine.

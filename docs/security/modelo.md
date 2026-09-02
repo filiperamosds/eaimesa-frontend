@@ -32,6 +32,7 @@
 | Funcionário fora do turno | Escala na abertura do caixa; login inativo → 403 `STAFF_INACTIVE` (ADR-031) |
 | Painel acessa mesa/claim/close | 403 `PANEL_FORBIDDEN`; Kanban só com as categorias do membro |
 | Relatórios financeiros | Só dono + módulo `finance`; `venue_id` da sessão |
+| Estoque / receita | Só dono + módulo `inventory`; `venue_id` da sessão; pedido não é recusado por saldo |
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
 | PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React; limpar rotaciona para `laravel2.log` (não apaga) |
 | Eventos de integração | Body em `integration_events`; `meta.headers` **sem** token/Authorization/Cookie; listagem `/admin/integracoes` só cookie platform |

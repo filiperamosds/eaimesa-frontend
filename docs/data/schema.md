@@ -210,6 +210,30 @@ Auditoria genérica de integrações (webhooks inbound primeiro). [ADR-027](../d
 
 Lista no console (`GET /v1/platform/integration-events`) **não** devolve `payload`/`meta`. Front: `/admin/integracoes`.
 
+## Entidades — fatia 21 (estoque)
+
+### StockItem (insumo)
+
+- `id`, `venue_id` → Venue
+- `name` (único no venue), `unit`: `g` | `ml` | `un`
+- `quantity` inteiro na unidade (pode ser negativo)
+- `alert_quantity` nullable — alerta se `quantity <= alert_quantity`
+- `archived_at` nullable, timestamps
+- Pacote (2 × 1000 g) só na entrada; o banco guarda 2000 g. [ADR-037](../decisions/ADR-037-estoque.md)
+
+### CatalogItemRecipe
+
+- `id`, `venue_id`, `catalog_item_id` → CatalogItem, `stock_item_id` → StockItem
+- `qty` — consumo por **1** unidade vendida, unique `(catalog_item_id, stock_item_id)`
+
+### StockMovement
+
+- `id`, `venue_id`, `stock_item_id`
+- `type`: `in` | `adjust` | `sale` | `sale_void`
+- `qty_delta` assinado; `note` nullable
+- `order_id`, `order_item_id` nullable; `created_by` nullable; `created_at`
+- Baixa na criação do pedido; cancelar gera `sale_void` com o que foi baixado
+
 ## Entidades — planejadas
 
 - **AuditLog** — `venue_id`, `actor_type`, `actor_id`, `action`, `metadata_json`
@@ -243,6 +267,10 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 - `integration_events(integration, event, created_at DESC)`
 - `integration_events(external_id)`
 - `integration_events(status, created_at DESC)`
+- `stock_items(venue_id, name)` UNIQUE
+- `catalog_item_recipes(catalog_item_id, stock_item_id)` UNIQUE
+- `stock_movements(venue_id, stock_item_id, created_at)`
+- `stock_movements(order_item_id, stock_item_id)`
 
 ## Regras de negócio
 
@@ -260,6 +288,7 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
 13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado) e em `venue_payment_methods` (até 5).
 14. Webhook autenticado grava `integration_events` (body + meta sanitizado); token nunca entra em `meta`.
+15. Estoque (módulo `inventory`): baixa na criação do pedido; cancelar estorna o `qty_delta` já gravado. Pedido não é recusado por saldo negativo.
 
 ## Planejado — fatia 15 (chamar garçom)
 
@@ -280,6 +309,11 @@ erDiagram
   Venue ||--o{ VenuePrintGroup : print_groups
   VenuePrintGroup ||--o{ CatalogCategory : categories
   CatalogCategory ||--o{ CatalogItem : contains
+  CatalogItem ||--o{ CatalogItemRecipe : recipe
+  Venue ||--o{ StockItem : inventory
+  StockItem ||--o{ CatalogItemRecipe : used_in
+  StockItem ||--o{ StockMovement : moves
+  OrderItem ||--o{ StockMovement : sale
   Venue ||--o{ VenueTable : has
   VenueTable ||--o{ TableSession : occupancy
   VenueTable ||--o{ PresenceSession : menu_scan

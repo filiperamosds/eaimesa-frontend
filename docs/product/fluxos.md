@@ -17,7 +17,7 @@ sequenceDiagram
   D->>W: /confirmar-email (código 6 dígitos)
   W->>API: POST /v1/auth/verify-email
   API-->>W: Set-Cookie eaimesa_owner + inicia trial
-  D->>W: /painel — Kanban de pedidos (nav: Pedidos, Mesas, Chamados, Caixa, Financeiro)
+  D->>W: /painel — Kanban de pedidos (nav: Pedidos, Mesas, Chamados, Caixa, Financeiro, Estoque)
   W->>API: GET /v1/owner/orders
   D->>W: /painel/configuracoes/cardapio — categorias e itens
   W->>API: CRUD /v1/owner/catalog/**
@@ -243,3 +243,10 @@ No Kanban (`/painel/pedidos`, `/garcom/pedidos`): auto-print liga em **Configura
 ## 5c. Relatórios (fatia 20)
 
 Em `/painel/financeiro`: **Faturamento** (dinheiro) e **Relatórios** (pedidos, comandas, itens, turnos, equipe). O período De/Até fica na URL. [fatia 20](fatia-20-relatorios.md).
+
+## 5d. Estoque (fatia 21)
+
+1. Dono em `/painel/estoque` cadastra o insumo (unidade `g`/`ml`/`un`) e entra pacotes (2 × 1000 g = 2000 g) com alerta.
+2. No cardápio, em cada item, a receita lista quanto aquele prato usa.
+3. Pedido (QR ou garçom) baixa `qty da receita × qty do pedido`. Cancelar devolve o que foi baixado.
+4. Saldo ≤ alerta → banner em Pedidos e em Estoque. Venda não trava. [ADR-037](../decisions/ADR-037-estoque.md).

@@ -11,6 +11,7 @@ export * from "./payer";
 export * from "./uuid";
 export * from "./plans";
 export * from "./modules";
+export * from "./inventory";
 export * from "./billing";
 export * from "./platform-logs";
 export * from "./platform-integration-events";

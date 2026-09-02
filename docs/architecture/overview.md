@@ -51,7 +51,8 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel` | Redirect pedidos ou configurações/cardápio conforme o plano |
 | `/painel/pedidos` | Kanban do dono (tudo) ou do perfil Painel (filtrado por categoria) |
 | `/painel/caixa` | Caixa (abrir/fechar turno) — penúltimo item da nav do painel |
-| `/painel/financeiro` | Faturamento + Relatórios (fatia 20) — último item da nav do painel |
+| `/painel/financeiro` | Faturamento + Relatórios (fatia 20) |
+| `/painel/estoque` | Insumos, saldo e alerta (fatia 21) — último item da nav do painel |
 | `/painel/financeiro/relatorios` | Dashboard operacional, pedidos, comandas, itens, turnos, equipe |
 | `/painel/mesas` | Redirect → `/painel/configuracoes/mesas` |
 | `/painel/configuracoes` | Hub: cardápio, bar, mesas, chamada, equipe, responsável |

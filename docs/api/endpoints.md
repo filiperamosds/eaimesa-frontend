@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–20)
+## Implementado (fatias 1–21)
 
 ### Saúde
 
@@ -344,6 +344,24 @@ Auth: cookie `eaimesa_owner`. Gate `module:finance`. UI: `/painel/financeiro` (F
 | GET | `/v1/owner/reports/export` | `?kind=orders\|tabs\|items\|payments` |
 
 `PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
+
+### Owner — estoque (fatia 21)
+
+Auth: cookie `eaimesa_owner`. Gate `module:inventory`. UI: `/painel/estoque` + receita no cardápio. [ADR-037](../decisions/ADR-037-estoque.md).
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| GET | `/v1/owner/stock/items` | Insumos (`?archived=1` inclui arquivados). Cada um: `quantity`, `alertQuantity`, `low`, `unit` |
+| POST | `/v1/owner/stock/items` | `{ name, unit, qty? \| packages+packageSize, alertQuantity? }` — 2×1000 g = 2000 |
+| PATCH | `/v1/owner/stock/items/{id}` | `{ name?, alertQuantity?, archived? }` |
+| DELETE | `/v1/owner/stock/items/{id}` | Só sem receita e sem movimento; senão 409 `STOCK_IN_USE` |
+| POST | `/v1/owner/stock/items/{id}/movements` | `{ type: in\|adjust, qty? \| packages+packageSize \| qtyDelta, note? }` |
+| GET | `/v1/owner/stock/alerts` | Insumos com `low`. `{ items, count }` |
+| GET | `/v1/owner/stock/recipes` | Todas as receitas do venue |
+| GET | `/v1/owner/catalog/items/{id}/recipe` | Linhas `{ stockItemId, name, unit, qty }` |
+| PUT | `/v1/owner/catalog/items/{id}/recipe` | `{ lines: [{ stockItemId, qty }] }` — vazio limpa |
+
+Pedido (guest/counter) baixa na criação; `cancelled` gera `sale_void`. Não há 409 por saldo. `STOCK_LIMIT` (200), `STOCK_NAME_TAKEN`, `STOCK_ITEM_NOT_FOUND`.
 
 ### Staff — fila (fatia 8)
 
