@@ -20,7 +20,6 @@ const ALL_LINKS = [
   { href: "/painel/chamados", label: "Chamados", icon: "◎", module: "waiter_call", always: true },
   { href: "/painel/caixa", label: "Caixa", icon: "▤", module: "finance", always: false },
   { href: "/painel/financeiro", label: "Financeiro", icon: "$", module: "finance", always: false },
-  { href: "/painel/estoque", label: "Estoque", icon: "▢", module: "inventory", always: false },
 ] as const;
 
 const COLS: Record<number, string> = {
@@ -38,6 +37,7 @@ const SERVICE_ONLY_PREFIXES = [
   "/painel/financeiro",
   "/painel/caixa",
   "/painel/estoque",
+  "/painel/configuracoes/estoque",
   "/painel/equipe",
   "/painel/configuracoes/equipe",
   "/painel/bar/equipe",

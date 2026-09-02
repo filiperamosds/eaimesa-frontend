@@ -347,7 +347,7 @@ Auth: cookie `eaimesa_owner`. Gate `module:finance`. UI: `/painel/financeiro` (F
 
 ### Owner — estoque (fatia 21)
 
-Auth: cookie `eaimesa_owner`. Gate `module:inventory`. UI: `/painel/estoque` + receita no cardápio. [ADR-037](../decisions/ADR-037-estoque.md).
+Auth: cookie `eaimesa_owner`. Gate `module:inventory`. UI: Configurações → Estoque (`/painel/configuracoes/estoque`) + receita no dialog de editar o item do cardápio. [ADR-037](../decisions/ADR-037-estoque.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|

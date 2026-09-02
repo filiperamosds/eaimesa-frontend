@@ -1,7 +1,12 @@
-import { StockPanel } from "../../../components/stock-panel";
+"use client";
 
-export const metadata = { title: "Estoque" };
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function PainelEstoquePage() {
-  return <StockPanel />;
+export default function EstoqueRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/painel/configuracoes/estoque");
+  }, [router]);
+  return <p className="text-ink-soft">Redirecionando…</p>;
 }
