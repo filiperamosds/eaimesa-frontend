@@ -105,43 +105,41 @@ Cron de e-mail (trial acabando) é da **API Laravel**, não deste front. No hPan
 
 | Branch | Papel |
 |--------|--------|
-| `develop` | Padrão. Staging. PRs do Cursor mergeiam aqui. Push → FTP `FTP_SERVER_DIR_DEV` |
-| `main` | Produção. Só com PR explícito. Push → FTP `FTP_SERVER_DIR_PRD` |
+| `develop` | Padrão. Staging. PRs do Cursor mergeiam aqui. Push → pasta DEV no servidor |
+| `main` | Produção. Só com PR explícito. Push → pasta PRD no servidor |
 
 No GitHub: **Settings → General → Default branch → `develop`**.
 
 ## Deploy — GitHub Actions
 
-Push em `develop` ou `main` (e **Run workflow** na branch certa). Callers: `.github/workflows/deploy-develop.yml` e `deploy-main.yml`. Decisão: [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
+Push em `develop` ou `main` (e **Run workflow** na branch certa). Callers: `.github/workflows/deploy-develop.yml` e `deploy-main.yml`. `pnpm build` gera `out/`; o runner empacota num `.tgz` e extrai por SSH ([ADR-038](../decisions/ADR-038-front-deploy-tarball-ssh.md)). Branch/URLs: [ADR-017](../decisions/ADR-017-github-actions-hostinger.md).
 
-No GitHub: **Settings → Secrets and variables → Actions**.
+No GitHub: **Settings → Secrets and variables → Actions**. Copiar as credenciais SSH do repo **eaimesa-backend** (é o mesmo servidor Hostinger).
 
 ### Secrets
 
-| Nome | Valor (hPanel → Contas FTP) |
-|------|----------------------|
-| `FTP_SERVER` | Só o **IP** (sem `ftp://`) |
-| `FTP_USERNAME` | Usuário FTP |
-| `FTP_PASSWORD` | Senha FTP |
-
-`FTP_SERVER` pode ser Variable em vez de Secret. Vale para os dois ambientes.
+| Nome | Valor |
+|------|--------|
+| `SSH_PRIVATE_KEY` | Mesma chave da API (bloco `BEGIN`…`END`) |
+| `REMOTE_HOST` | Hostname ou IP (**sem** `://` nem path). Se vazio, usa `FTP_SERVER` |
+| `REMOTE_USER` | Utilizador SSH |
 
 ### Variables
 
 | Nome | Ambiente | Valor |
 |------|----------|--------|
-| `FTP_SERVER_DIR_DEV` | `develop` | Pasta FTP de staging (ex. `domains/eaimesa.com/public_html/dev/`) |
-| `FTP_SERVER_DIR_PRD` | `main` | Pasta FTP de produção (ex. `domains/eaimesa.com/public_html/`) |
+| `REMOTE_PORT` | ambos | Vazio = 22. Hostinger shared costuma ser `65002` |
+| `REMOTE_TARGET_FRONT_DEV` | `develop` | Pasta no servidor (ex. `domains/eaimesa.com/public_html/dev`). Fallback: `FTP_SERVER_DIR_DEV` |
+| `REMOTE_TARGET_FRONT_PRD` | `main` | Pasta de produção (ex. `domains/eaimesa.com/public_html`). Fallback: `FTP_SERVER_DIR_PRD` |
+| `FTP_SERVER_DIR_DEV` / `_PRD` | fallback | Pastas do job FTP antigo; ainda servem de destino se `REMOTE_TARGET_FRONT_*` não existir |
 | `NEXT_PUBLIC_APP_URL` | `develop` | Origem do front de staging (ex. `https://dev.eaimesa.com`) |
 | `NEXT_PUBLIC_API_URL` | `develop` | API Laravel de staging (ex. `https://apidev.eaimesa.com`) |
 | `NEXT_PUBLIC_APP_URL_PRD` | `main` | Origem do front de produção (ex. `https://eaimesa.com`) |
 | `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
 | `STATIC_SLUGS` | ambos | Opcional. Default do código: `seu-estabelecimento` |
 
-O job faz sync incremental. Antes do upload, `scripts/ftp-prepare.py` recria as pastas do `out/` e apaga `.ftp-deploy-sync-state.json` se o wipe anterior deixou o servidor inconsistente (FTP 550 em `__venue/bem-vindo/`). As pastas DEV e PRD têm que ser **diferentes**. Hashes antigos em `_next/` podem sobrar; o HTML novo aponta só para os arquivos do último build.
+As pastas DEV e PRD têm que ser **diferentes**. O extract faz `rsync --delete` (se o servidor tiver `rsync`) e limpa hashes velhos em `_next/`. Sem `rsync`, o tar só sobrepõe.
 
 No Laravel de cada ambiente, `APP_URL` = o `NEXT_PUBLIC_APP_URL` correspondente (CORS/cookies).
-
-A action exige barra no **final** do path; o workflow acrescenta se faltar. Path sem `/` no começo é relativo ao home FTP.
 
 Antes do primeiro push em `main`, grave `NEXT_PUBLIC_APP_URL_PRD` e `NEXT_PUBLIC_API_URL_PRD` — senão o job de produção recusa o build (não reutiliza as URLs de staging).

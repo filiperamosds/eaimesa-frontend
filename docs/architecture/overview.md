@@ -90,8 +90,8 @@ Não existem `apps/guest` nem `apps/staff`.
 |-----|-----|-------|
 | `local` | MySQL 8 + **dois terminais**: backend `:8000`, frontend `:3000` | `pnpm dev` |
 | `cursor-cloud` | MySQL nativo (apt) via `.cursor/environment.json`; sem Docker | `pnpm dev` |
-| `staging` | Piloto 1 bar | GitHub Actions em `develop` → `FTP_SERVER_DIR_DEV` ([ADR-017](../decisions/ADR-017-github-actions-hostinger.md)) |
-| `prod` | SaaS | GitHub Actions em `main` → `FTP_SERVER_DIR_PRD`. Só PR explícito |
+| `staging` | Piloto 1 bar | GitHub Actions em `develop` → tarball SSH na pasta DEV ([ADR-038](../decisions/ADR-038-front-deploy-tarball-ssh.md)) |
+| `prod` | SaaS | GitHub Actions em `main` → pasta PRD. Só PR explícito |
 
 Setup: [docs/ops/dev-setup.md](../ops/dev-setup.md).
 
