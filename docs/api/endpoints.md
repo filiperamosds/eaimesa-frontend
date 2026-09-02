@@ -333,11 +333,11 @@ Auth: cookie `eaimesa_owner`. Gate `module:finance`. UI: `/painel/financeiro` (F
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/finance/summary` | `?from&to&groupBy=day\|method\|table\|waiter` |
+| GET | `/v1/owner/finance/summary` | `?from&to&groupBy=day\|method\|table\|waiter` — KPIs incluem `courtesyCents`, `discountCents`, `netCents` |
 | GET | `/v1/owner/finance/top-items` | `?from&to&limit` |
 | GET | `/v1/owner/finance/export` | `?from&to` — CSV dos recebimentos |
 | GET | `/v1/owner/cash-sessions` | `?from&to` — turnos + `movementsCents` |
-| GET | `/v1/owner/reports/overview` | KPIs operacionais + período anterior |
+| GET | `/v1/owner/reports/overview` | KPIs operacionais + período anterior + `byHour` (pico, Brasília) |
 | GET | `/v1/owner/reports/orders` | Histórico de pedidos (`status`, `source`, `tableId`, página) |
 | GET | `/v1/owner/reports/tabs` | Comandas fechadas (`hasBalance`, `method`, página) |
 | GET | `/v1/owner/reports/categories` | Venda por categoria |

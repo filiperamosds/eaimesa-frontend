@@ -19,14 +19,14 @@ Período **De / Até** compartilhado (query `from`/`to`). Atalhos: hoje, ontem, 
 
 ### Faturamento
 
-- KPIs: recebido, taxa de serviço, comandas, ticket médio, itens
+- KPIs: recebido, **líquido** (recebido − cortesia), cortesia, descontos, taxa de serviço, comandas, ticket médio, itens
 - Formas de pagamento; taxa por quem abriu a mesa ([ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md))
 - **Série por dia** e **por mesa**
 - Export CSV dos recebimentos
 
 ### Relatórios
 
-1. **Dashboard operacional** — pedidos × cancelados, origem QR vs garçom, comandas com saldo, cortesia/desconto, ocupações; vs período anterior.
+1. **Dashboard operacional** — pedidos × cancelados, origem QR vs garçom, ocupações; vs período anterior; **pico por hora** (Brasília). Cortesia e desconto no Faturamento.
 2. **Pedidos** — histórico (não o Kanban de 48 h).
 3. **Comandas** — fechamentos com saldo, desconto e formas.
 4. **Itens e categorias**

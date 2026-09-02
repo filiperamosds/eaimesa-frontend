@@ -12,6 +12,9 @@ type Summary = {
   kpis: {
     grossCents: number;
     serviceFeeCents?: number;
+    courtesyCents?: number;
+    discountCents?: number;
+    netCents?: number;
     settlements: number;
     avgTicketCents: number;
     items: number;
@@ -95,8 +98,25 @@ export function FinanceReport() {
       {summary ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <FinanceKpi label="Recebido" value={formatBrlFromCents(summary.kpis.grossCents)} />
+            <FinanceKpi
+              label="Recebido"
+              value={formatBrlFromCents(summary.kpis.grossCents)}
+              hint="Inclui cortesia registrada no fechamento"
+            />
+            <FinanceKpi
+              label="Líquido"
+              value={formatBrlFromCents(summary.kpis.netCents ?? 0)}
+              hint="Recebido menos cortesia"
+            />
+            <FinanceKpi label="Cortesia" value={formatBrlFromCents(summary.kpis.courtesyCents ?? 0)} />
+            <FinanceKpi
+              label="Descontos"
+              value={formatBrlFromCents(summary.kpis.discountCents ?? 0)}
+              hint="Já saiu do valor devido; não está no recebido"
+            />
             <FinanceKpi label="Taxa de serviço" value={formatBrlFromCents(summary.kpis.serviceFeeCents ?? 0)} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
             <FinanceKpi label="Comandas" value={String(summary.kpis.settlements)} />
             <FinanceKpi label="Ticket médio" value={formatBrlFromCents(summary.kpis.avgTicketCents)} />
             <FinanceKpi label="Itens vendidos" value={String(summary.kpis.items)} />
