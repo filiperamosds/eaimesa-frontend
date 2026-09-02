@@ -165,6 +165,24 @@ jobs:
             DEST="$(pwd)"
             test -f front-deploy.tgz || { echo "Falta front-deploy.tgz em $DEST"; ls -la; exit 1; }
 
+            # O FTP antigo não apagava extras. rsync --delete no document root
+            # do front mata a API se ela viver ao lado (public_html/api, artisan,
+            # domains/). Recusar destinos largos e pastas Laravel.
+            case "$DEST" in
+              /|"$HOME"|"$HOME/"|"$HOME/domains"|"$HOME/domains/")
+                echo "REMOTE_TARGET_FRONT demasiado largo: $DEST"
+                exit 1
+                ;;
+            esac
+            if [ -f "$DEST/artisan" ] || [ -d "$DEST/vendor/laravel" ]; then
+              echo "Esta pasta é a API Laravel ($DEST). Não extrair o front aqui."
+              exit 1
+            fi
+            if [ -f "$DEST/index.php" ] && grep -q 'laravel' "$DEST/index.php" 2>/dev/null; then
+              echo "index.php Laravel em $DEST — recusando rsync --delete."
+              exit 1
+            fi
+
             RELEASE="$DEST/.release-front"
             rm -rf "$RELEASE"
             mkdir -p "$RELEASE"
@@ -173,12 +191,24 @@ jobs:
             test -f "$RELEASE/.htaccess" || { echo "Falta .htaccess no tarball"; ls -la "$RELEASE"; exit 1; }
 
             if command -v rsync >/dev/null 2>&1; then
-              # --exclude .htaccess: o --delete não pode apagar o do Apache se o tar vier sem ele.
+              # Excludes sobrevivem ao --delete (sem --delete-excluded).
               rsync -a --delete \
                 --exclude '.release-front' \
                 --exclude '.htaccess' \
                 --exclude 'cgi-bin' \
                 --exclude '.well-known' \
+                --exclude '.env' \
+                --exclude 'api' \
+                --exclude 'apidev' \
+                --exclude 'backend' \
+                --exclude 'laravel' \
+                --exclude 'artisan' \
+                --exclude 'vendor' \
+                --exclude 'app' \
+                --exclude 'bootstrap' \
+                --exclude 'storage' \
+                --exclude 'database' \
+                --exclude 'public_html' \
                 "$RELEASE"/ "$DEST"/
             else
               cp -a "$RELEASE"/. "$DEST"/

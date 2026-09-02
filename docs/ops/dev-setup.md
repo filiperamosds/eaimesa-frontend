@@ -138,7 +138,9 @@ No GitHub: **Settings → Secrets and variables → Actions**. Copiar as credenc
 | `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
 | `STATIC_SLUGS` | ambos | Opcional. Default do código: `seu-estabelecimento` |
 
-As pastas DEV e PRD têm que ser **diferentes**. O extract faz `rsync --delete` (se o servidor tiver `rsync`) e limpa hashes velhos em `_next/`. Sem `rsync`, o tar só sobrepõe.
+As pastas DEV e PRD têm que ser **diferentes**, e **não** podem ser a pasta da API (`REMOTE_TARGET_API_*`). O extract faz `rsync --delete` (se o servidor tiver `rsync`) e limpa hashes velhos em `_next/`; exclui `cgi-bin`, `.well-known` e vestígios Laravel (`api`, `artisan`, `vendor`…). Sem `rsync`, o tar só sobrepõe.
+
+O `.htaccess` do front (`public/.htaccess`) só reescreve slugs do Next. **Não** manda CORS. Login chama `NEXT_PUBLIC_API_URL` (`https://apidev.eaimesa.com` / `https://api.eaimesa.com`). Se esses hosts devolverem o 404 da Hostinger, o browser mostra CORS. Restaurar a API: document root = `app/public` do Laravel e re-run do deploy do **backend**.
 
 No Laravel de cada ambiente, `APP_URL` = o `NEXT_PUBLIC_APP_URL` correspondente (CORS/cookies).
 

@@ -15,7 +15,7 @@ O `pnpm build` não desaparece: TypeScript/React ainda precisam virar HTML. O qu
 
 1. Runner: `pnpm typecheck` + `pnpm build` → empacota `out/` num `front-deploy.tgz`.
 2. Um SCP + SSH extract no document root (`appleboy/scp-action` / `ssh-action`), o mesmo padrão da API.
-3. No servidor, `rsync --delete` (se existir) alinha a pasta com o tarball e limpa hashes velhos em `_next/`. Preserva `cgi-bin` e `.well-known`.
+3. No servidor, `rsync --delete` (se existir) alinha a pasta com o tarball e limpa hashes velhos em `_next/`. Preserva `cgi-bin`, `.well-known`, `.env` e pastas da API (`api`, `artisan`, `vendor`, `app`…). Recusa extrair em `$HOME`, `domains/` ou numa pasta Laravel — o FTP antigo não apagava extras; um `--delete` no sítio errado tira o `public` da API e o login no front passa a falhar com CORS (a API responde 404 HTML sem `Access-Control-Allow-Origin`).
 4. Destino: `REMOTE_TARGET_FRONT_DEV` / `_PRD`, com fallback para as variables já existentes `FTP_SERVER_DIR_DEV` / `_PRD`.
 5. Credenciais SSH: as mesmas da API (`SSH_PRIVATE_KEY`, `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_PORT`). `REMOTE_HOST` pode cair em `FTP_SERVER` (IP).
 
