@@ -28,4 +28,6 @@
 ## Consequências
 
 - Front: `/painel/financeiro` + `/painel/financeiro/relatorios/*`.
+- Faturamento: `netCents` = recebido − cortesia; desconto à parte (já saiu do devido).
+- Relatórios: `byHour` no overview, horário de Brasília.
 - Contrato: [endpoints.md](../api/endpoints.md). Produto: [fatia 20](../product/fatia-20-relatorios.md).
