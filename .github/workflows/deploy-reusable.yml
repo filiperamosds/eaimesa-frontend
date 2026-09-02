@@ -114,11 +114,18 @@ jobs:
       - name: Conferir out/ e .htaccess
         run: |
           test -f out/index.html
+          test -f public/.htaccess
+          # Next pode omitir dotfiles de public/ no export; o Apache do front depende disto.
+          cp -f public/.htaccess out/.htaccess
           test -f out/.htaccess
 
       - name: Pack out/
         run: |
           tar -czf "$RUNNER_TEMP/front-deploy.tgz" -C out .
+          tar -tzf "$RUNNER_TEMP/front-deploy.tgz" | grep -qE '(^|/)\.htaccess$' || {
+            echo "::error::O tarball não inclui .htaccess — o extract apagaria o do servidor."
+            exit 1
+          }
           cp "$RUNNER_TEMP/front-deploy.tgz" "$GITHUB_WORKSPACE/front-deploy.tgz"
           ls -lh "$GITHUB_WORKSPACE/front-deploy.tgz"
 
@@ -163,16 +170,21 @@ jobs:
             mkdir -p "$RELEASE"
             tar -xzf front-deploy.tgz -C "$RELEASE"
             rm -f front-deploy.tgz
+            test -f "$RELEASE/.htaccess" || { echo "Falta .htaccess no tarball"; ls -la "$RELEASE"; exit 1; }
 
             if command -v rsync >/dev/null 2>&1; then
+              # --exclude .htaccess: o --delete não pode apagar o do Apache se o tar vier sem ele.
               rsync -a --delete \
                 --exclude '.release-front' \
+                --exclude '.htaccess' \
                 --exclude 'cgi-bin' \
                 --exclude '.well-known' \
                 "$RELEASE"/ "$DEST"/
             else
               cp -a "$RELEASE"/. "$DEST"/
             fi
+            cp -f "$RELEASE/.htaccess" "$DEST/.htaccess"
             rm -rf "$RELEASE"
             test -f "$DEST/index.html"
+            test -f "$DEST/.htaccess"
             echo "Front extraído em $DEST"
