@@ -128,7 +128,7 @@ No GitHub: **Settings → Secrets and variables → Actions**. Copiar as credenc
 
 | Nome | Ambiente | Valor |
 |------|----------|--------|
-| `REMOTE_PORT` | ambos | Vazio = 22. Hostinger shared costuma ser `65002` |
+| `REMOTE_PORT` | ambos | Vazio = **65002** (SSH Hostinger shared). Só preencha se for outra porta |
 | `REMOTE_TARGET_FRONT_DEV` | `develop` | Pasta no servidor (ex. `domains/eaimesa.com/public_html/dev`). Fallback: `FTP_SERVER_DIR_DEV` |
 | `REMOTE_TARGET_FRONT_PRD` | `main` | Pasta de produção (ex. `domains/eaimesa.com/public_html`). Fallback: `FTP_SERVER_DIR_PRD` |
 | `FTP_SERVER_DIR_DEV` / `_PRD` | fallback | Pastas do job FTP antigo; ainda servem de destino se `REMOTE_TARGET_FRONT_*` não existir |

@@ -59,6 +59,7 @@ jobs:
           U: ${{ env.DEPLOY_USER }}
           K: ${{ env.DEPLOY_KEY }}
           D: ${{ inputs.remote_dir }}
+          P: ${{ vars.REMOTE_PORT }}
         run: |
           missing=0
           if [ -z "$H" ] || [ -z "$U" ] || [ -z "$K" ]; then
@@ -90,8 +91,11 @@ jobs:
           d="${d%"${d##*[![:space:]]}"}"
           d="${d#"${d%%[![:space:]]*}"}"
           d="${d%/}"
+          # Hostinger shared não escuta 22; o default da API neste projeto é 65002.
+          port="${P:-65002}"
           echo "REMOTE_TARGET_FRONT=$d" >> "$GITHUB_ENV"
-          echo "Deploy SSH → $H:$d (branch ${GITHUB_REF_NAME})"
+          echo "DEPLOY_PORT=$port" >> "$GITHUB_ENV"
+          echo "Deploy SSH → $H:$port $d (branch ${GITHUB_REF_NAME})"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -128,7 +132,7 @@ jobs:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          port: ${{ vars.REMOTE_PORT == '' && 22 || vars.REMOTE_PORT }}
+          port: ${{ env.DEPLOY_PORT }}
           timeout: 5m
           source: front-deploy.tgz
           target: ${{ env.REMOTE_TARGET_FRONT }}
@@ -141,7 +145,7 @@ jobs:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ env.DEPLOY_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          port: ${{ vars.REMOTE_PORT == '' && 22 || vars.REMOTE_PORT }}
+          port: ${{ env.DEPLOY_PORT }}
           timeout: 2m
           command_timeout: 10m
           envs: REMOTE_PATH
