@@ -1,4 +1,3 @@
-import { BrandFoodPattern, BrandPhoneMock } from "../components/brand-phone-mock";
 import { HomePlanCtas, LivePlanMarketingCards } from "../components/home-plan-ctas";
 import { SiteFooter, SiteHeader } from "../components/site-chrome";
 
@@ -23,19 +22,32 @@ export default function HomePage() {
               <HomePlanCtas />
             </div>
 
-            <BrandPhoneMock />
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden bg-chili text-white">
-          <BrandFoodPattern className="pointer-events-none absolute -right-8 top-0 h-full w-[min(100%,42rem)] text-white" />
-          <div className="relative mx-auto max-w-6xl px-5 py-10 sm:py-12">
-            <p className="font-serif text-2xl leading-snug sm:text-3xl">
-              O cardápio no celular. A fila, na tela do estabelecimento.
-            </p>
-            <p className="mt-2 max-w-xl text-sm text-white/80 sm:text-base">
-              Auto atendimento com a cara da casa — o cliente lê no próprio aparelho.
-            </p>
+            <div className="relative mx-auto w-full max-w-sm">
+              <div className="absolute -inset-8 -z-10 rounded-[2.5rem] bg-gradient-to-br from-chili/20 via-amber/10 to-sage/20 blur-2xl" />
+              <div className="surface overflow-hidden p-1">
+                <div className="rounded-[1.15rem] bg-night px-5 pb-6 pt-4 text-white">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-white/45">
+                    eaimesa.com.br/seu-estabelecimento
+                  </p>
+                  <h2 className="mt-3 font-serif text-3xl">Seu Estabelecimento</h2>
+                  <div className="mt-5 space-y-3">
+                    {[
+                      ["Calabresa acebolada", "R$ 32,90"],
+                      ["Chopp 500 ml", "R$ 14,00"],
+                      ["Caipirinha", "R$ 22,00"],
+                    ].map(([name, price]) => (
+                      <div
+                        key={name}
+                        className="flex items-baseline justify-between gap-4 rounded-2xl bg-white/10 px-4 py-3"
+                      >
+                        <span className="text-white/90">{name}</span>
+                        <span className="tabular-nums text-amber">{price}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

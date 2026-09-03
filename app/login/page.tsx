@@ -8,7 +8,7 @@ export default function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <aside className="relative hidden overflow-hidden bg-night p-10 text-white lg:flex lg:flex-col lg:justify-between">
-        <Logo invert withTagline />
+        <Logo invert />
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Painel</p>
           <h1 className="mt-3 font-serif text-4xl leading-tight">A fila do estabelecimento, na tela.</h1>
