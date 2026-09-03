@@ -9,7 +9,7 @@ export function BrandPhoneMock() {
         aria-hidden
       />
       <div className="rounded-[2.15rem] bg-ink p-[0.7rem] shadow-[0_28px_60px_-28px_rgba(30,27,24,0.75)]">
-        <div className="rounded-[1.65rem] bg-paper px-5 pb-6 pt-7 text-center">
+        <div className="flex flex-col items-center rounded-[1.65rem] bg-paper px-5 pb-6 pt-7 text-center">
           <div className="flex justify-center">
             <BrandLockup withTagline />
           </div>
