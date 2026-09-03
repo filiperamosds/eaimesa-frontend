@@ -2,6 +2,7 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
+import { BRAND } from "../lib/brand";
 
 type Props = {
   venueName: string;
@@ -33,7 +34,7 @@ export function ClaimQrModal({ venueName, tableLabel, claimUrl, expiresAt, pinDi
     QRCode.toCanvas(canvas, claimUrl, {
       width: 280,
       margin: 2,
-      color: { dark: "#161311", light: "#fffdf8" },
+      color: { dark: BRAND.ink, light: BRAND.paper },
       errorCorrectionLevel: "M",
     }).catch(() => setError("Não foi possível gerar o QR."));
   }, [claimUrl]);
