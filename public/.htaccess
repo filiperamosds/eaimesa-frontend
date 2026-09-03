@@ -30,11 +30,4 @@ DirectorySlash Off
   RewriteRule ^([^/]+)/?$ /__venue/index.html [L]
 </IfModule>
 
-<IfModule mod_headers.c>
-  # HTML muda de hash a cada deploy; o browser não pode reusar index.html velho.
-  <FilesMatch "\.(html)$">
-    Header set Cache-Control "no-cache, must-revalidate"
-  </FilesMatch>
-</IfModule>
-
 ErrorDocument 404 /404.html

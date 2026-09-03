@@ -2,19 +2,19 @@
 
 @theme {
   --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
-  --color-paper: #f9f4ec;
-  --color-paper-2: #efe6d8;
-  --color-ink: #1e1b18;
-  --color-ink-soft: #6b5e55;
-  --color-chili: #d84a2b;
-  --color-chili-dark: #b8391e;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --color-paper: #f6f0e7;
+  --color-paper-2: #efe5d6;
+  --color-ink: #161311;
+  --color-ink-soft: #6a5c51;
+  --color-chili: #e23c14;
+  --color-chili-dark: #c43210;
   --color-amber: #e8a317;
   --color-sage: #1d6b4f;
   --color-sage-soft: #d7ebe3;
-  --color-line: #e8dcce;
+  --color-line: #e5d8c5;
   --color-card: #fffdf8;
-  --color-night: #1e1b18;
+  --color-night: #14110f;
 }
 
 html,
@@ -25,12 +25,12 @@ body {
 
 body {
   background-image:
-    radial-gradient(1100px 520px at 8% -8%, rgba(216, 74, 43, 0.1), transparent 55%),
-    radial-gradient(900px 480px at 100% 0%, rgba(184, 57, 30, 0.06), transparent 50%);
+    radial-gradient(1100px 520px at 8% -8%, rgba(226, 60, 20, 0.09), transparent 55%),
+    radial-gradient(900px 480px at 100% 0%, rgba(29, 107, 79, 0.08), transparent 50%);
 }
 
 ::selection {
-  background: rgba(216, 74, 43, 0.22);
+  background: #f4c4b0;
 }
 
 .btn-primary {
@@ -42,7 +42,7 @@ body {
   padding: 0.7rem 1.35rem;
   font-weight: 550;
   color: #fff;
-  box-shadow: 0 10px 24px -12px rgba(216, 74, 43, 0.7);
+  box-shadow: 0 10px 24px -12px rgba(226, 60, 20, 0.7);
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
@@ -59,7 +59,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  border: 1px solid rgba(30, 27, 24, 0.12);
+  border: 1px solid rgba(22, 19, 17, 0.12);
   background: var(--color-card);
   padding: 0.7rem 1.35rem;
   font-weight: 550;
@@ -67,7 +67,7 @@ body {
 }
 
 .btn-secondary:hover {
-  border-color: rgba(30, 27, 24, 0.28);
+  border-color: rgba(22, 19, 17, 0.28);
 }
 
 .btn-ghost {
@@ -82,7 +82,7 @@ body {
 
 .btn-ghost:hover {
   color: var(--color-ink);
-  background: rgba(30, 27, 24, 0.04);
+  background: rgba(22, 19, 17, 0.04);
 }
 
 .field {
@@ -95,8 +95,8 @@ body {
 }
 
 .field:focus {
-  box-shadow: 0 0 0 3px rgba(216, 74, 43, 0.18);
-  border-color: rgba(216, 74, 43, 0.45);
+  box-shadow: 0 0 0 3px rgba(226, 60, 20, 0.18);
+  border-color: rgba(226, 60, 20, 0.45);
 }
 
 .field:disabled {
@@ -111,15 +111,15 @@ body {
   border-radius: 0.9rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: #241f1c;
-  color: #f9f4ec;
+  color: #f6f0e7;
   padding: 0.6rem 0.85rem;
   outline: none;
-  caret-color: #f9f4ec;
+  caret-color: #f6f0e7;
   color-scheme: dark;
 }
 
 .field-night::placeholder {
-  color: rgba(249, 244, 236, 0.42);
+  color: rgba(246, 240, 231, 0.42);
 }
 
 .field-night:focus {
@@ -129,14 +129,14 @@ body {
 
 .field-night option {
   background: #241f1c;
-  color: #f9f4ec;
+  color: #f6f0e7;
 }
 
 .surface {
   border: 1px solid var(--color-line);
   background: var(--color-card);
   border-radius: 1.35rem;
-  box-shadow: 0 20px 50px -32px rgba(30, 27, 24, 0.45);
+  box-shadow: 0 20px 50px -32px rgba(22, 19, 17, 0.45);
 }
 
 .eyebrow {

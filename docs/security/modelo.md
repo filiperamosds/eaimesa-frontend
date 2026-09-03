@@ -84,7 +84,7 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 
 - Chave SSH e demais secrets só em **GitHub Actions secrets**, nunca no git nem no `out/`. Mesmos nomes da API (`SSH_PRIVATE_KEY`, `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_PORT`).
 - `NEXT_PUBLIC_*` vai para o HTML no `pnpm build` (não é secret). Staging usa Variables do GitHub; ver [dev-setup](../ops/dev-setup.md) e [ADR-038](../decisions/ADR-038-front-deploy-tarball-ssh.md).
-- O extract faz `rsync --delete` só na pasta do front (`REMOTE_TARGET_FRONT_*` / `FTP_SERVER_DIR_*`), não no home SSH inteiro. Excludes Laravel são `/app/`, `/vendor/`, não `app` solto ([ADR-040](../decisions/ADR-040-rsync-exclude-chunks-app.md)).
+- O extract faz `rsync --delete` só na pasta do front (`REMOTE_TARGET_FRONT_*` / `FTP_SERVER_DIR_*`), não no home SSH inteiro.
 
 ## Nunca
 
