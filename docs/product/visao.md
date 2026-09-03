@@ -74,7 +74,7 @@ Implementação **agora**: [fatia 21 — estoque e receita](fatia-21-estoque.md)
 
 ## Naming / URLs
 
-- Marca: **EaiMesa**
+- Marca: **EaiMesa** — identidade (paleta, símbolo, tipo): [identidade visual](../architecture/identidade.md), [ADR-039](../decisions/ADR-039-identidade-visual.md)
 - Domínio alvo: `eaimesa.com.br`
 - Path do cardápio: `/{slug}` (ex. `/seu-estabelecimento`) — [ADR-004](../decisions/ADR-004-slug-publico.md)
 - Path de claim: `/{slug}/c/{claimToken}` (redirect após redeem)

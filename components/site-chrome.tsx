@@ -2,29 +2,52 @@ import { SUPPORT_EMAIL } from "@eaimesa/shared";
 import Link from "next/link";
 import { LogoMark } from "./logo-mark";
 
+export function BrandLockup({
+  className = "",
+  invert = false,
+  withTagline = false,
+}: {
+  className?: string;
+  invert?: boolean;
+  withTagline?: boolean;
+}) {
+  return (
+    <span className={`inline-flex items-center gap-2.5 tracking-tight ${invert ? "text-white" : "text-ink"} ${className}`}>
+      <LogoMark className="h-10 w-10 shrink-0" variant={invert ? "inverse" : "brand"} />
+      <span className="flex min-w-0 flex-col">
+        <span className="font-serif text-[1.35rem] leading-none">
+          Eai<span className={invert ? "text-white" : "text-chili"}>Mesa</span>
+        </span>
+        {withTagline ? (
+          <span
+            className={`mt-1.5 flex items-center gap-1.5 text-[0.58rem] font-semibold uppercase leading-none tracking-[0.22em] ${
+              invert ? "text-white/55" : "text-ink-soft"
+            }`}
+          >
+            <span className={`h-px w-3 ${invert ? "bg-white/35" : "bg-ink/20"}`} aria-hidden />
+            Auto atendimento
+            <span className={`h-px w-3 ${invert ? "bg-white/35" : "bg-ink/20"}`} aria-hidden />
+          </span>
+        ) : null}
+      </span>
+    </span>
+  );
+}
+
 export function Logo({
   className = "",
   invert = false,
   href = "/",
+  withTagline = false,
 }: {
   className?: string;
   invert?: boolean;
   href?: string;
+  withTagline?: boolean;
 }) {
   return (
-    <Link
-      href={href}
-      className={`inline-flex items-center gap-2 tracking-tight ${invert ? "text-white" : "text-ink"} ${className}`}
-    >
-      <span
-        className={`grid h-8 w-8 place-items-center rounded-full ${invert ? "bg-white/15 text-white" : "bg-chili text-white"}`}
-        aria-hidden
-      >
-        <LogoMark className="h-5 w-5" />
-      </span>
-      <span className="font-serif text-xl">
-        Eai<span className={invert ? "text-amber" : "text-chili"}>Mesa</span>
-      </span>
+    <Link href={href} className={className}>
+      <BrandLockup invert={invert} withTagline={withTagline} />
     </Link>
   );
 }
@@ -59,7 +82,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-line bg-night text-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Logo invert />
+          <Logo invert withTagline />
           <p className="mt-3 max-w-sm text-sm text-white/60">
             Cardápio e comanda para bares e restaurantes. O cliente usa o celular; o link da porta
             não abre pedido.

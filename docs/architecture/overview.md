@@ -8,7 +8,7 @@
 | API | **Laravel 13** ([ADR-016](../decisions/ADR-016-laravel-mysql.md)) | REST, cookies |
 | DB | **MySQL 8** | Transações |
 | ORM | Eloquent | Migrations, models |
-| UI | **Next.js** (um app) | Landing + painel + cardápio |
+| UI | **Next.js** (um app) | Landing + painel + cardápio. Identidade: [identidade visual](identidade.md) |
 | Auth dono | Cookie **httpOnly** `eaimesa_owner` | JWT assinado |
 | Auth guest | Cookie `eaimesa_guest` | Redeem (fatia 4) e PIN join (fatia 5) |
 | Auth platform | Cookie **httpOnly** `eaimesa_platform` | JWT próprio (`PLATFORM_JWT_SECRET`) |

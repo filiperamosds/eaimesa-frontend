@@ -25,7 +25,7 @@ export function CadastroScreen() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <aside className="relative hidden overflow-y-auto bg-night p-10 text-white lg:flex lg:flex-col">
-        <Logo invert />
+        <Logo invert withTagline />
         <div className="mt-12 flex-1">
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Começar</p>
           <h1 className="mt-3 font-serif text-4xl leading-tight">Sua URL, no ar em minutos.</h1>

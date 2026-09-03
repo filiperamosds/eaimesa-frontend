@@ -2,6 +2,7 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
+import { BRAND } from "../lib/brand";
 import { publicMenuUrl } from "../lib/public-url";
 
 type Props = {
@@ -46,7 +47,7 @@ export function MenuQrModal({
     QRCode.toCanvas(canvas, target, {
       width: 280,
       margin: 2,
-      color: { dark: "#161311", light: "#fffdf8" },
+      color: { dark: BRAND.ink, light: BRAND.paper },
       errorCorrectionLevel: "M",
     }).catch(() => setError("Não foi possível gerar o QR."));
   }, [slug, mesaCode]);
@@ -62,16 +63,16 @@ export function MenuQrModal({
     const ctx = card.getContext("2d");
     if (!ctx) return;
 
-    ctx.fillStyle = "#fffdf8";
+    ctx.fillStyle = BRAND.paper;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.fillStyle = "#161311";
+    ctx.fillStyle = BRAND.ink;
     ctx.font = "600 22px Georgia, serif";
     ctx.textAlign = "center";
     ctx.fillText(venueName, w / 2, 48);
 
     if (tableLabel) {
-      ctx.fillStyle = "#e23c14";
+      ctx.fillStyle = BRAND.chili;
       ctx.font = "600 36px Georgia, serif";
       ctx.fillText(tableLabel, w / 2, 100);
     }
@@ -81,7 +82,7 @@ export function MenuQrModal({
     const qrY = tableLabel ? 130 : 80;
     ctx.drawImage(canvas, qrX, qrY, qrSize, qrSize);
 
-    ctx.fillStyle = "#6a5c51";
+    ctx.fillStyle = BRAND.inkSoft;
     ctx.font = "14px system-ui, sans-serif";
     if (servicePlan) {
       ctx.fillText("Cardápio · só leitura", w / 2, qrY + qrSize + 36);
@@ -94,7 +95,7 @@ export function MenuQrModal({
       ctx.fillText("Escaneie no celular", w / 2, qrY + qrSize + 58);
     }
 
-    ctx.fillStyle = "#161311";
+    ctx.fillStyle = BRAND.ink;
     ctx.font = "12px system-ui, sans-serif";
     const short = url.replace(/^https?:\/\//, "");
     ctx.fillText(short.length > 42 ? `${short.slice(0, 40)}…` : short, w / 2, h - 36);

@@ -7,6 +7,7 @@ import { GuestCart, type CartLine } from "./guest-cart";
 import { GuestPartialDialog } from "./guest-partial-dialog";
 import { GuestTabBar } from "./guest-tab-bar";
 import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
+import { LogoMark } from "./logo-mark";
 import { mediaSrc } from "../lib/media";
 import { useGuestOrders } from "../lib/use-guest-orders";
 import { useGuestTab } from "../lib/use-guest-tab";
@@ -70,7 +71,7 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   return (
     <div className="min-h-screen">
       <header className="relative overflow-hidden bg-night text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(226,60,20,0.35),transparent_45%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(216,74,43,0.35),transparent_45%)]" />
         <div className="relative mx-auto max-w-lg px-5 py-12 text-center">
           <p className="text-[11px] font-medium uppercase tracking-[0.32em] text-white/50">Cardápio</p>
           <h1 className="mt-3 font-serif text-4xl leading-tight sm:text-5xl">{menu.venue.name}</h1>
@@ -256,9 +257,10 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
         />
       ) : null}
 
-      <footer className="pb-10 text-center text-xs text-ink-soft">
+      <footer className="flex items-center justify-center gap-2 pb-10 text-xs text-ink-soft">
         Cardápio por{" "}
-        <Link href="/" className="font-medium text-ink underline decoration-chili/40">
+        <Link href="/" className="inline-flex items-center gap-1.5 font-medium text-ink underline decoration-chili/40">
+          <LogoMark className="h-5 w-5" />
           EaiMesa
         </Link>
       </footer>
