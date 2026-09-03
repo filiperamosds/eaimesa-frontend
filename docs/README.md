@@ -37,7 +37,7 @@ Fatia atual: **estoque e receita**; fatias 1–21 no repo.
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
 9e. [Backend — chamar garçom](api/backend-waiter-call.md) — presença `?mesa=`, cookie, fila (ADR-026)
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — … **front tarball SSH (ADR-038)**, **identidade visual (ADR-039)**, **rsync exclude `app` vs chunks (ADR-040)**
+11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**, **cupom ESC/POS USB (ADR-029)**, **escala na abertura do caixa (ADR-031)**, **taxa de serviço do garçom que abriu a mesa (ADR-032)**, **cancelar assinatura no fim da vigência (ADR-033)**, **e-mails transacionais (ADR-034)**, **grupos de impressão (ADR-035)**, **relatórios do estabelecimento (ADR-036)**, **estoque e receita (ADR-037)**, **front tarball SSH (ADR-038)**, **identidade visual (ADR-039)**
 
 ## Cursor
 

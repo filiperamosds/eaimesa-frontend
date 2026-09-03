@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Outfit, Playfair_Display } from "next/font/google";
-import { ChunkLoadRecovery } from "../components/chunk-load-recovery";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -35,10 +34,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${outfit.variable} ${playfair.variable}`}>
-      <body className="min-h-screen font-sans antialiased">
-        <ChunkLoadRecovery />
-        {children}
-      </body>
+      <body className="min-h-screen font-sans antialiased">{children}</body>
     </html>
   );
 }

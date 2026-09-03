@@ -34,5 +34,4 @@ O `pnpm build` não desaparece: TypeScript/React ainda precisam virar HTML. O qu
 - No GitHub do **frontend**, copiar os secrets SSH do repo da API antes do primeiro job. Sem eles o deploy falha de propósito (não volta ao FTP).
 - `scripts/ftp-prepare.py` e `FTP-Deploy-Action` saem do pipeline. Secrets FTP podem ficar órfãos.
 - Extract a meio deixa HTML a meio: `cancel-in-progress: false`.
-- `--exclude 'app'` (sem `/`) casa `_next/static/chunks/app/` e parte o painel — [ADR-040](ADR-040-rsync-exclude-chunks-app.md).
 - Workflow: [`.github/workflows/deploy-reusable.yml`](../../.github/workflows/deploy-reusable.yml). Setup: [docs/ops/dev-setup.md](../ops/dev-setup.md).
