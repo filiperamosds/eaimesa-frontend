@@ -190,30 +190,53 @@ jobs:
             rm -f front-deploy.tgz
             test -f "$RELEASE/.htaccess" || { echo "Falta .htaccess no tarball"; ls -la "$RELEASE"; exit 1; }
 
+            # Padrões com / inicial = só a raiz do DEST. Sem a âncora, `app`
+            # também casa `_next/static/chunks/app/` (rotas do Next) e o
+            # rsync não atualiza esses JS — ChunkLoadError 404 no painel.
+            RSYNC_EXCL=(
+              --exclude=/.release-front/
+              --exclude=/.htaccess
+              --exclude=/cgi-bin/
+              --exclude=/.well-known/
+              --exclude=/.env
+              --exclude=/api/
+              --exclude=/apidev/
+              --exclude=/backend/
+              --exclude=/laravel/
+              --exclude=/artisan
+              --exclude=/vendor/
+              --exclude=/app/
+              --exclude=/bootstrap/
+              --exclude=/storage/
+              --exclude=/database/
+              --exclude=/public_html/
+            )
             if command -v rsync >/dev/null 2>&1; then
-              # Excludes sobrevivem ao --delete (sem --delete-excluded).
-              rsync -a --delete \
-                --exclude '.release-front' \
-                --exclude '.htaccess' \
-                --exclude 'cgi-bin' \
-                --exclude '.well-known' \
-                --exclude '.env' \
-                --exclude 'api' \
-                --exclude 'apidev' \
-                --exclude 'backend' \
-                --exclude 'laravel' \
-                --exclude 'artisan' \
-                --exclude 'vendor' \
-                --exclude 'app' \
-                --exclude 'bootstrap' \
-                --exclude 'storage' \
-                --exclude 'database' \
-                --exclude 'public_html' \
-                "$RELEASE"/ "$DEST"/
+              # 1) hashes novos primeiro (tabs com HTML velho ainda encontram JS)
+              rsync -a "${RSYNC_EXCL[@]}" "$RELEASE"/ "$DEST"/
+              # 2) HTML + apagar o que saiu do build (excludes não são apagados)
+              rsync -a --delete "${RSYNC_EXCL[@]}" "$RELEASE"/ "$DEST"/
             else
               cp -a "$RELEASE"/. "$DEST"/
             fi
             cp -f "$RELEASE/.htaccess" "$DEST/.htaccess"
+
+            missing=0
+            LIST="$RELEASE/.next-asset-list"
+            (cd "$RELEASE" && find _next -type f \( -name '*.js' -o -name '*.css' \)) > "$LIST"
+            while IFS= read -r f; do
+              [ -n "$f" ] || continue
+              if [ ! -f "$DEST/$f" ]; then
+                echo "Falta no destino: $f"
+                missing=1
+              fi
+            done < "$LIST"
+            rm -f "$LIST"
+            if [ "$missing" -ne 0 ]; then
+              echo "rsync não copiou os chunks do Next — abortar."
+              exit 1
+            fi
+
             rm -rf "$RELEASE"
             test -f "$DEST/index.html"
             test -f "$DEST/.htaccess"
