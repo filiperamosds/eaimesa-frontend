@@ -138,7 +138,7 @@ No GitHub: **Settings → Secrets and variables → Actions**. Copiar as credenc
 | `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
 | `STATIC_SLUGS` | ambos | Opcional. Default do código: `seu-estabelecimento` |
 
-As pastas DEV e PRD têm que ser **diferentes**, e **não** podem ser a pasta da API (`REMOTE_TARGET_API_*`). O extract faz `rsync --delete` (se o servidor tiver `rsync`) e limpa hashes velhos em `_next/`; os excludes são **só na raiz** (`/app/`, `/vendor/`, `/api/`, …) para não bloquear `_next/static/chunks/app/` ([ADR-040](../decisions/ADR-040-rsync-exclude-chunks-app.md)). Sem `rsync`, o tar só sobrepõe.
+As pastas DEV e PRD têm que ser **diferentes**, e **não** podem ser a pasta da API (`REMOTE_TARGET_API_*`). O extract faz `rsync --delete` (se o servidor tiver `rsync`) e limpa hashes velhos em `_next/`; os excludes são **só na raiz** (`/app/`, `/vendor/`, `/api/`, `/dev/`, …) para não bloquear `_next/static/chunks/app/` ([ADR-040](../decisions/ADR-040-rsync-exclude-chunks-app.md)). `/dev/` é o staging (`public_html/dev`): o deploy da `main` **não** a apaga. Sem `rsync`, o tar só sobrepõe.
 
 O `.htaccess` do front (`public/.htaccess`) só reescreve slugs do Next. **Não** manda CORS. Login chama `NEXT_PUBLIC_API_URL` (`https://apidev.eaimesa.com` / `https://api.eaimesa.com`). Se esses hosts devolverem o 404 da Hostinger, o browser mostra CORS. Restaurar a API: document root = `app/public` do Laravel e re-run do deploy do **backend**.
 
