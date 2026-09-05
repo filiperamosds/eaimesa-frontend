@@ -82,11 +82,7 @@ export function ClaimQrModal({ venueName, tableLabel, claimUrl, expiresAt, pinDi
           {error ? <p className="mt-2 text-sm text-chili">{error}</p> : null}
           {expired ? (
             <p className="mt-3 text-sm font-medium text-chili">Código expirado — gere outro QR.</p>
-          ) : (
-            <p className="mt-3 break-all text-center text-xs text-ink-soft">
-              {claimUrl.replace(/^https?:\/\//, "")}
-            </p>
-          )}
+          ) : null}
         </div>
         <div className="mt-6 flex justify-end">
           <button type="button" onClick={onClose} className="btn-primary !py-2 text-sm">
