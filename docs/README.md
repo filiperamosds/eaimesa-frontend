@@ -1,6 +1,6 @@
 # Documentação EaiMesa
 
-Fatia atual: **ofertas e happy hour**; fatias 1–24 no repo.
+Fatia atual: **modo escuro do cardápio**; fatias 1–25 no repo.
 
 1. [Fatia 1 — Cardápio](product/fatia-01-cardapio.md)
 1b. [Fatia 2 — Pedidos](product/fatia-02-pedidos.md) — Kanban / KDS no painel
@@ -26,14 +26,15 @@ Fatia atual: **ofertas e happy hour**; fatias 1–24 no repo.
 1v. [Fatia 22 — Fila de cupom](product/fatia-22-fila-cupom-kanban.md) — garçom no celular enfileira; Kanban imprime ([ADR-041](decisions/ADR-041-fila-cupom-kanban.md))
 1w. [Fatia 23 — Fotos no backend](product/fatia-23-imagens-cardapio.md) — upload no disco; deploy não apaga ([ADR-042](decisions/ADR-042-imagens-backend.md))
 1x. [Fatia 24 — Ofertas e happy hour](product/fatia-24-ofertas-happy-hour.md) — abas Ofertas / Happy hour / categorias ([ADR-043](decisions/ADR-043-ofertas-happy-hour.md))
+1y. [Fatia 25 — Modo escuro](product/fatia-25-modo-escuro-cardapio.md) — tema claro/escuro do `/{slug}`
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
 4. [Pricing](product/pricing.md) — Cardápio e Auto atendimento
 5. [Arquitetura](architecture/overview.md) — dois repos (Laravel + Next), um front
 6. [Sessão claim + PIN](architecture/sessao-claim-pin.md) — claim, PIN join, cookie guest
 7. [Segurança](security/modelo.md) — tenancy, cookies, ameaças
-8. [Modelo de dados](data/schema.md) — entidades fatia 1–24 + planejadas
-9. [API](api/endpoints.md) — REST fatia 1–24 + contrato futuro
+8. [Modelo de dados](data/schema.md) — entidades fatia 1–25 + planejadas
+9. [API](api/endpoints.md) — REST fatia 1–25 + contrato futuro
 9b. [Backend — caixa / close](api/backend-caixa-close.md) — o que o Laravel precisa alterar (`staffCanCloseTabs`, `cashier`)
 9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId`, PIN no staff, `POST .../tabs`
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila

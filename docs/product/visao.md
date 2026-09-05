@@ -44,7 +44,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 24 — ofertas e happy hour](fatia-24-ofertas-happy-hour.md).
+Implementação **agora**: [fatia 25 — modo escuro do cardápio](fatia-25-modo-escuro-cardapio.md).
 
 ### MVP (quando as fatias somarem)
 
