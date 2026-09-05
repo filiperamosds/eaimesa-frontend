@@ -8,7 +8,7 @@ import type { CatalogCategory, Session } from "../lib/types";
 import { ItemCreateDialog } from "./item-create-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
 
-export function CatalogEditor() {
+export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogCategory[]) => void }) {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +37,7 @@ export function CatalogEditor() {
   async function load() {
     const data = await api<{ categories: CatalogCategory[] }>("/v1/owner/catalog");
     setCategories(data.categories);
+    onCategories?.(data.categories);
     await loadInventory().catch(() => undefined);
   }
 
@@ -265,6 +266,9 @@ function ItemRow({
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="tabular-nums font-medium">{formatBrlFromCents(item.priceCents)}</span>
+          {item.offerPriceCents != null && item.offerPriceCents < item.priceCents ? (
+            <span className="text-xs text-chili">oferta {formatBrlFromCents(item.offerPriceCents)}</span>
+          ) : null}
           <button type="button" onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink">
             Editar
           </button>

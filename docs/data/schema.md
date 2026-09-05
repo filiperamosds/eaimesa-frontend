@@ -37,8 +37,15 @@ Um account possui **um** venue (1:1). `VenueMember` só no plano Auto atendiment
 
 - **CatalogCategory** — `venue_id`, `name`, `sort_order`, `active`, timestamps
 - **CatalogItem**
-  - `venue_id`, `category_id`, `name`, `description`, `image_url` (http(s) ou `/v1/uploads/{uuid}.ext`)
-  - `price_cents`, `sort_order`, `active`, `max_note_length` (default 80; UI na fatia pedido guest)
+  - `venue_id`, `category_id`, `name`, `description`, `image_url` (`/v1/uploads/{uuid}.ext` no cadastro do dono; seed local pode ser `/seed/` ou http)
+  - `price_cents`, `offer_price_cents` nullable (oferta permanente, [fatia 24](../product/fatia-24-ofertas-happy-hour.md)), `sort_order`, `active`, `max_note_length` (default 80; UI na fatia pedido guest)
+
+### Happy hour (fatia 24)
+
+- **HappyHourWindow** — `venue_id`, `name` nullable, `days` JSON (0=Dom…6=Sáb), `starts_at`, `ends_at` (time), `sort_order`
+- **HappyHourWindowItem** — `window_id`, `catalog_item_id`, `price_cents` (único por janela+item)
+
+Preço efetivo: happy hour ativo (menor) > oferta < lista > lista. Timezone `America/Sao_Paulo`. Pedido snapshota o efetivo.
 
 ## Entidades — fatia 2 (pedidos)
 
@@ -253,6 +260,8 @@ Relatórios (fatia 20) não criam tabela: leem `orders`, `tab_settlements`, `cas
 - `accounts(email)` UNIQUE
 - `catalog_categories(venue_id, sort_order)`
 - `catalog_items(venue_id, category_id)`
+- `happy_hour_windows(venue_id, sort_order)`
+- `happy_hour_window_items(window_id, catalog_item_id)` UNIQUE
 - `orders(venue_id, status, created_at)`
 - `order_items(order_id)`
 - `venue_tables(venue_id, sort_order)`
@@ -316,6 +325,9 @@ erDiagram
   VenuePrintGroup ||--o{ CatalogCategory : categories
   CatalogCategory ||--o{ CatalogItem : contains
   CatalogItem ||--o{ CatalogItemRecipe : recipe
+  Venue ||--o{ HappyHourWindow : happy_hour
+  HappyHourWindow ||--o{ HappyHourWindowItem : items
+  CatalogItem ||--o{ HappyHourWindowItem : promo_price
   Venue ||--o{ StockItem : inventory
   StockItem ||--o{ CatalogItemRecipe : used_in
   StockItem ||--o{ StockMovement : moves

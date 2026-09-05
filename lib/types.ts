@@ -72,6 +72,7 @@ export type CatalogItem = {
   description: string | null;
   imageUrl: string | null;
   priceCents: number;
+  offerPriceCents?: number | null;
   sortOrder: number;
   active: boolean;
 };
@@ -82,6 +83,15 @@ export type CatalogCategory = {
   sortOrder: number;
   active: boolean;
   items: CatalogItem[];
+};
+
+export type HappyHourWindow = {
+  id?: string;
+  name: string | null;
+  days: number[];
+  startsAt: string;
+  endsAt: string;
+  items: { catalogItemId: string; priceCents: number }[];
 };
 
 export type PublicMenu = {
@@ -105,6 +115,8 @@ export type PublicMenu = {
       description: string | null;
       imageUrl: string | null;
       priceCents: number;
+      listPriceCents?: number;
+      promo?: "offer" | "happy_hour" | null;
       maxNoteLength: number;
     }[];
   }[];
