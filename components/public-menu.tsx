@@ -40,7 +40,7 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const servicePlan = planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "");
   const flag = menu.venue.waiterCallEnabled;
   const waiterFeatureOn = flag === true || (flag !== false && !servicePlan);
-  const waiterEnabled = !suspended && waiterFeatureOn;
+  const waiterEnabled = !suspended && waiterFeatureOn && (!ordering || tab === null);
   const waiter = useWaiterPresence(menu.venue.slug, waiterEnabled);
 
   function addItem(item: PublicMenu["categories"][number]["items"][number]) {

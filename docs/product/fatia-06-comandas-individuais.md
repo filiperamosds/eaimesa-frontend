@@ -11,12 +11,13 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 - Várias comandas `open` na mesma mesa
 - Guest: após claim ou PIN, formulário nome + telefone (`/{slug}/comanda`) — máscara `(11) 98888-7777`; a API grava só dígitos
 - Telefone único enquanto a comanda está `open`: mesmo número em **outra** mesa → 409 `TAB_ALREADY_OPEN`. Se o garçom já abriu a comanda **nesta** mesa com esse telefone, o guest retoma essa conta.
-- Garçom `/garcom`: toque na mesa (livre ou ocupada) abre o **dialog**. Vê o **PIN**, abre comanda (nome + telefone), parcial com **A receber**, **Imprimir na térmica** (ESC/POS USB, [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)), lança pedido, fecha conta.
+- Garçom `/garcom`: toque na mesa abre o **dialog**. PIN compacto, lista de comandas, **Abrir comanda** ao lado de **Novo QR**. **Trocar** ao lado do título da mesa. Toque numa comanda **abre o detalhe** (PIN some; **← Comandas** volta): itens, **Adicionar pedido**, **Receber** e imprimir.
 - Guest `/{slug}`: **Parcial** em dialog; `/{slug}/comanda` para abrir perfil ([fatia 9](fatia-09-parcial-guest.md))
 - `POST /v1/staff/tables/{id}/tabs` — garçom abre comanda `{ name, phone }`
 - `POST /v1/staff/orders` com `tabId` — garçom lança itens na comanda (dialog)
 - `POST /v1/staff/tabs/{id}/close` — fecha uma comanda (UI destaca o valor a receber)
 - `POST /v1/staff/tables/{id}/close` — encerra a mesa; **409** se ainda houver comanda aberta. Os pedidos da ocupação saem do Kanban.
+- `POST /v1/staff/tables/{id}/transfer` `{ toTableId }` — troca PIN e comandas para outra mesa livre (`TABLE_OCCUPIED` se destino ocupado). Botão **Trocar** ao lado do título da mesa.
 - Telefone mascarado no painel do garçom (últimos 4 dígitos)
 
 ## Não inclui
@@ -34,11 +35,11 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 
 ## Fluxo garçom
 
-1. Toque na mesa abre o dialog (livre ou ocupada). PIN grande se a sessão existir.
-2. **Abrir comanda**: nome + telefone. **Novo QR** para o cliente escanear. Os dois geram/mostram o PIN.
+1. Toque na mesa abre o dialog (livre ou ocupada). PIN compacto se a sessão existir. **Trocar** ao lado do título abre o destino livre.
+2. **Abrir comanda** e **Novo QR** no rodapé. Os dois geram/mostram o PIN.
 3. Cartão da mesa lista os **nomes**. O quadro recarrega sozinho.
-4. Seleciona uma conta → **A receber** em destaque (com **taxa de serviço %** se estiver ligada), itens e **Imprimir na térmica** (ESC/POS no USB; o Chrome pede a POS80 uma vez, ou em Configurações → Estabelecimento → **Configurar impressora**). Não use o diálogo do sistema na POS80: o Mac manda A4/PostScript e ela imprime código. **Adicionar pedido**: escolhe categorias (só aí há **Cancelar**), soma itens de várias categorias (ex. bebida + petisco) e **Lança** um pedido.
-5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`) — botão mostra o valor. **Encerrar mesa** só com zero comandas abertas.
+4. Toque numa conta **abre o detalhe** (PIN some; **← Comandas** volta): itens, taxa (se ligada), **Imprimir**, **Adicionar pedido** e **Receber**. **Adicionar pedido**: escolhe categorias (só aí há **Cancelar**), soma itens de várias categorias (ex. bebida + petisco) e **Lança** um pedido. Térmica: ESC/POS no USB ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)); o Chrome pede a POS80 uma vez, ou em Configurações → Estabelecimento → **Configurar impressora**. Não use o diálogo do sistema na POS80.
+5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`) — botão mostra o valor. **Encerrar mesa** só aparece com a sessão aberta e zero comandas abertas.
 
 ## Por que não uma comanda só
 

@@ -10,7 +10,7 @@ import {
 } from "@eaimesa/shared";
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
-import type { StaffOrder, StaffTableTab, StaffTableTabsPayload } from "../lib/types";
+import type { StaffOrder, StaffTable, StaffTableTab, StaffTableTabsPayload } from "../lib/types";
 import { PhoneField } from "./masked-fields";
 import { StaffAddOrderDialog } from "./staff-add-order-dialog";
 import { StaffCloseTabDialog } from "./staff-close-tab-dialog";
@@ -22,9 +22,11 @@ type Props = {
   venueName: string;
   canClose: boolean;
   cashBlocked?: boolean;
+  tables: StaffTable[];
   onClose: () => void;
   onGenerateQr: () => void;
   onChanged: () => void;
+  onMoved: (next: { tableId: string; tableLabel: string }) => void;
 };
 
 function mergeOrders(
@@ -69,9 +71,11 @@ export function StaffTableDialog({
   venueName,
   canClose,
   cashBlocked = false,
+  tables,
   onClose,
   onGenerateQr,
   onChanged,
+  onMoved,
 }: Props) {
   const [raw, setRaw] = useState<StaffTableTabsPayload | null>(null);
   const [boardOrders, setBoardOrders] = useState<StaffOrder[]>([]);
@@ -84,6 +88,8 @@ export function StaffTableDialog({
   const [openingTab, setOpeningTab] = useState(false);
   const [receiptTab, setReceiptTab] = useState<StaffTableTab | null>(null);
   const [closingTab, setClosingTab] = useState<StaffTableTab | null>(null);
+  const [destId, setDestId] = useState("");
+  const [movingTable, setMovingTable] = useState(false);
 
   async function load(opts?: { silent?: boolean }) {
     if (!opts?.silent) {
@@ -97,10 +103,7 @@ export function StaffTableDialog({
       ]);
       setRaw(payload);
       setBoardOrders(board.orders);
-      setSelectedId((cur) => {
-        if (cur && payload.tabs.some((t) => t.id === cur)) return cur;
-        return payload.tabs[0]?.id ?? null;
-      });
+      setSelectedId((cur) => (cur && payload.tabs.some((t) => t.id === cur) ? cur : null));
       setError(null);
     } catch (err) {
       if (!opts?.silent) {
@@ -112,6 +115,9 @@ export function StaffTableDialog({
   }
 
   useEffect(() => {
+    setDestId("");
+    setMovingTable(false);
+    setOpeningTab(false);
     void load();
     const id = window.setInterval(() => {
       void load({ silent: true });
@@ -124,12 +130,17 @@ export function StaffTableDialog({
     () => (raw ? mergeOrders(raw, boardOrders, overlay) : null),
     [raw, boardOrders, overlay],
   );
-  const selected: StaffTableTab | undefined = data?.tabs.find((t) => t.id === selectedId);
-  const selectedDue = selected ? (selected.dueCents ?? tabDueCents(selected.totalCents, selected.serviceFeePercent ?? 0)) : 0;
-  const selectedFeeOn = (selected?.serviceFeePercent ?? 0) > 0;
   const openCount = data?.table.openTabCount ?? 0;
   const pin = data?.table.pinDisplay ?? null;
   const unassigned = data?.unassignedOrders ?? [];
+  const freeTables = tables.filter((t) => t.id !== tableId && !t.sessionOpen);
+  const sessionOpen = Boolean(data?.table.sessionOpen || pin);
+  const selected = data?.tabs.find((t) => t.id === selectedId) ?? null;
+  const canEndTable = canClose && sessionOpen && openCount === 0;
+  const showOpenTabBtn = !selected && !openingTab;
+  const showQrBtn = !selected;
+  const fecharFullRow =
+    (Number(showOpenTabBtn) + Number(showQrBtn) + Number(canEndTable) + 1) % 2 === 1;
 
   async function closeTable() {
     setBusy(true);
@@ -145,6 +156,25 @@ export function StaffTableDialog({
     }
   }
 
+  async function transferTable() {
+    if (!destId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const moved = await api<{ tableId: string; tableLabel: string }>(`/v1/staff/tables/${tableId}/transfer`, {
+        method: "POST",
+        body: JSON.stringify({ toTableId: destId }),
+      });
+      setDestId("");
+      setMovingTable(false);
+      onMoved(moved);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível trocar de mesa.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-4 backdrop-blur-sm sm:items-center"
@@ -154,20 +184,87 @@ export function StaffTableDialog({
     >
       <div className="surface flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden p-5">
         <p className="eyebrow">Contas da mesa</p>
-        <h2 id="staff-table-title" className="mt-2 font-serif text-2xl">
-          {tableLabel}
-        </h2>
-        {pin ? (
-          <div className="mt-3 rounded-2xl border border-chili/30 bg-paper-2 px-4 py-3 text-center">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-soft">PIN da mesa</p>
-            <p className="mt-1 font-serif text-4xl tracking-[0.3em] text-chili">{pin}</p>
-            <p className="mt-1 text-xs text-ink-soft">Passe este código para o cliente entrar em /entrar.</p>
+        {selected ? (
+          <button
+            type="button"
+            onClick={() => setSelectedId(null)}
+            className="btn-secondary mt-3 gap-1.5 !px-3 !py-1.5 text-sm"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
+              <path
+                fillRule="evenodd"
+                d="M12.78 4.22a.75.75 0 0 1 0 1.06L8.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06l-5.25-5.25a.75.75 0 0 1 0-1.06l5.25-5.25a.75.75 0 0 1 1.06 0Z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Comandas
+          </button>
+        ) : null}
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <h2 id="staff-table-title" className="font-serif text-2xl">
+            {tableLabel}
+          </h2>
+          {!selected && sessionOpen ? (
+            <button
+              type="button"
+              aria-expanded={movingTable}
+              onClick={() => setMovingTable((v) => !v)}
+              className="btn-secondary shrink-0 !px-3 !py-1.5 text-sm"
+            >
+              Trocar
+            </button>
+          ) : null}
+        </div>
+        {selected ? (
+          <p className="mt-1 text-sm text-ink-soft">
+            {selected.guestName}
+            {selected.status === "closed" ? " · fechada" : ""}
+          </p>
+        ) : null}
+        {!selected && pin ? (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-chili/25 bg-paper-2 px-3 py-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-ink-soft">PIN</span>
+            <span className="font-serif text-xl tracking-[0.28em] text-chili">{pin}</span>
           </div>
-        ) : (
+        ) : null}
+        {!selected && !pin ? (
           <p className="mt-3 text-sm text-ink-soft">
             Ainda sem PIN. Abra uma comanda ou gere o QR — o código aparece aqui para você passar ao cliente.
           </p>
-        )}
+        ) : null}
+        {!selected && movingTable && sessionOpen ? (
+          <div className="mt-3 rounded-2xl border border-line p-3">
+            <p className="text-sm font-medium">Trocar mesa</p>
+            <p className="mt-1 text-xs text-ink-soft">
+              Leva PIN e comandas para outra mesa livre. O cliente continua na mesma sessão.
+            </p>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <select
+                className="field flex-1 text-sm"
+                value={destId}
+                onChange={(e) => setDestId(e.target.value)}
+                disabled={busy || freeTables.length === 0}
+              >
+                <option value="">
+                  {freeTables.length === 0 ? "Nenhuma mesa livre" : "Escolher mesa"}
+                </option>
+                {freeTables.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={busy || !destId}
+                onClick={() => void transferTable()}
+                className="btn-secondary text-sm disabled:opacity-50"
+              >
+                Transferir
+              </button>
+            </div>
+          </div>
+        ) : null}
         {error ? <p className="mt-3 text-sm text-chili">{error}</p> : null}
         {cashBlocked ? (
           <p className="mt-3 rounded-2xl border border-chili/30 bg-chili/5 px-3 py-2 text-sm text-chili">
@@ -178,198 +275,135 @@ export function StaffTableDialog({
           <p className="py-10 text-center text-ink-soft">Carregando…</p>
         ) : (
           <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
-            {!data || data.tabs.length === 0 ? (
-              <p className="text-sm text-ink-soft">Nenhuma comanda nesta mesa ainda.</p>
-            ) : (
-              <ul className="space-y-2">
-                {data.tabs.map((t) => (
-                  <li key={t.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(t.id)}
-                      className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left ${
-                        selectedId === t.id ? "border-chili/50 bg-paper-2" : "border-line bg-card"
-                      }`}
-                    >
-                      <span>
-                        <span className="font-medium">{t.guestName}</span>
-                        <span className="mt-0.5 block text-xs text-ink-soft">
-                          {t.guestPhoneMasked}
-                          {t.status === "closed" ? " · fechada" : ""}
-                        </span>
-                      </span>
-                      <span className="text-sm font-medium tabular-nums text-chili">
-                        {formatBrlFromCents(t.dueCents ?? tabDueCents(t.totalCents, t.serviceFeePercent ?? 0))}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {unassigned.length > 0 ? (
-              <div className="mt-4 rounded-2xl border border-amber/40 bg-amber/10 p-3">
-                <p className="text-sm font-medium">Pedidos nesta mesa (sem comanda)</p>
-                <p className="mt-1 text-xs text-ink-soft">
-                  Ainda não estão na conta de ninguém. Lance pela comanda da pessoa para aparecer na parcial.
-                </p>
-                <ul className="mt-2 space-y-2 text-sm">
-                  {unassigned.map((order) => (
-                    <li key={order.id}>
-                      <p className="text-xs uppercase tracking-wide text-ink-soft">
-                        {GUEST_ORDER_STATUS_LABEL[order.status]}
-                      </p>
-                      {order.items.map((item) => (
-                        <p key={item.id}>
-                          {item.qty}× {item.name}
-                        </p>
-                      ))}
-                      <p className="tabular-nums text-chili">{formatBrlFromCents(order.totalCents)}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-            {openingTab ? (
-              <StaffOpenTabForm
-                tableId={tableId}
+            {selected ? (
+              <StaffTabDetail
+                tab={selected}
                 busy={busy}
-                onCancel={() => setOpeningTab(false)}
-                onBusy={setBusy}
-                onError={setError}
-                onCreated={(tabId) => {
-                  setOpeningTab(false);
-                  setSelectedId(tabId);
-                  void load();
-                  onChanged();
-                }}
+                cashBlocked={cashBlocked}
+                canClose={canClose}
+                onPrint={() => setReceiptTab(selected)}
+                onAddOrder={() => setAddingTab(selected)}
+                onReceive={() => setClosingTab(selected)}
               />
             ) : (
-              <button
-                type="button"
-                disabled={busy || cashBlocked}
-                onClick={() => setOpeningTab(true)}
-                className="btn-secondary mt-4 w-full text-sm disabled:opacity-50"
-              >
-                Abrir comanda
-              </button>
-            )}
-            {selected ? (
-              <div className="mt-5 border-t border-line pt-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{selected.guestName}</p>
-                    <p className="text-xs text-ink-soft">{selected.guestPhoneMasked}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-secondary shrink-0 !px-3 !py-1.5 text-sm"
-                    onClick={() => setReceiptTab(selected)}
-                  >
-                    Imprimir
-                  </button>
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-chili/25 bg-chili/5 px-4 py-4 text-center">
-                  <p className="text-xs font-medium uppercase tracking-wide text-ink-soft">
-                    {selected.status === "open" ? "A receber" : "Total da comanda"}
-                  </p>
-                  <p className="mt-1 font-serif text-4xl tabular-nums tracking-tight text-chili">
-                    {formatBrlFromCents(selectedDue)}
-                  </p>
-                  {selectedFeeOn ? (
-                    <p className="mt-1 text-xs text-ink-soft">
-                      Taxa de serviço ({selected.serviceFeePercent}%) ·{" "}
-                      {formatBrlFromCents(selected.serviceFeeCents ?? 0)}
-                    </p>
-                  ) : null}
-                  <p className="mt-1 text-xs text-ink-soft">
-                    {selected.orders.filter((o) => o.status !== "cancelled").length}{" "}
-                    {selected.orders.filter((o) => o.status !== "cancelled").length === 1
-                      ? "pedido"
-                      : "pedidos"}
-                    {selected.status === "closed" ? " · fechada" : ""}
-                  </p>
-                </div>
-
-                {selected.orders.length === 0 ? (
-                  <p className="mt-3 text-sm text-ink-soft">Nenhum pedido nesta comanda ainda.</p>
+              <>
+                {!data || data.tabs.length === 0 ? (
+                  <p className="text-sm text-ink-soft">Nenhuma comanda nesta mesa ainda.</p>
                 ) : (
-                  <ul className="mt-4 space-y-3">
-                    {selected.orders.map((order) => (
-                      <li key={order.id} className="text-sm">
-                        <p className="text-xs uppercase tracking-wide text-ink-soft">
-                          {GUEST_ORDER_STATUS_LABEL[order.status]}
-                        </p>
-                        {order.items.map((item) => (
-                          <p key={item.id} className="flex justify-between gap-2">
+                  <ul className="space-y-2">
+                    {data.tabs.map((t) => {
+                      const due = t.dueCents ?? tabDueCents(t.totalCents, t.serviceFeePercent ?? 0);
+                      return (
+                        <li key={t.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedId(t.id);
+                              setMovingTable(false);
+                              setOpeningTab(false);
+                            }}
+                            className="flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-card px-3 py-3 text-left"
+                          >
                             <span>
-                              {item.qty}× {item.name}
+                              <span className="font-medium">{t.guestName}</span>
+                              <span className="mt-0.5 block text-xs text-ink-soft">
+                                {t.guestPhoneMasked}
+                                {t.status === "closed" ? " · fechada" : ""}
+                              </span>
                             </span>
-                            <span className="shrink-0 tabular-nums text-ink-soft">
-                              {formatBrlFromCents(item.unitPriceCents * item.qty)}
+                            <span className="shrink-0 text-sm font-medium tabular-nums text-chili">
+                              {formatBrlFromCents(due)}
                             </span>
-                          </p>
-                        ))}
-                        <p className="mt-0.5 text-right tabular-nums text-chili">
-                          {formatBrlFromCents(order.totalCents)}
-                        </p>
-                      </li>
-                    ))}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
-                {selected.status === "open" ? (
-                  <button
-                    type="button"
-                    disabled={busy || cashBlocked}
-                    onClick={() => setAddingTab(selected)}
-                    className="btn-primary mt-4 w-full !py-2 text-sm disabled:opacity-50"
-                  >
-                    Adicionar pedido
-                  </button>
+                {unassigned.length > 0 ? (
+                  <div className="mt-4 rounded-2xl border border-amber/40 bg-amber/10 p-3">
+                    <p className="text-sm font-medium">Pedidos nesta mesa (sem comanda)</p>
+                    <p className="mt-1 text-xs text-ink-soft">
+                      Ainda não estão na conta de ninguém. Lance pela comanda da pessoa para aparecer na parcial.
+                    </p>
+                    <ul className="mt-2 space-y-2 text-sm">
+                      {unassigned.map((order) => (
+                        <li key={order.id}>
+                          <p className="text-xs uppercase tracking-wide text-ink-soft">
+                            {GUEST_ORDER_STATUS_LABEL[order.status]}
+                          </p>
+                          {order.items.map((item) => (
+                            <p key={item.id}>
+                              {item.qty}× {item.name}
+                            </p>
+                          ))}
+                          <p className="tabular-nums text-chili">{formatBrlFromCents(order.totalCents)}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
-                {selected.status === "open" && canClose ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => setClosingTab(selected)}
-                    className="btn-secondary mt-3 w-full text-sm"
-                  >
-                    Receber {formatBrlFromCents(selectedDue)} e fechar comanda
-                  </button>
-                ) : selected.status === "open" ? (
-                  <p className="mt-3 text-sm text-ink-soft">Peça ao caixa para encerrar esta comanda.</p>
+                {openingTab ? (
+                  <StaffOpenTabForm
+                    tableId={tableId}
+                    busy={busy}
+                    onCancel={() => setOpeningTab(false)}
+                    onBusy={setBusy}
+                    onError={setError}
+                    onCreated={() => {
+                      setOpeningTab(false);
+                      void load();
+                      onChanged();
+                    }}
+                  />
                 ) : null}
-              </div>
-            ) : null}
+              </>
+            )}
           </div>
         )}
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onGenerateQr}
-            disabled={cashBlocked}
-            className="btn-secondary text-sm disabled:opacity-50"
-            title={cashBlocked ? "Abra o caixa para gerar o QR" : undefined}
-          >
-            Novo QR
-          </button>
-          {canClose ? (
+        <div className="mt-5 grid grid-cols-2 gap-2 border-t border-line pt-4">
+          {showOpenTabBtn ? (
             <button
               type="button"
-              disabled={busy || openCount > 0}
+              disabled={busy || cashBlocked}
+              onClick={() => setOpeningTab(true)}
+              className="btn-secondary w-full !py-2.5 text-sm disabled:opacity-50"
+            >
+              Abrir comanda
+            </button>
+          ) : null}
+          {showQrBtn ? (
+            <button
+              type="button"
+              onClick={onGenerateQr}
+              disabled={cashBlocked}
+              className="btn-secondary w-full !py-2.5 text-sm disabled:opacity-50"
+              title={cashBlocked ? "Abra o caixa para gerar o QR" : undefined}
+            >
+              Novo QR
+            </button>
+          ) : null}
+          {canEndTable ? (
+            <button
+              type="button"
+              disabled={busy}
               onClick={() => void closeTable()}
-              className="btn-secondary text-sm disabled:opacity-50"
-              title={openCount > 0 ? "Feche todas as comandas primeiro" : undefined}
+              className="btn-secondary w-full !py-2.5 text-sm disabled:opacity-50"
             >
               Encerrar mesa
             </button>
-          ) : (
-            <p className="self-center text-sm text-ink-soft">Só o caixa encerra a mesa.</p>
-          )}
-          <button type="button" onClick={onClose} className="btn-primary !py-2 text-sm">
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            className={`btn-primary w-full !py-2.5 text-sm${fecharFullRow ? " col-span-2" : ""}`}
+          >
             Fechar
           </button>
         </div>
+        {!canClose && sessionOpen && openCount === 0 ? (
+          <p className="mt-2 text-center text-xs text-ink-soft">Só o caixa encerra a mesa.</p>
+        ) : null}
       </div>
       {addingTab?.status === "open" ? (
         <StaffAddOrderDialog
@@ -414,6 +448,87 @@ export function StaffTableDialog({
   );
 }
 
+function StaffTabDetail({
+  tab,
+  busy,
+  cashBlocked,
+  canClose,
+  onPrint,
+  onAddOrder,
+  onReceive,
+}: {
+  tab: StaffTableTab;
+  busy: boolean;
+  cashBlocked: boolean;
+  canClose: boolean;
+  onPrint: () => void;
+  onAddOrder: () => void;
+  onReceive: () => void;
+}) {
+  const due = tab.dueCents ?? tabDueCents(tab.totalCents, tab.serviceFeePercent ?? 0);
+  const feeOn = (tab.serviceFeePercent ?? 0) > 0;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        {feeOn ? (
+          <p className="text-xs text-ink-soft">
+            Taxa {tab.serviceFeePercent}% · {formatBrlFromCents(tab.serviceFeeCents ?? 0)}
+          </p>
+        ) : (
+          <span />
+        )}
+        <button type="button" className="btn-ghost !px-2 !py-1 text-sm" onClick={onPrint}>
+          Imprimir
+        </button>
+      </div>
+      {tab.orders.length === 0 ? (
+        <p className="text-sm text-ink-soft">Nenhum pedido nesta comanda ainda.</p>
+      ) : (
+        <ul className="space-y-3">
+          {tab.orders.map((order) => (
+            <li key={order.id} className="text-sm">
+              <p className="text-xs uppercase tracking-wide text-ink-soft">
+                {GUEST_ORDER_STATUS_LABEL[order.status]}
+              </p>
+              {order.items.map((item) => (
+                <p key={item.id} className="flex justify-between gap-2">
+                  <span>
+                    {item.qty}× {item.name}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-ink-soft">
+                    {formatBrlFromCents(item.unitPriceCents * item.qty)}
+                  </span>
+                </p>
+              ))}
+              <p className="mt-0.5 text-right tabular-nums text-chili">{formatBrlFromCents(order.totalCents)}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {tab.status === "open" ? (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={busy || cashBlocked}
+            onClick={onAddOrder}
+            className="btn-primary w-full !py-2 text-sm disabled:opacity-50"
+          >
+            Adicionar pedido
+          </button>
+          {canClose ? (
+            <button type="button" disabled={busy} onClick={onReceive} className="btn-secondary w-full text-sm">
+              Receber {formatBrlFromCents(due)}
+            </button>
+          ) : (
+            <p className="text-sm text-ink-soft">Peça ao caixa para encerrar esta comanda.</p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function StaffOpenTabForm({
   tableId,
   busy,
@@ -427,7 +542,7 @@ function StaffOpenTabForm({
   onCancel: () => void;
   onBusy: (v: boolean) => void;
   onError: (m: string | null) => void;
-  onCreated: (tabId: string) => void;
+  onCreated: () => void;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -444,11 +559,11 @@ function StaffOpenTabForm({
     onError(null);
     setPhoneBlocked(false);
     try {
-      const created = await api<{ id?: string; tab?: { id: string } }>(`/v1/staff/tables/${tableId}/tabs`, {
+      await api<{ id?: string; tab?: { id: string } }>(`/v1/staff/tables/${tableId}/tabs`, {
         method: "POST",
         body: JSON.stringify(parsed.data),
       });
-      onCreated(created.tab?.id ?? created.id ?? "");
+      onCreated();
     } catch (err) {
       const blocked = err instanceof ApiError && err.code === ERROR_CODES.TAB_ALREADY_OPEN;
       setPhoneBlocked(blocked);

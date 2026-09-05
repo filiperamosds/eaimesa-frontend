@@ -7,6 +7,20 @@ import { pickStr } from "./api-case";
 import { clearStoredMesa, resolveMesaCode } from "./mesa-session-storage";
 import type { PresenceSession } from "./types";
 
+const CALL_POLL_MS = 3000;
+const OPEN_CALL_MSG = "Garçom chamado — aguarde no salão.";
+
+function openCallFrom(raw: unknown): PresenceSession["waiterCall"] {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const id = pickStr(o, "id");
+  const status = pickStr(o, "status");
+  const createdAt = pickStr(o, "createdAt", "created_at");
+  if (!id || !createdAt) return null;
+  if (status !== "open" && status !== "acked" && status !== "expired") return null;
+  return { id, status, createdAt };
+}
+
 function normalizePresence(data: unknown): PresenceSession | null {
   if (!data || typeof data !== "object") return null;
   const o = data as Record<string, unknown>;
@@ -19,11 +33,19 @@ function normalizePresence(data: unknown): PresenceSession | null {
       : typeof o.expires_in_seconds === "number"
         ? o.expires_in_seconds
         : undefined;
-  return { tableLabel, expiresAt, expiresInSeconds: expiresIn };
+  const waiterCall = "waiterCall" in o || "waiter_call" in o
+    ? openCallFrom(o.waiterCall ?? o.waiter_call)
+    : undefined;
+  return { tableLabel, expiresAt, expiresInSeconds: expiresIn, waiterCall };
+}
+
+function isOpenCall(presence: PresenceSession | null | undefined): boolean {
+  return presence?.waiterCall?.status === "open";
 }
 
 /**
  * Presença no cardápio (ADR-026): menuCode no sessionStorage (bootstrap via QR ?mesa=) → POST presence.
+ * Enquanto houver chamado `open`, poll em GET /presence até o salão marcar atendido (EAI-5).
  */
 export function useWaiterPresence(slug: string, enabled: boolean) {
   const [presence, setPresence] = useState<PresenceSession | null | undefined>(null);
@@ -61,12 +83,16 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
               return;
             }
             setPresence(data);
+            if (isOpenCall(data)) setCallMsg(OPEN_CALL_MSG);
           }
           return;
         }
         const raw = await api<unknown>("/v1/public/presence");
         const data = normalizePresence(raw);
-        if (!cancelled) setPresence(data);
+        if (!cancelled) {
+          setPresence(data);
+          if (isOpenCall(data)) setCallMsg(OPEN_CALL_MSG);
+        }
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError) {
@@ -117,13 +143,41 @@ export function useWaiterPresence(slug: string, enabled: boolean) {
     };
   }, [slug, enabled]);
 
+  useEffect(() => {
+    if (!enabled || !slug) return;
+    const waiting = Boolean(callMsg) || isOpenCall(presence);
+    if (!waiting) return;
+    let cancelled = false;
+
+    async function tick() {
+      try {
+        const raw = await api<unknown>("/v1/public/presence");
+        const data = normalizePresence(raw);
+        if (cancelled || !data) return;
+        setPresence(data);
+        if (!isOpenCall(data)) {
+          setCallMsg(null);
+        }
+      } catch {
+        // Presença temporariamente indisponível: tenta de novo no próximo tick.
+      }
+    }
+
+    const id = window.setInterval(() => void tick(), CALL_POLL_MS);
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [enabled, slug, callMsg, presence?.waiterCall?.status]);
+
   async function callWaiter() {
     setCallError(null);
     setCallMsg(null);
     setCalling(true);
     try {
       await api("/v1/public/waiter-calls", { method: "POST", body: JSON.stringify({}) });
-      setCallMsg("Garçom chamado — aguarde no salão.");
+      setCallMsg(OPEN_CALL_MSG);
     } catch (err) {
       if (err instanceof ApiError && err.code === ERROR_CODES.CALL_ALREADY_OPEN) {
         setCallMsg("Já avisamos o salão — aguarde um instante.");

@@ -26,7 +26,7 @@ const COUNT_LABEL: Record<CountMethod, string> = {
 const ALWAYS_COUNT: CountMethod[] = ["cash", "debit", "credit", "pix"];
 
 type RosterMember = { id: string; name: string; role: "staff" | "cashier" };
-type Roster = { required: boolean; members: RosterMember[] };
+type Roster = { required: boolean; members: RosterMember[]; suggestedOpeningFloatCents?: number };
 
 const ROLE_LABEL: Record<RosterMember["role"], string> = {
   staff: "Garçom",
@@ -110,6 +110,7 @@ export function CashRegisterPanel() {
       const next: Record<string, boolean> = {};
       for (const m of r.members) next[m.id] = true;
       setOnShift(next);
+      setOpeningFloat(r.suggestedOpeningFloatCents ?? 0);
     } catch {
       setRoster(null);
     }

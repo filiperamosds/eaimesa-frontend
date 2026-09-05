@@ -95,7 +95,7 @@ curl http://localhost:8000/health
 
 ## Estático (`out/`)
 
-`pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
+`pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`). No `next dev`, o mesmo path do QR usa rewrite em `next.config.ts` (o export estático não tem rewrite).
 
 Rotas novas da fatia 18 (`/confirmar-email`, `/esqueci-senha`, `/redefinir-senha`, `/convite`) saem como pastas no export. Convite usa query `?token=` (não path), porque o token é dinâmico.
 

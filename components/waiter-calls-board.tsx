@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { api, ApiError } from "../lib/api";
 import type { WaiterCall } from "../lib/types";
 
@@ -62,22 +61,18 @@ export function WaiterCallsBoard() {
     }
   }
 
-  if (loading) return <p className="text-ink-soft">Carregando chamados…</p>;
+  if (loading) {
+    return (
+      <div>
+        <CallsHeader onRefresh={() => void load()} />
+        <p className="text-ink-soft">Carregando chamados…</p>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <p className="text-sm text-ink-soft">
-          Ligue a chamada em{" "}
-          <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
-            Chamada
-          </Link>
-          .
-        </p>
-        <button type="button" onClick={() => void load()} className="text-sm font-medium text-chili">
-          Atualizar agora
-        </button>
-      </div>
+      <CallsHeader onRefresh={() => void load()} />
       {error ? <p className="mb-4 text-sm text-chili">{error}</p> : null}
       {calls.length === 0 ? (
         <p className="surface p-8 text-center text-ink-soft">Nenhum chamado aberto.</p>
@@ -103,6 +98,17 @@ export function WaiterCallsBoard() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function CallsHeader({ onRefresh }: { onRefresh: () => void }) {
+  return (
+    <div className="mb-8 flex items-end justify-between gap-3">
+      <h1 className="font-serif text-3xl">Chamados</h1>
+      <button type="button" onClick={onRefresh} className="text-sm font-medium text-chili">
+        Atualizar agora
+      </button>
     </div>
   );
 }

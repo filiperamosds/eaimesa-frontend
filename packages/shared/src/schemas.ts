@@ -218,6 +218,7 @@ export const patchVenueSchema = z
     slug: slugSchema.optional(),
     staffCanCloseTabs: z.boolean().optional(),
     requireShiftOnOpenCash: z.boolean().optional(),
+    thermalAutoPrint: z.boolean().optional(),
     representative: representativeSchema.optional(),
     waiterCallEnabled: z.boolean().optional(),
     waiterCallTtlMinutes: z
@@ -233,6 +234,7 @@ export const patchVenueSchema = z
       b.slug !== undefined ||
       b.staffCanCloseTabs !== undefined ||
       b.requireShiftOnOpenCash !== undefined ||
+      b.thermalAutoPrint !== undefined ||
       b.representative !== undefined ||
       b.waiterCallEnabled !== undefined ||
       b.waiterCallTtlMinutes !== undefined,
@@ -304,9 +306,14 @@ export const createOrderSchema = z
     message: "Escolha a mesa ou a comanda.",
   });
 
-export const patchOrderSchema = z.object({
-  status: z.enum(ORDER_STATUSES),
-});
+export const patchOrderSchema = z
+  .object({
+    status: z.enum(ORDER_STATUSES).optional(),
+    printed: z.boolean().optional(),
+  })
+  .refine((b) => b.status !== undefined || b.printed !== undefined, {
+    message: "Envie status e/ou printed.",
+  });
 
 export const createTableSchema = z.object({
   label: z.string().trim().min(1, "Informe o nome da mesa.").max(TABLE_LABEL_MAX),

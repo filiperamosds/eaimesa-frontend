@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { useMenuSlugFromName } from "../lib/menu-slug";
 import { configureThermalPrinter, connectThermalPrinter, hasGrantedThermalPrinter } from "../lib/print-escpos";
-import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
+import { setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
 import type { CatalogCategory, Session, Venue } from "../lib/types";
 import { PrintGroupsEditor, type DraftPrintGroup } from "./print-groups-editor";
 
@@ -40,6 +40,8 @@ export function ConfigBarPanels() {
         setName(v.name);
         setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
         setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
+        setThermalPrint(v.thermalAutoPrint === true);
+        setThermalAutoPrintEnabled(v.thermalAutoPrint === true);
         setCategories(catalog.categories);
         setPrintGroups(
           (v.printGroups ?? []).map((g) => ({
@@ -53,12 +55,7 @@ export function ConfigBarPanels() {
   }, []);
 
   useEffect(() => {
-    void hasGrantedThermalPrinter().then((ok) => {
-      setPrinterReady(ok);
-      if (!isThermalAutoPrintEnabled()) return;
-      if (ok) setThermalPrint(true);
-      else setThermalAutoPrintEnabled(false);
-    });
+    void hasGrantedThermalPrinter().then((ok) => setPrinterReady(ok));
   }, []);
 
   async function save(e: React.FormEvent) {
@@ -90,6 +87,7 @@ export function ConfigBarPanels() {
             slug: string;
             staffCanCloseTabs?: boolean;
             requireShiftOnOpenCash?: boolean;
+            thermalAutoPrint?: boolean;
           } = {
             name,
             slug: nextSlug,
@@ -97,6 +95,7 @@ export function ConfigBarPanels() {
           if (service) {
             body.staffCanCloseTabs = staffCanCloseTabs;
             body.requireShiftOnOpenCash = requireShiftOnOpenCash;
+            body.thermalAutoPrint = thermalPrint;
           }
           v = await api<Venue>("/v1/owner/venue", {
             method: "PATCH",
@@ -135,6 +134,7 @@ export function ConfigBarPanels() {
       if (service) {
         setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
         setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
+        setThermalPrint(v.thermalAutoPrint === true);
       }
       if (service) setThermalAutoPrintEnabled(thermalPrint);
       if (service) setPrinterReady(await hasGrantedThermalPrinter());
@@ -203,7 +203,7 @@ export function ConfigBarPanels() {
                 <span className="block font-medium">Imprimir pedidos novos na térmica</span>
                 <span className="mt-1 block text-sm text-ink-soft">
                   Via dos pedidos novos no Kanban e cupom de conferência, neste Chrome, sem a caixa de
-                  imprimir do sistema.
+                  imprimir do sistema. Desligada, o pedido não fica na fila para imprimir depois.
                 </span>
               </span>
             </label>

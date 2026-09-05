@@ -41,10 +41,6 @@ export function PainelMesas() {
       <div className="mb-4">
         <p className="eyebrow">Salão</p>
         <h1 className="mt-2 font-serif text-3xl">Mesas e comandas</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          Toque na mesa para ver PIN, comandas e receber. Para cadastrar/renomear mesas, vá em
-          Configurações → Mesas.
-        </p>
       </div>
       <StaffBoard />
     </div>

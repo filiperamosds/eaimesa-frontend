@@ -44,10 +44,10 @@ sequenceDiagram
 1. Dono liga **Chamar garçom**, define TTL (ex. 120 min), cadastra mesas, exporta QR **por mesa** (URL com `?mesa=`).
 2. Cliente escaneia esse QR (não o QR geral da porta) → presença na mesa → vê o botão.
 3. Toca **Chamar garçom** → aparece em `/painel/chamados`.
-4. Dono marca **Atendido**.
+4. Dono marca **Atendido**. O cardápio poll `GET /v1/public/presence` (~3s); quando `waiterCall` deixa de ser `open`, o botão volta a **Chamar garçom**.
 5. Sem scan do QR da mesa (sem código no sessionStorage) ou feature off ou TTL vencido → sem botão (aviso para escanear no salão).
 
-**Front:** o botão não fica restrito ao plano Cardápio — se `waiterCallEnabled=true` no `GET /v1/public/venues/{slug}`, a faixa aparece também no Auto atendimento (além da comanda).
+**Front:** o botão não fica restrito ao plano Cardápio — se `waiterCallEnabled=true` no `GET /v1/public/venues/{slug}`, a faixa aparece também no Auto atendimento. Com comanda guest aberta (claim/PIN), a faixa some: a presença do QR fixo é encerrada.
 
 ## Configuração (UI)
 
@@ -62,5 +62,6 @@ sequenceDiagram
 - QR Mesa 3 contém `?mesa=` distinto do QR Mesa 4.
 - Scan cria cookie; botão aparece.
 - Chamada lista a mesa certa no painel.
+- **Atendido** no painel → no cardápio o botão volta a **Chamar garçom** (poll da presença).
 - Feature off → sem botão / API 403 `FEATURE_DISABLED`.
 - TTL baixo → após expirar, botão some até novo scan.

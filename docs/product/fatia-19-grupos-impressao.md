@@ -20,7 +20,7 @@ Uma térmica, várias vias: o dono agrupa categorias do cardápio (Cozinha, Drin
 ## Fluxo
 
 1. Dono abre Estabelecimento e cria grupos: Cozinha (Petiscos, Porções), Drinks (Drinks), Bebidas (Bebidas).
-2. Liga **Imprimir pedidos novos na térmica** neste Chrome.
+2. Liga **Imprimir pedidos novos na térmica** e salva (grava no estabelecimento). Desligada, pedidos novos não entram na fila.
 3. Pedido misto (porção + caipirinha + chopp) chega no Kanban do dono → três papéis, cada um com o nome do grupo no topo.
 4. Tablet da Cozinha (Painel) sem o flag: uma via só de comida. Com **Imprimir via grupos**: categorias travadas; a térmica aplica os grupos do estabelecimento.
 

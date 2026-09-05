@@ -56,7 +56,7 @@ Liberar CRUD de mesas (`GET/POST/PATCH/DELETE /v1/owner/tables`) no `kind=cardap
 1. Cliente com presença válida toca **Chamar garçom**.
 2. `POST` cria `WaiterCall` (`open`) com mesa + timestamp; rate limit por presença.
 3. Dono (e depois staff, se houver) vê em **`/painel/chamados`** (poll curto).
-4. **Atendido** → `acked`; lista some dos abertos.
+4. **Atendido** → `acked`; lista some dos abertos. O cardápio poll `GET /v1/public/presence` (`waiterCall`) e o botão volta a **Chamar garçom**.
 5. Chamada órfã (presença expirou) pode permanecer até ack ou TTL da própria call (ex. 30 min).
 
 ### Quem atende no Cardápio
@@ -70,11 +70,11 @@ Sem equipe no plano Cardápio: a tela é do **dono** em `/painel/chamados` (celu
 | Hash `#mesa=` | Não chega ao servidor; sessão só no `localStorage` é fácil de forjar e não escala para a fila do painel |
 | Reusar `eaimesa_guest` / claim | Mistura comanda; claim é uso único + TTL curto |
 | Só rótulo impresso no PNG, sem query | Aparelho não sabe a mesa → não dá para filtrar chamados |
-| WebSocket obrigatório | Poll no painel basta (padrão Kanban) |
+| WebSocket obrigatório | Poll no painel e no cardápio (`waiterCall` na presença) basta |
 
 ## Consequências
 
-- Front: `publicMenuUrl(slug, { mesa })` no QR; cardápio bootstrap `?mesa=` → `sessionStorage` + URL limpa; Configurações + `/painel/chamados`.
+- Front: `publicMenuUrl(slug, { mesa })` no QR; cardápio bootstrap `?mesa=` → `sessionStorage` + URL limpa; Configurações + `/painel/chamados`. Claim/PIN apagam a presença para não misturar mesas.
 - Backend: ver [backend-waiter-call.md](../api/backend-waiter-call.md).
 - Docs de pricing/fatia 3: Cardápio passa a ter mesas (QR) se a feature estiver no produto.
 - Claim / Auto atendimento **inalterados**.

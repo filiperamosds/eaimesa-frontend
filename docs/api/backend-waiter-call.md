@@ -71,7 +71,7 @@ Regras:
 
 - `mesa` = `menuCode` da mesa **ativa** do venue.
 - Se `waiterCallEnabled=false` → 403 `FEATURE_DISABLED` (ou 404 genérico).
-- Sucesso: cria/renova `PresenceSession`, `Set-Cookie: eaimesa_presence`, body `{ tableLabel, expiresAt, expiresInSeconds }`.
+- Sucesso: cria/renova `PresenceSession`, `Set-Cookie: eaimesa_presence`, body `{ tableLabel, expiresAt, expiresInSeconds, waiterCall }`. `waiterCall` é o chamado `open` da mesa ou `null`.
 - Rate limit por IP (ex. 30/min).
 
 ### Público — cardápio
@@ -92,7 +92,7 @@ Regras:
 | Método | Path | Auth |
 |--------|------|------|
 | POST | `/v1/public/waiter-calls` | Cookie `eaimesa_presence` |
-| GET | `/v1/public/presence` | Cookie — `{ tableLabel, expiresAt }` ou 401 |
+| GET | `/v1/public/presence` | Cookie — `{ tableLabel, expiresAt, expiresInSeconds, waiterCall }` ou 401 |
 
 `POST /v1/public/waiter-calls`:
 
@@ -123,8 +123,10 @@ Lista: `{ id, tableId, tableLabel, createdAt, status }[]` ordenada por `created_
 
 Front: botão no `/{slug}` após presença; **Configurações → Mesas/Chamada**; fila em `/painel/chamados`. Bootstrap: QR com `?mesa=` → front grava em `sessionStorage` e remove da URL; POST presence usa o código guardado. Enquanto o Laravel responder `PLAN_FEATURE` em `/v1/owner/tables` ou não tiver presença/waiter-calls, a UI fica sem botão / com erro de API.
 
+Depois do POST de chamado, o cardápio **poll** `GET /v1/public/presence` (~3s). Quando `waiterCall` some (ack/expirado), o botão volta a **Chamar garçom**. Sem SSE.
+
 ## Fora
 
 - Staff `/v1/staff/waiter-calls` (pode vir depois)
-- SSE / push
+- SSE / push (poll no painel e no cardápio)
 - Invalidar presença ao ack (não precisa)

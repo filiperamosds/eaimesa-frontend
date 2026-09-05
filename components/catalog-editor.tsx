@@ -2,11 +2,11 @@
 
 import { formatBrlFromCents, venueHasModule, type RecipeLine, type StockItem } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
-import { api, ApiError, apiUpload } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { mediaSrc } from "../lib/media";
 import type { CatalogCategory, Session } from "../lib/types";
+import { ItemCreateDialog } from "./item-create-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
-import { MoneyField } from "./masked-fields";
 
 export function CatalogEditor() {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
@@ -112,10 +112,7 @@ function CategoryBlock({
   recipes: Record<string, RecipeLine[]>;
 }) {
   const [name, setName] = useState(category.name);
-  const [itemName, setItemName] = useState("");
-  const [itemDesc, setItemDesc] = useState("");
-  const [itemPriceCents, setItemPriceCents] = useState<number | null>(null);
-  const [itemPhoto, setItemPhoto] = useState<File | null>(null);
+  const [creating, setCreating] = useState(false);
 
   async function saveName() {
     onError(null);
@@ -154,38 +151,6 @@ function CategoryBlock({
     }
   }
 
-  async function addItem(e: React.FormEvent) {
-    e.preventDefault();
-    const cents = itemPriceCents;
-    if (cents === null) {
-      onError("Informe o preço (ex. R$ 12,50).");
-      return;
-    }
-    onError(null);
-    try {
-      const created = await api<{ id: string }>("/v1/owner/catalog/items", {
-        method: "POST",
-        body: JSON.stringify({
-          categoryId: category.id,
-          name: itemName,
-          description: itemDesc || null,
-          priceCents: cents,
-          sortOrder: category.items.length,
-        }),
-      });
-      if (itemPhoto) {
-        await apiUpload(`/v1/owner/catalog/items/${created.id}/image`, itemPhoto);
-      }
-      setItemName("");
-      setItemDesc("");
-      setItemPriceCents(null);
-      setItemPhoto(null);
-      await onChange();
-    } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao criar item.");
-    }
-  }
-
   return (
     <section className="surface p-5">
       <div className="flex flex-wrap items-center gap-2">
@@ -218,38 +183,21 @@ function CategoryBlock({
           />
         ))}
       </ul>
-      <form onSubmit={addItem} className="mt-4 grid gap-2 sm:grid-cols-2">
-        <input
-          value={itemName}
-          onChange={(e) => setItemName(e.target.value)}
-          placeholder="Item"
-          className="field"
-          required
+      <button
+        type="button"
+        onClick={() => setCreating(true)}
+        className="btn-secondary mt-4 py-2 text-sm"
+      >
+        Adicionar item
+      </button>
+      {creating ? (
+        <ItemCreateDialog
+          categoryId={category.id}
+          sortOrder={category.items.length}
+          onSaved={onChange}
+          onClose={() => setCreating(false)}
         />
-        <MoneyField
-          cents={itemPriceCents}
-          onCentsChange={setItemPriceCents}
-          className="field"
-          required
-        />
-        <textarea
-          value={itemDesc}
-          onChange={(e) => setItemDesc(e.target.value)}
-          placeholder="Descrição (opcional)"
-          rows={3}
-          maxLength={280}
-          className="field sm:col-span-2"
-        />
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={(e) => setItemPhoto(e.target.files?.[0] ?? null)}
-          className="field text-sm file:mr-2 file:rounded-full file:border-0 file:bg-paper-2 file:px-3 file:py-1 sm:col-span-2"
-        />
-        <button type="submit" className="btn-secondary py-2 text-sm sm:col-span-2">
-          Adicionar item
-        </button>
-      </form>
+      ) : null}
     </section>
   );
 }

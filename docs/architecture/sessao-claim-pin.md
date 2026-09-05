@@ -23,7 +23,7 @@ Gerado pelo staff autenticado para uma mesa. **Este** é o QR que abre a comanda
 | Uso | **Single redeem** — primeiro scan consome |
 | Escopo | `venue_id` + `table_id` + `staff_user_id` |
 | Invalidação | Novo claim na mesma mesa invalida anterior não usado |
-| URL | `/{slug}/c/{token}` |
+| URL | `/{slug}/c/{token}` (dev: rewrite Next; Hostinger: `.htaccess` → página `/{slug}/c`) |
 
 ### Onde o QR vive (UI)
 
@@ -39,6 +39,7 @@ O cardápio público e a landing **não** geram claim. Modo comanda **só** apó
 ```
 POST /v1/public/venues/{slug}/c/{token}/redeem
 → 200 Set-Cookie: eaimesa_guest=...; HttpOnly; Secure; SameSite=Lax
+→ Set-Cookie: eaimesa_presence= (expirado) — claim/PIN encerram a presença do QR fixo da mesa, para o cardápio não mostrar duas mesas
 → 302 Location: /{slug}
 → Body inclui pin_display (4 dígitos) para compartilhar na mesa
 Staff já vê o mesmo PIN em GET /v1/staff/tables e no dialog da mesa (sessão abre no claim ou ao abrir comanda).
@@ -50,7 +51,7 @@ Após redirect, **token não permanece** na barra de endereço.
 
 - PIN **da mesa** (TableSession), 4 dígitos, ex. `4821`.
 - Mostrado no primeiro aparelho; depois fica atrás de um ícone de olho no cardápio/comanda (dialog com o PIN).
-- `POST /guest/tabs/join` com `{ slug, pin }` → cookie na ocupação da mesa.
+- `POST /guest/tabs/join` com `{ slug, pin }` → cookie na ocupação da mesa. Também encerra `eaimesa_presence`.
 - Comanda pessoal: `POST /guest/tabs` `{ name, phone }`.
 
 ## 4. GuestSession (cookie)

@@ -11,6 +11,7 @@ type Preview = {
   serviceFeeCents: number;
   discountCents: number;
   totalDueCents: number;
+  allowUnpaidClose?: boolean;
 };
 
 type Method = "cash" | "debit" | "credit" | "pix" | "courtesy" | "other";
@@ -37,6 +38,8 @@ export function StaffCloseTabDialog({ tabId, guestName, onCancel, onDone }: Prop
   const [discountCents, setDiscountCents] = useState(0);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
   const [draft, setDraft] = useState<PaymentLine>({ method: "cash", amountCents: 0, tenderedCents: null });
+  const [unpaid, setUnpaid] = useState(false);
+  const [waiveFee, setWaiveFee] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -46,8 +49,18 @@ export function StaffCloseTabDialog({ tabId, guestName, onCancel, onDone }: Prop
       .catch((err) => setError(err instanceof ApiError ? err.message : "Falha ao carregar o fechamento."));
   }, [tabId]);
 
+  useEffect(() => {
+    if (preview && preview.allowUnpaidClose !== true) setUnpaid(false);
+  }, [preview]);
+
+  useEffect(() => {
+    if (!preview) return;
+    const due = Math.max(0, preview.subtotalCents + (waiveFee ? 0 : preview.serviceFeeCents) - discountCents);
+    setDraft((d) => ({ ...d, amountCents: due }));
+  }, [preview, discountCents, waiveFee]);
+
   const subtotal = preview?.subtotalCents ?? 0;
-  const fee = preview?.serviceFeeCents ?? 0;
+  const fee = waiveFee ? 0 : (preview?.serviceFeeCents ?? 0);
   const totalDue = Math.max(0, subtotal + fee - discountCents);
   const paid = payments.reduce((s, p) => s + p.amountCents, 0);
   const remaining = Math.max(0, totalDue - paid);
@@ -65,12 +78,24 @@ export function StaffCloseTabDialog({ tabId, guestName, onCancel, onDone }: Prop
   async function confirm() {
     setBusy(true);
     setError(null);
+    let lines = payments;
+    if (!unpaid && remaining > 0) {
+      lines = [
+        ...payments,
+        {
+          method: draft.method,
+          amountCents: remaining,
+          tenderedCents: draft.method === "cash" ? draft.tenderedCents : null,
+        },
+      ];
+    }
     try {
       await api(`/v1/staff/tabs/${tabId}/close`, {
         method: "POST",
         body: JSON.stringify({
           discountCents,
-          payments: payments.map((p) => ({
+          waiveServiceFee: waiveFee,
+          payments: lines.map((p) => ({
             method: p.method,
             amountCents: p.amountCents,
             tenderedCents: p.method === "cash" ? p.tenderedCents ?? undefined : undefined,
@@ -101,7 +126,25 @@ export function StaffCloseTabDialog({ tabId, guestName, onCancel, onDone }: Prop
           <>
             <div className="mt-4 space-y-1 text-sm">
               <Row label="Subtotal" value={formatBrlFromCents(subtotal)} />
-              {fee > 0 ? <Row label={`Taxa de serviço (${preview.serviceFeePercent}%)`} value={formatBrlFromCents(fee)} /> : null}
+              {preview.serviceFeeCents > 0 ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className={waiveFee ? "text-ink-soft line-through" : "text-ink-soft"}>
+                    Taxa de serviço ({preview.serviceFeePercent}%)
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className={`tabular-nums ${waiveFee ? "text-ink-soft line-through" : ""}`}>
+                      {formatBrlFromCents(preview.serviceFeeCents)}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-xs text-chili hover:underline"
+                      onClick={() => setWaiveFee((v) => !v)}
+                    >
+                      {waiveFee ? "Restaurar" : "Sem taxa"}
+                    </button>
+                  </span>
+                </div>
+              ) : null}
               <label className="flex items-center justify-between gap-2">
                 <span className="text-ink-soft">Desconto</span>
                 <MoneyField
@@ -196,7 +239,28 @@ export function StaffCloseTabDialog({ tabId, guestName, onCancel, onDone }: Prop
               </div>
             </div>
 
-            {remaining > 0 && payments.length > 0 ? (
+            {preview.allowUnpaidClose ? (
+              <label className="mt-3 flex items-start gap-2 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={unpaid}
+                  onChange={(e) => setUnpaid(e.target.checked)}
+                />
+                <span>Fechar sem receber (fiado). O valor não entra em Recebido.</span>
+              </label>
+            ) : null}
+            {remaining > 0 && !unpaid ? (
+              <p className="mt-3 text-xs text-ink-soft">
+                Ao fechar, registra {formatBrlFromCents(remaining)} como {METHOD_LABEL[draft.method]}. Troque a forma acima se precisar.
+              </p>
+            ) : null}
+            {remaining > 0 && unpaid && payments.length === 0 ? (
+              <p className="mt-3 text-xs text-ink-soft">
+                Sem forma de pagamento o valor não entra em Recebido (fica como saldo pendente).
+              </p>
+            ) : null}
+            {remaining > 0 && unpaid && payments.length > 0 ? (
               <p className="mt-3 text-xs text-ink-soft">
                 Fechamento parcial: falta {formatBrlFromCents(remaining)}. A comanda fecha e o saldo fica como pendente.
               </p>
@@ -211,7 +275,7 @@ export function StaffCloseTabDialog({ tabId, guestName, onCancel, onDone }: Prop
             Cancelar
           </button>
           <button type="button" onClick={() => void confirm()} disabled={busy || !preview} className="btn-primary flex-1 !py-2 text-sm">
-            {busy ? "Fechando…" : "Fechar comanda"}
+            {busy ? "Fechando…" : unpaid ? "Fechar comanda" : "Receber e fechar"}
           </button>
         </div>
       </div>
