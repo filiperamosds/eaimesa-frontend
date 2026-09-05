@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatBrlFromCents, GUEST_ORDER_STATUS_LABEL } from "@eaimesa/shared";
-import { printEscPosReceipt } from "../lib/print-escpos";
+import { api, ApiError } from "../lib/api";
+import { hasGrantedThermalPrinter, printEscPosReceipt } from "../lib/print-escpos";
 import { printSystemReceipt } from "../lib/print-thermal-receipt";
 import type { StaffTableTab } from "../lib/types";
 
@@ -32,14 +33,33 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
   const cancelled = tab.orders.filter((o) => o.status === "cancelled");
   const [printError, setPrintError] = useState<string | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [queued, setQueued] = useState(false);
+  const [hasLocalPrinter, setHasLocalPrinter] = useState(false);
+
+  useEffect(() => {
+    void hasGrantedThermalPrinter().then(setHasLocalPrinter);
+  }, []);
 
   async function printThermal() {
     setPrintError(null);
+    setQueued(false);
     setPrinting(true);
     try {
-      await printEscPosReceipt(venueName, tableLabel, tab);
+      if (await hasGrantedThermalPrinter()) {
+        await printEscPosReceipt(venueName, tableLabel, tab);
+        setHasLocalPrinter(true);
+        return;
+      }
+      await api(`/v1/staff/tabs/${tab.id}/print`, { method: "POST" });
+      setQueued(true);
     } catch (err) {
-      setPrintError(err instanceof Error ? err.message : "Não foi possível imprimir na térmica.");
+      setPrintError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Não foi possível imprimir na térmica.",
+      );
     } finally {
       setPrinting(false);
     }
@@ -70,7 +90,7 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
               disabled={printing}
               onClick={() => void printThermal()}
             >
-              {printing ? "Enviando…" : "Imprimir"}
+              {printing ? "Enviando…" : queued ? "Enviado" : "Imprimir"}
             </button>
             <button type="button" className="btn-ghost !px-3 !py-1.5 text-sm" onClick={onClose}>
               Fechar
@@ -157,20 +177,31 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
               Documento de conferência — não é cupom fiscal.
             </p>
             <p className="mt-2 text-center text-[11px] text-ink-soft print:hidden">
-              Use <b>Imprimir na térmica</b> (USB). O diálogo do Chrome manda A4/PostScript e a POS80 imprime código.
+              {hasLocalPrinter
+                ? "Use a térmica USB neste Chrome. O diálogo do sistema manda A4 e a POS80 imprime código."
+                : "Sem térmica neste aparelho: o Kanban com a impressora ligada imprime o cupom."}
             </p>
           </div>
         </div>
 
         <div className="border-t border-line px-4 py-3 print:hidden">
           {printError ? <p className="mb-2 text-sm text-chili">{printError}</p> : null}
+          {queued ? (
+            <p className="mb-2 text-sm text-ink-soft">Enviado ao Kanban. A térmica do painel imprime o cupom.</p>
+          ) : null}
           <button
             type="button"
             className="btn-primary w-full !py-2.5 text-sm disabled:opacity-50"
             disabled={printing}
             onClick={() => void printThermal()}
           >
-            {printing ? "Enviando para a térmica…" : "Imprimir na térmica"}
+            {printing
+              ? "Enviando…"
+              : hasLocalPrinter
+                ? "Imprimir na térmica"
+                : queued
+                  ? "Enviar de novo"
+                  : "Imprimir no Kanban"}
           </button>
           <button type="button" className="btn-ghost mt-2 w-full !py-2 text-sm" onClick={printSystem}>
             Impressora do sistema (laser / PDF)

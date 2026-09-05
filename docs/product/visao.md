@@ -60,7 +60,7 @@ Implementação **agora**: [fatia 21 — estoque e receita](fatia-21-estoque.md)
 
 - Pagamento da conta no app / split
 - CPF do consumidor para pedir
-- Agente impressora térmica (cozinha em processo local). Via USB no Kanban e cupom de conferência: [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md). Vias por grupo de categoria: [ADR-035](../decisions/ADR-035-grupos-impressao.md).
+- Agente impressora térmica (cozinha em processo local). Via USB no Kanban e cupom de conferência: [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md). Cupom a partir do celular: [ADR-041](../decisions/ADR-041-fila-cupom-kanban.md). Vias por grupo: [ADR-035](../decisions/ADR-035-grupos-impressao.md).
 - Delivery, iFood, WhatsApp bot
 - App nativo, domínio customizado por estabelecimento
 - NFC-e

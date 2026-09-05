@@ -222,6 +222,18 @@ export type StaffTableTab = {
   orders: StaffTabOrder[];
 };
 
+/** Cupom da comanda na fila do Kanban (ADR-041). */
+export type TabReceiptPrintJob = {
+  id: string;
+  kind: "tab_receipt";
+  status: "pending" | "printing" | "printed" | "failed" | "expired";
+  createdAt: string | null;
+  printedAt?: string | null;
+  venueName: string;
+  tableLabel: string;
+  tab: StaffTableTab;
+};
+
 export type StaffTableTabsPayload = {
   table: {
     id: string;

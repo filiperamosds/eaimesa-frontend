@@ -300,8 +300,13 @@ export async function sendEscPos(data: Uint8Array, promptIfNeeded = true) {
 }
 
 /** Envia o cupom em ESC/POS na POS80 (USB/serial). Não passa pelo diálogo A4 do Chrome. */
-export async function printEscPosReceipt(venueName: string, tableLabel: string, tab: StaffTableTab) {
-  await sendEscPos(encodeEscPosReceipt(venueName, tableLabel, tab), true);
+export async function printEscPosReceipt(
+  venueName: string,
+  tableLabel: string,
+  tab: StaffTableTab,
+  promptIfNeeded = true,
+) {
+  await sendEscPos(encodeEscPosReceipt(venueName, tableLabel, tab), promptIfNeeded);
 }
 
 /** Via da cozinha: um pedido (ou N vias por grupo, cada uma com corte). */

@@ -12,7 +12,7 @@ Uma térmica, várias vias: o dono agrupa categorias do cardápio (Cozinha, Drin
 
 ## Não inclui
 
-- Várias impressoras / fila por IP
+- Várias impressoras / fila por IP / escolher qual Kanban
 - Agente local (`print_pending`)
 - Status por item
 - Grupo por mesa ou por operador (exceto o flag do Painel)
