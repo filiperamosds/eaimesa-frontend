@@ -38,7 +38,7 @@ Pedido pelo cardápio (carrinho) está na [fatia 7](fatia-07-pedido-guest.md).
 1. Toque na mesa abre o dialog (livre ou ocupada). PIN compacto se a sessão existir. **Trocar** ao lado do título abre o destino livre.
 2. **Abrir comanda** e **Novo QR** no rodapé. Os dois geram/mostram o PIN.
 3. Cartão da mesa lista os **nomes**. O quadro recarrega sozinho.
-4. Toque numa conta **abre o detalhe** (PIN some; **← Comandas** volta): itens, taxa (se ligada), **Imprimir**, **Adicionar pedido** e **Receber**. **Adicionar pedido**: escolhe categorias (só aí há **Cancelar**), soma itens de várias categorias (ex. bebida + petisco) e **Lança** um pedido. Térmica: ESC/POS no USB ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)); o Chrome pede a POS80 uma vez, ou em Configurações → Estabelecimento → **Configurar impressora**. Não use o diálogo do sistema na POS80.
+4. Toque numa conta **abre o detalhe** (PIN some; **← Comandas** volta): itens, taxa (se ligada), **Imprimir**, **Adicionar pedido** e **Receber**. **Adicionar pedido**: escolhe categorias (só aí há **Cancelar**), soma itens de várias categorias (ex. bebida + petisco) e **Lança** um pedido. Térmica neste Chrome: ESC/POS no USB ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). No celular: fila no Kanban ([ADR-041](../decisions/ADR-041-fila-cupom-kanban.md)).
 5. Fecha comanda por pessoa (caixa, dono, ou garçom se `staffCanCloseTabs`) — botão mostra o valor. **Encerrar mesa** só aparece com a sessão aberta e zero comandas abertas.
 
 ## Por que não uma comanda só

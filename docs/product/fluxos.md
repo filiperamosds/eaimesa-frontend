@@ -174,7 +174,7 @@ Detalhe em [fatia-06-comandas-individuais.md](fatia-06-comandas-individuais.md).
 7. Config **Permitir fechar com fiado** (`finance.config.allowUnpaidClose`, default off): só então o dialog mostra **Fechar sem receber**. Sem a flag, o close precisa quitar o devido (`TAB_CREDIT_DISABLED`). No fechamento, **Sem taxa** zera a taxa só nesta conta (`waiveServiceFee`).
 8. Config **Exigir escala ao abrir o caixa** em Estabelecimento (`requireShiftOnOpenCash`): na abertura, lista garçom e caixa (todos marcados); desmarcar inativa o membro. Login inativo mostra “Seu usuário está inativo.” ([ADR-031](../decisions/ADR-031-escala-abrir-caixa.md)).
 9. Quem abre a mesa fica com a taxa de serviço daquela ocupação. `/painel/financeiro` (Faturamento) lista o valor por funcionário ([ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md)). Relatórios (pedidos, comandas, caixa): [fatia 20](fatia-20-relatorios.md).
-10. **Imprimir na térmica** (Chrome USB/serial, ESC/POS) manda o cupom direto na POS80 — não passa pelo diálogo A4. Se a taxa de serviço estiver ligada, o cupom traz o % e o total com taxa. Se o Mac já tiver a POS80 como impressora do sistema, pause essa fila para o Chrome usar o USB. **Impressora do sistema** fica para laser/PDF. Agente local de cozinha continua fora do MVP ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)).
+10. **Imprimir** o cupom: com USB neste Chrome, ESC/POS na hora; no celular, enfileira e o Kanban com a POS80 imprime ([ADR-041](../decisions/ADR-041-fila-cupom-kanban.md)). Taxa de serviço entra no cupom se estiver ligada. **Impressora do sistema** fica para laser/PDF. Agente local de cozinha continua fora do MVP ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)).
 
 ## 5b. Fatia 10 — planos e checkout stub
 
@@ -240,7 +240,7 @@ Na fatia 1, `suspended` ainda mostra o cardápio (read-only) com aviso, se o sta
 
 ## Impressora
 
-No Kanban (`/painel/pedidos`, `/garcom/pedidos`): auto-print liga em **Configurações → Estabelecimento** (`thermalAutoPrint`). O botão **Configurar impressora** no card abre o picker USB/serial deste Chrome ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Com a flag desligada, pedidos novos já entram como impressos e não saem depois. Com a flag ligada, pedido novo em `pending` gera via ESC/POS; se o estabelecimento tiver **grupos de impressão**, cada grupo com itens vira uma via e a térmica corta entre elas ([ADR-035](../decisions/ADR-035-grupos-impressao.md)). Falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
+No Kanban (`/painel/pedidos`, `/garcom/pedidos`): auto-print liga em **Configurações → Estabelecimento** (`thermalAutoPrint`). O botão **Configurar impressora** no card abre o picker USB/serial deste Chrome ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Com a flag desligada, pedidos novos já entram como impressos e não saem depois. Com a flag ligada, pedido novo em `pending` gera via ESC/POS; se o estabelecimento tiver **grupos de impressão**, cada grupo com itens vira uma via e a térmica corta entre elas ([ADR-035](../decisions/ADR-035-grupos-impressao.md)). Cupom da comanda pedido no celular entra na fila `print_jobs` e este mesmo Kanban imprime ([ADR-041](../decisions/ADR-041-fila-cupom-kanban.md)). Falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
 
 ## 5c. Relatórios (fatia 20)
 

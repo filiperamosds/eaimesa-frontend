@@ -377,6 +377,16 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `
 
 Mesmo body de `POST /v1/owner/orders` (`tabId` opcional). Front: mesa → comanda → **Adicionar pedido**.
 
+### Staff — fila de cupom (fatia 22)
+
+Auth: cookie `role: owner | staff`. [ADR-041](../decisions/ADR-041-fila-cupom-kanban.md).
+
+| Método | Path | Descrição |
+|--------|------|-----------|
+| POST | `/v1/staff/tabs/{tabId}/print` | Enfileira cupom. Job `pending`/`printing` da mesma comanda é reusado. Painel: 403 |
+| POST | `/v1/staff/print-jobs/next` | Reclama o próximo `pending`. Sem job → `{ job: null }` |
+| PATCH | `/v1/staff/print-jobs/{id}` | `{ status: printed \| failed }` |
+
 Resposta de `GET /v1/staff/tables` (recorte):
 
 ```json

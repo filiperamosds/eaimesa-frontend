@@ -121,6 +121,10 @@ No máximo **uma** sessão `open` por mesa.
 
 Várias tabs `open` por sessão. Telefone único entre as `open` do **bar** (`open_venue_phone`): cadastrar o mesmo número com comanda ainda aberta → 409 `TAB_ALREADY_OPEN`.
 
+### PrintJob (fatia 22)
+
+Fila do cupom para o Kanban ([ADR-041](../decisions/ADR-041-fila-cupom-kanban.md)): `kind=tab_receipt`; `pending` | `printing` | `printed` | `failed` | `expired`.
+
 ### TableClaim
 
 Como na fatia 4; `table_session_id` preenchido no redeem. **Não** cria a tab pessoal.
@@ -323,6 +327,8 @@ erDiagram
   TableSession ||--o{ Tab : comandas
   Tab ||--o{ GuestSession : devices
   Tab ||--o{ Order : parcial
+  Tab ||--o{ PrintJob : receipt_queue
+  Venue ||--o{ PrintJob : print_jobs
   Venue ||--o{ Order : has
   Venue ||--o{ BillingEvent : checkouts
   Venue ||--o| VenueBilling : gateway
