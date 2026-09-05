@@ -16,11 +16,7 @@ export default function ConfigResponsavelPage() {
 
   return (
     <div>
-      <h2 className="font-serif text-2xl">Responsável</h2>
-      <p className="mt-2 mb-8 max-w-2xl text-ink-soft">
-        Dados do responsável pelo estabelecimento. O checkout de plano usa estes campos como
-        pagador (Asaas), sem digitar de novo — salvo se você alterar na tela de pagamento.
-      </p>
+      <h2 className="mb-8 font-serif text-2xl">Responsável</h2>
       <RepresentativeForm defaultEmail={email} />
     </div>
   );

@@ -114,11 +114,18 @@ jobs:
       - name: Conferir out/ e .htaccess
         run: |
           test -f out/index.html
+          test -f public/.htaccess
+          # Next pode omitir dotfiles de public/ no export; o Apache do front depende disto.
+          cp -f public/.htaccess out/.htaccess
           test -f out/.htaccess
 
       - name: Pack out/
         run: |
           tar -czf "$RUNNER_TEMP/front-deploy.tgz" -C out .
+          tar -tzf "$RUNNER_TEMP/front-deploy.tgz" | grep -qE '(^|/)\.htaccess$' || {
+            echo "::error::O tarball não inclui .htaccess — o extract apagaria o do servidor."
+            exit 1
+          }
           cp "$RUNNER_TEMP/front-deploy.tgz" "$GITHUB_WORKSPACE/front-deploy.tgz"
           ls -lh "$GITHUB_WORKSPACE/front-deploy.tgz"
 
@@ -158,21 +165,79 @@ jobs:
             DEST="$(pwd)"
             test -f front-deploy.tgz || { echo "Falta front-deploy.tgz em $DEST"; ls -la; exit 1; }
 
+            # O FTP antigo não apagava extras. rsync --delete no document root
+            # do front mata a API se ela viver ao lado (public_html/api, artisan,
+            # domains/). Recusar destinos largos e pastas Laravel.
+            case "$DEST" in
+              /|"$HOME"|"$HOME/"|"$HOME/domains"|"$HOME/domains/")
+                echo "REMOTE_TARGET_FRONT demasiado largo: $DEST"
+                exit 1
+                ;;
+            esac
+            if [ -f "$DEST/artisan" ] || [ -d "$DEST/vendor/laravel" ]; then
+              echo "Esta pasta é a API Laravel ($DEST). Não extrair o front aqui."
+              exit 1
+            fi
+            if [ -f "$DEST/index.php" ] && grep -q 'laravel' "$DEST/index.php" 2>/dev/null; then
+              echo "index.php Laravel em $DEST — recusando rsync --delete."
+              exit 1
+            fi
+
             RELEASE="$DEST/.release-front"
             rm -rf "$RELEASE"
             mkdir -p "$RELEASE"
             tar -xzf front-deploy.tgz -C "$RELEASE"
             rm -f front-deploy.tgz
+            test -f "$RELEASE/.htaccess" || { echo "Falta .htaccess no tarball"; ls -la "$RELEASE"; exit 1; }
 
+            # Padrões com / inicial = só a raiz do DEST. Sem a âncora, `app`
+            # também casa `_next/static/chunks/app/` (rotas do Next) e o
+            # rsync não atualiza esses JS — ChunkLoadError 404 no painel.
+            RSYNC_EXCL=(
+              --exclude=/.release-front/
+              --exclude=/.htaccess
+              --exclude=/cgi-bin/
+              --exclude=/.well-known/
+              --exclude=/.env
+              --exclude=/api/
+              --exclude=/apidev/
+              --exclude=/backend/
+              --exclude=/laravel/
+              --exclude=/artisan
+              --exclude=/vendor/
+              --exclude=/app/
+              --exclude=/bootstrap/
+              --exclude=/storage/
+              --exclude=/database/
+              --exclude=/public_html/
+            )
             if command -v rsync >/dev/null 2>&1; then
-              rsync -a --delete \
-                --exclude '.release-front' \
-                --exclude 'cgi-bin' \
-                --exclude '.well-known' \
-                "$RELEASE"/ "$DEST"/
+              # 1) hashes novos primeiro (tabs com HTML velho ainda encontram JS)
+              rsync -a "${RSYNC_EXCL[@]}" "$RELEASE"/ "$DEST"/
+              # 2) HTML + apagar o que saiu do build (excludes não são apagados)
+              rsync -a --delete "${RSYNC_EXCL[@]}" "$RELEASE"/ "$DEST"/
             else
               cp -a "$RELEASE"/. "$DEST"/
             fi
+            cp -f "$RELEASE/.htaccess" "$DEST/.htaccess"
+
+            missing=0
+            LIST="$RELEASE/.next-asset-list"
+            (cd "$RELEASE" && find _next -type f \( -name '*.js' -o -name '*.css' \)) > "$LIST"
+            while IFS= read -r f; do
+              [ -n "$f" ] || continue
+              if [ ! -f "$DEST/$f" ]; then
+                echo "Falta no destino: $f"
+                missing=1
+              fi
+            done < "$LIST"
+            rm -f "$LIST"
+            if [ "$missing" -ne 0 ]; then
+              echo "rsync não copiou os chunks do Next — abortar."
+              exit 1
+            fi
+
             rm -rf "$RELEASE"
             test -f "$DEST/index.html"
+            test -f "$DEST/.htaccess"
             echo "Front extraído em $DEST"

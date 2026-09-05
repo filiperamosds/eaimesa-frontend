@@ -15,7 +15,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { hasGrantedThermalPrinter, printEscPosOrder } from "../lib/print-escpos";
-import { isThermalAutoPrintEnabled, setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
+import { setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
 import type { Session, StaffOrder } from "../lib/types";
 
 function timeAgo(iso: string) {
@@ -68,36 +68,52 @@ export function OrdersBoard({
   const [autoPrint, setAutoPrint] = useState(false);
   const [printingId, setPrintingId] = useState<string | null>(null);
   const [printGroups, setPrintGroups] = useState<{ name: string; categoryIds: string[] }[]>([]);
-  const primedRef = useRef(false);
-  const seenRef = useRef(new Set<string>());
   const autoPrintRef = useRef(false);
   const printChain = useRef(Promise.resolve());
+  const printingRef = useRef(new Set<string>());
 
   autoPrintRef.current = autoPrint;
   const printGroupsRef = useRef(printGroups);
   printGroupsRef.current = printGroups;
+  const patchRef = useRef(endpoints.patch);
+  patchRef.current = endpoints.patch;
+
+  const enqueuePrint = useCallback((order: StaffOrder, requestDevice: boolean) => {
+    if (printingRef.current.has(order.id)) return;
+    printingRef.current.add(order.id);
+    setPrintingId(order.id);
+    printChain.current = printChain.current
+      .then(async () => {
+        await printEscPosOrder(order, requestDevice, printGroupsRef.current);
+        const updated = await api<StaffOrder>(patchRef.current(order.id), {
+          method: "PATCH",
+          body: JSON.stringify({ printed: true }),
+        });
+        setOrders((cur) =>
+          cur.map((o) => (o.id === order.id ? { ...o, printedAt: updated.printedAt } : o)),
+        );
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Falha ao imprimir na térmica.");
+      })
+      .finally(() => {
+        printingRef.current.delete(order.id);
+        setPrintingId((cur) => (cur === order.id ? null : cur));
+      });
+  }, []);
 
   const load = useCallback(async () => {
     const data = await api<{ orders: StaffOrder[] }>(endpoints.list);
     const incoming = station ? filterOrdersByCategories(data.orders, categoryIds) : data.orders;
-    if (!primedRef.current) {
-      for (const o of incoming) seenRef.current.add(o.id);
-      primedRef.current = true;
-      setOrders(data.orders);
-      return;
-    }
-    const fresh = incoming.filter((o) => o.status === "pending" && !seenRef.current.has(o.id));
-    for (const o of incoming) seenRef.current.add(o.id);
     setOrders(data.orders);
     if (!autoPrintRef.current) return;
+    const fresh = incoming.filter(
+      (o) => o.status === "pending" && !o.printedAt && !printingRef.current.has(o.id),
+    );
     for (const order of fresh) {
-      printChain.current = printChain.current
-        .then(() => printEscPosOrder(order, false, printGroupsRef.current))
-        .catch((err) => {
-          setError(err instanceof Error ? err.message : "Falha ao imprimir na térmica.");
-        });
+      enqueuePrint(order, false);
     }
-  }, [endpoints.list, station, categoryIds]);
+  }, [endpoints.list, station, categoryIds, enqueuePrint]);
 
   useEffect(() => {
     load().catch((e) => setError(e instanceof ApiError ? e.message : "Falha ao carregar pedidos."));
@@ -113,18 +129,22 @@ export function OrdersBoard({
         const panel = isPanelMember(session);
         const viaGroups = !panel || session.member?.printViaGroups === true;
         setPrintGroups(viaGroups ? (session.venue.printGroups ?? []) : []);
+        if (session.venue.thermalAutoPrint !== true) {
+          setAutoPrint(false);
+          return;
+        }
+        void hasGrantedThermalPrinter().then((ok) => {
+          if (ok) setAutoPrint(true);
+          else setThermalAutoPrintEnabled(false);
+        });
       })
       .catch(() => setPrintGroups([]));
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!isThermalAutoPrintEnabled()) return;
-    void hasGrantedThermalPrinter().then((ok) => {
-      if (ok) setAutoPrint(true);
-      else setThermalAutoPrintEnabled(false);
-    });
-  }, []);
+    if (!autoPrint) return;
+    void load().catch(() => undefined);
+  }, [autoPrint, load]);
 
   const visible = useMemo(
     () => (station ? filterOrdersByCategories(orders, categoryIds) : orders),
@@ -152,16 +172,9 @@ export function OrdersBoard({
     return map;
   }, [filtered]);
 
-  async function printOrder(order: StaffOrder) {
+  function printOrder(order: StaffOrder) {
     setError(null);
-    setPrintingId(order.id);
-    try {
-      await printEscPosOrder(order, true, printGroups);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível imprimir na térmica.");
-    } finally {
-      setPrintingId(null);
-    }
+    enqueuePrint(order, true);
   }
 
   async function setStatus(id: string, status: OrderStatus) {
@@ -181,15 +194,8 @@ export function OrdersBoard({
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Turno</p>
+          <p className="eyebrow">Quadro</p>
           <h1 className={`mt-2 font-serif ${compact ? "text-2xl" : "text-3xl"}`}>Pedidos</h1>
-          <p className="mt-1 text-sm text-ink-soft">
-            {station
-              ? "Somente itens das categorias deste monitor. Avance o status quando a estação terminar."
-              : compact
-                ? "Avance os pedidos. Encerrar a mesa tira os cards da fila. Para lançar itens, abra a mesa em Mesas."
-                : "Kanban do turno. Encerrar a mesa tira os pedidos da fila. Lançar pedido: abra a mesa em Mesas e comandas."}
-          </p>
         </div>
         {compact && !station ? (
           <Link href="/garcom" className="btn-secondary !py-2 text-sm">

@@ -7,7 +7,6 @@ import {
   type StockItem,
   type StockUnit,
 } from "@eaimesa/shared";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 
@@ -59,16 +58,6 @@ export function StockPanel() {
     <div className="space-y-6">
       <div>
         <h2 className="font-serif text-2xl">Estoque</h2>
-        <p className="mt-2 text-ink-soft">
-          Cadastre o insumo na unidade de uso (g, ml ou un). Dois pacotes de 1 kg de arroz entram
-          como 2000 g.           A receita de cada prato fica no{" "}
-          <Link href="/painel/configuracoes/cardapio" className="font-medium text-chili underline">
-            Cardápio
-          </Link>
-          {" "}
-          (Editar item)
-          .
-        </p>
       </div>
       {items.some((i) => i.low) ? (
         <div className="rounded-2xl border border-chili/25 bg-chili/5 px-4 py-3 text-sm">

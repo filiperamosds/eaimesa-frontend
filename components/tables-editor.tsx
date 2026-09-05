@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { pickStr } from "../lib/api-case";
+import { downloadTablesQrPdf } from "../lib/qr-sheet-pdf";
 import type { Venue, VenueTable } from "../lib/types";
 import { MenuQrModal } from "./menu-qr-modal";
 
@@ -30,6 +31,16 @@ function tablesErrorMessage(err: unknown): string {
   return "Erro ao carregar.";
 }
 
+function slugifyFile(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48);
+}
+
 export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean }) {
   const [tables, setTables] = useState<VenueTable[]>([]);
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -40,6 +51,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
   const [label, setLabel] = useState("");
   const [qrTable, setQrTable] = useState<VenueTable | null>(null);
   const [venueQr, setVenueQr] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   async function load() {
     const [tablesData, venueData] = await Promise.all([
@@ -78,59 +90,51 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
 
   if (loading) return <p className="text-ink-soft">Carregando mesas…</p>;
 
+  async function createPdf() {
+    if (!venue) return;
+    setError(null);
+    setPdfBusy(true);
+    try {
+      await downloadTablesQrPdf({
+        venueName: venue.name,
+        slug: venue.slug,
+        includeGeneral: showVenueQr,
+        tables,
+        fileName: `eaimesa-${slugifyFile(venue.slug)}-mesas.pdf`,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível gerar o PDF.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
   const service = venue ? planAllowsService(venue.planKind ?? venue.plan) : false;
+  const canPdf = Boolean(venue && (showVenueQr || tables.length > 0));
 
   return (
     <div>
-      <div className="surface mb-6 border-sage/20 bg-sage-soft/40 p-4 text-sm text-ink-soft">
-        {service ? (
-          <>
-            <p className="font-medium text-ink">QR fixo = cardápio. QR do garçom = comanda.</p>
-            <p className="mt-1">
-              Exporte o QR de cada mesa para o cliente chamar o garçom pelo cardápio, se estiver
-              ligado em{" "}
-              <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
-                Chamada
-              </Link>
-              . A comanda continua com o QR do garçom.
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="font-medium text-ink">Mesas do salão + QR por mesa</p>
-            <p className="mt-1">
-              O botão de chamar só aparece depois de escanear o QR da mesa. Ligue a chamada em{" "}
-              <Link href="/painel/configuracoes/chamada" className="font-medium text-chili underline">
-                Chamada
-              </Link>
-              .
-            </p>
-          </>
-        )}
-      </div>
-      {showVenueQr && venue ? (
-        <section className="surface mb-6 p-5">
-          <p className="eyebrow">QR do cardápio</p>
-          <h2 className="mt-2 font-serif text-xl">Geral — porta ou Instagram</h2>
-          <p className="mt-2 text-sm text-ink-soft">
-            Aponta para <span className="font-medium text-ink">/{venue.slug}</span> (sem mesa).
-          </p>
-          <button type="button" onClick={() => setVenueQr(true)} className="btn-secondary mt-4 !py-2 text-sm">
-            Ver e exportar QR geral
-          </button>
-        </section>
-      ) : null}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <p className="text-sm text-ink-soft">
           {activeCount}/{maxActive} mesas ativas
           {service ? ". Pedido de balcão e claim usam esta lista." : "."}
         </p>
-        <Link
-          href={service ? "/painel/pedidos" : "/painel/configuracoes/chamada"}
-          className="text-sm font-medium text-chili"
-        >
-          {service ? "Ir para pedidos →" : "Configurar chamada →"}
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn-secondary !py-1.5 text-sm"
+            disabled={pdfBusy || !canPdf}
+            onClick={() => void createPdf()}
+          >
+            {pdfBusy ? "Gerando…" : "PDF para gráfica"}
+          </button>
+          <Link
+            href={service ? "/painel/pedidos" : "/painel/configuracoes/chamada"}
+            className="text-sm font-medium text-chili"
+          >
+            {service ? "Ir para pedidos →" : "Configurar chamada →"}
+          </Link>
+        </div>
       </div>
       <form onSubmit={(e) => void add(e)} className="mb-6 flex flex-wrap gap-2">
         <input
@@ -147,10 +151,34 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
       </form>
       {error ? <p className="mb-4 text-sm text-chili">{error}</p> : null}
       {tables.length === 0 && !error ? (
-        <p className="text-ink-soft">Nenhuma mesa ainda. Comece por Balcão e Mesa 1.</p>
+        <p className="mb-4 text-ink-soft">Nenhuma mesa ainda. Comece por Balcão e Mesa 1.</p>
       ) : null}
-      {tables.length > 0 ? (
+      {showVenueQr || tables.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {showVenueQr && venue ? (
+            <li className="surface p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span
+                  className="grid h-12 w-12 place-items-center rounded-full border-2 border-chili/40 bg-chili/10 font-serif text-sm text-chili"
+                  aria-hidden
+                >
+                  QR
+                </span>
+                <span className="text-[11px] uppercase tracking-wider text-sage">geral</span>
+              </div>
+              <p className="font-serif text-xl">Cardápio geral</p>
+              <p className="mt-1 text-xs text-ink-soft">/{venue.slug}</p>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setVenueQr(true)}
+                  className="text-sm font-medium text-chili hover:text-chili-dark"
+                >
+                  QR cardápio
+                </button>
+              </div>
+            </li>
+          ) : null}
           {tables.map((table) => (
             <TableCard
               key={table.id}

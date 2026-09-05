@@ -15,14 +15,14 @@ Spec: [ADR-036](../decisions/ADR-036-relatorios-estabelecimento.md).
 | **Faturamento** | `/painel/financeiro` | Relatório de dinheiro que já existia + série por dia + vendas por mesa |
 | **Relatórios** | `/painel/financeiro/relatorios` | Operação + listas |
 
-Período **De / Até** compartilhado (query `from`/`to`). Atalhos: hoje, ontem, 7 dias, 30 dias. Só dono; módulo `finance`; Auto atendimento.
+Período **De / Até** compartilhado (query `from`/`to`), **data e hora** em Brasília — para expediente que vira o dia (ex. 18:00 do dia 2 até 03:00 do dia 3). Só data ainda vale (dia inteiro). Atalhos: hoje, ontem, 7 dias, 30 dias. Só dono; módulo `finance`; Auto atendimento.
 
 ### Faturamento
 
-- KPIs: recebido, **líquido** (recebido − cortesia), cortesia, descontos, taxa de serviço, comandas, ticket médio, itens
+- KPIs: **vendido** (total devido das comandas fechadas), recebido (pago), **líquido** (recebido − cortesia), cortesia, descontos, taxa de serviço, comandas, ticket médio, itens
 - Formas de pagamento; taxa por quem abriu a mesa ([ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md))
 - **Série por dia** e **por mesa**
-- Export CSV dos recebimentos
+- Export CSV dos recebimentos (`GET /v1/owner/finance/export`): colunas **Quando, Mesa, Cliente, Forma, Valor** (Brasília, BRL; sem UUID nem centavos)
 
 ### Relatórios
 

@@ -11,6 +11,7 @@ type Summary = {
   range: { from: string; to: string };
   kpis: {
     grossCents: number;
+    soldCents?: number;
     serviceFeeCents?: number;
     courtesyCents?: number;
     discountCents?: number;
@@ -97,11 +98,16 @@ export function FinanceReport() {
 
       {summary ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <FinanceKpi
+              label="Vendido"
+              value={formatBrlFromCents(summary.kpis.soldCents ?? summary.kpis.grossCents)}
+              hint="Total devido das comandas fechadas no período"
+            />
             <FinanceKpi
               label="Recebido"
               value={formatBrlFromCents(summary.kpis.grossCents)}
-              hint="Inclui cortesia registrada no fechamento"
+              hint="Pago no fechamento (inclui cortesia)"
             />
             <FinanceKpi
               label="Líquido"

@@ -95,7 +95,7 @@ curl http://localhost:8000/health
 
 ## Estático (`out/`)
 
-`pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`).
+`pnpm build` gera HTML em `out/` (`output: "export"`). Suba o **conteúdo** dessa pasta no Hostinger. `.htaccess` cobre `/{slug}/c/{token}` e slugs que não estavam no build (`STATIC_SLUGS` + `__venue`). No `next dev`, o mesmo path do QR usa rewrite em `next.config.ts` (o export estático não tem rewrite).
 
 Rotas novas da fatia 18 (`/confirmar-email`, `/esqueci-senha`, `/redefinir-senha`, `/convite`) saem como pastas no export. Convite usa query `?token=` (não path), porque o token é dinâmico.
 
@@ -138,7 +138,9 @@ No GitHub: **Settings → Secrets and variables → Actions**. Copiar as credenc
 | `NEXT_PUBLIC_API_URL_PRD` | `main` | API Laravel de produção |
 | `STATIC_SLUGS` | ambos | Opcional. Default do código: `seu-estabelecimento` |
 
-As pastas DEV e PRD têm que ser **diferentes**. O extract faz `rsync --delete` (se o servidor tiver `rsync`) e limpa hashes velhos em `_next/`. Sem `rsync`, o tar só sobrepõe.
+As pastas DEV e PRD têm que ser **diferentes**, e **não** podem ser a pasta da API (`REMOTE_TARGET_API_*`). O extract faz `rsync --delete` (se o servidor tiver `rsync`) e limpa hashes velhos em `_next/`; os excludes são **só na raiz** (`/app/`, `/vendor/`, `/api/`, …) para não bloquear `_next/static/chunks/app/` ([ADR-040](../decisions/ADR-040-rsync-exclude-chunks-app.md)). Sem `rsync`, o tar só sobrepõe.
+
+O `.htaccess` do front (`public/.htaccess`) só reescreve slugs do Next. **Não** manda CORS. Login chama `NEXT_PUBLIC_API_URL` (`https://apidev.eaimesa.com` / `https://api.eaimesa.com`). Se esses hosts devolverem o 404 da Hostinger, o browser mostra CORS. Restaurar a API: document root = `app/public` do Laravel e re-run do deploy do **backend**.
 
 No Laravel de cada ambiente, `APP_URL` = o `NEXT_PUBLIC_APP_URL` correspondente (CORS/cookies).
 

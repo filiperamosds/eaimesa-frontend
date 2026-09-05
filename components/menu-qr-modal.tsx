@@ -2,6 +2,7 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
+import { downloadQrStickerPng, printQrSticker } from "../lib/print-qr-sticker";
 import { publicMenuUrl } from "../lib/public-url";
 
 type Props = {
@@ -26,6 +27,15 @@ function slugifyFile(s: string) {
     .slice(0, 48);
 }
 
+async function qrPng(target: string) {
+  return QRCode.toDataURL(target, {
+    width: 640,
+    margin: 2,
+    color: { dark: "#161311", light: "#ffffff" },
+    errorCorrectionLevel: "M",
+  });
+}
+
 export function MenuQrModal({
   slug,
   venueName,
@@ -37,6 +47,7 @@ export function MenuQrModal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const target = publicMenuUrl(slug, { mesa: mesaCode });
@@ -51,61 +62,40 @@ export function MenuQrModal({
     }).catch(() => setError("Não foi possível gerar o QR."));
   }, [slug, mesaCode]);
 
+  async function stickerCopy() {
+    const target = url || publicMenuUrl(slug, { mesa: mesaCode });
+    return {
+      venueName,
+      tableLabel,
+      qrDataUrl: await qrPng(target),
+    };
+  }
+
   async function downloadPng() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const card = document.createElement("canvas");
-    const w = 480;
-    const h = tableLabel ? 640 : 580;
-    card.width = w;
-    card.height = h;
-    const ctx = card.getContext("2d");
-    if (!ctx) return;
-
-    ctx.fillStyle = "#fffdf8";
-    ctx.fillRect(0, 0, w, h);
-
-    ctx.fillStyle = "#161311";
-    ctx.font = "600 22px Georgia, serif";
-    ctx.textAlign = "center";
-    ctx.fillText(venueName, w / 2, 48);
-
-    if (tableLabel) {
-      ctx.fillStyle = "#e23c14";
-      ctx.font = "600 36px Georgia, serif";
-      ctx.fillText(tableLabel, w / 2, 100);
+    setError(null);
+    setBusy(true);
+    try {
+      const name = tableLabel
+        ? `eaimesa-${slugifyFile(slug)}-${slugifyFile(tableLabel)}.png`
+        : `eaimesa-${slugifyFile(slug)}-cardapio.png`;
+      await downloadQrStickerPng(await stickerCopy(), name);
+    } catch {
+      setError("Não foi possível exportar o adesivo.");
+    } finally {
+      setBusy(false);
     }
+  }
 
-    const qrSize = 280;
-    const qrX = (w - qrSize) / 2;
-    const qrY = tableLabel ? 130 : 80;
-    ctx.drawImage(canvas, qrX, qrY, qrSize, qrSize);
-
-    ctx.fillStyle = "#6a5c51";
-    ctx.font = "14px system-ui, sans-serif";
-    if (servicePlan) {
-      ctx.fillText("Cardápio · só leitura", w / 2, qrY + qrSize + 36);
-      ctx.fillText("Comanda: peça o QR do garçom", w / 2, qrY + qrSize + 58);
-    } else if (mesaCode) {
-      ctx.fillText("Cardápio desta mesa", w / 2, qrY + qrSize + 36);
-      ctx.fillText("Escaneie no celular", w / 2, qrY + qrSize + 58);
-    } else {
-      ctx.fillText("Cardápio · só leitura", w / 2, qrY + qrSize + 36);
-      ctx.fillText("Escaneie no celular", w / 2, qrY + qrSize + 58);
+  async function printSticker() {
+    setError(null);
+    setBusy(true);
+    try {
+      printQrSticker(await stickerCopy());
+    } catch {
+      setError("Não foi possível imprimir o adesivo.");
+    } finally {
+      setBusy(false);
     }
-
-    ctx.fillStyle = "#161311";
-    ctx.font = "12px system-ui, sans-serif";
-    const short = url.replace(/^https?:\/\//, "");
-    ctx.fillText(short.length > 42 ? `${short.slice(0, 40)}…` : short, w / 2, h - 36);
-
-    const a = document.createElement("a");
-    const name = tableLabel
-      ? `eaimesa-${slugifyFile(slug)}-${slugifyFile(tableLabel)}.png`
-      : `eaimesa-${slugifyFile(slug)}-cardapio.png`;
-    a.download = name;
-    a.href = card.toDataURL("image/png");
-    a.click();
   }
 
   return (
@@ -127,9 +117,7 @@ export function MenuQrModal({
               pedir exige o QR do garçom.
             </>
           ) : mesaCode ? (
-            <>
-              QR desta mesa: o celular identifica o lugar para chamar o garçom, se estiver ligado.
-            </>
+            <>QR desta mesa: o celular identifica o lugar para chamar o garçom, se estiver ligado.</>
           ) : (
             <>QR geral do cardápio (porta / Instagram). Sem identificação de mesa.</>
           )}
@@ -140,12 +128,26 @@ export function MenuQrModal({
           {url ? (
             <p className="mt-3 break-all text-center text-xs text-ink-soft">{url.replace(/^https?:\/\//, "")}</p>
           ) : null}
+          <p className="mt-2 text-center text-xs text-ink-soft">Adesivo 8 × 10 cm</p>
         </div>
         <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-ghost">
             Fechar
           </button>
-          <button type="button" onClick={() => void downloadPng()} className="btn-primary !py-2 text-sm">
+          <button
+            type="button"
+            disabled={busy || !url}
+            onClick={() => void printSticker()}
+            className="btn-secondary !py-2 text-sm"
+          >
+            Imprimir
+          </button>
+          <button
+            type="button"
+            disabled={busy || !url}
+            onClick={() => void downloadPng()}
+            className="btn-primary !py-2 text-sm"
+          >
             Exportar PNG
           </button>
         </div>

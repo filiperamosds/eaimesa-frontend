@@ -11,7 +11,7 @@
 ## Decisão
 
 1. Nav interna em `/painel/financeiro`: **Faturamento** e **Relatórios**.
-2. Período `from`/`to` na query string, compartilhado entre as abas.
+2. Período `from`/`to` na query string (data ou data+hora em Brasília), compartilhado entre as abas.
 3. Faturamento mostra série por dia e vendas por mesa (`GET /v1/owner/finance/summary`).
 4. Relatórios em `/v1/owner/reports/*`. O Kanban (`GET /v1/owner/orders`) continua 48 h + caixa.
 5. Turnos ao vivo permanecem em `/painel/caixa`; Relatórios lista `GET /v1/owner/cash-sessions`.
@@ -28,6 +28,6 @@
 ## Consequências
 
 - Front: `/painel/financeiro` + `/painel/financeiro/relatorios/*`.
-- Faturamento: `netCents` = recebido − cortesia; desconto à parte (já saiu do devido).
+- Faturamento: `soldCents` = devido nas comandas fechadas; `grossCents` = pago; `netCents` = recebido − cortesia; desconto à parte (já saiu do devido).
 - Relatórios: `byHour` no overview, horário de Brasília.
 - Contrato: [endpoints.md](../api/endpoints.md). Produto: [fatia 20](../product/fatia-20-relatorios.md).

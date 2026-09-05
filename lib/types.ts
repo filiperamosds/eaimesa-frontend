@@ -12,8 +12,9 @@ export type Venue = {
   acceptsOrders: boolean;
   trialEndsAt?: string | null;
   currentPeriodEndsAt?: string | null;
-    staffCanCloseTabs?: boolean;
-    requireShiftOnOpenCash?: boolean;
+  staffCanCloseTabs?: boolean;
+  requireShiftOnOpenCash?: boolean;
+  thermalAutoPrint?: boolean;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
   /** Fatia 16 — módulos efetivos do venue (ADR-029). */
@@ -109,18 +110,20 @@ export type PublicMenu = {
   }[];
 };
 
-export type PresenceSession = {
-  tableLabel: string;
-  expiresAt: string;
-  expiresInSeconds?: number;
-};
-
 export type WaiterCall = {
   id: string;
   tableId: string;
   tableLabel: string;
   createdAt: string;
   status: "open" | "acked" | "expired";
+};
+
+export type PresenceSession = {
+  tableLabel: string;
+  expiresAt: string;
+  expiresInSeconds?: number;
+  /** Chamado `open` desta mesa; `null` depois do ack (EAI-5). */
+  waiterCall?: { id: string; status: WaiterCall["status"]; createdAt: string } | null;
 };
 
 export type OrderStatus = "pending" | "accepted" | "preparing" | "delivered" | "cancelled";
@@ -240,6 +243,7 @@ export type StaffOrder = {
   tabId: string | null;
   guestName: string | null;
   note: string | null;
+  printedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   totalCents: number;

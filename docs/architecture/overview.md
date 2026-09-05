@@ -67,7 +67,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel/chamados` | Fila “chamar garçom” (plano Cardápio / ADR-026) |
 | `/painel/cardapio`, `/painel/bar/*`, `/painel/equipe` | Redirects legados |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |
-| `/{slug}/c/{token}` | Redeem do claim (redirect se plano Cardápio) |
+| `/{slug}/c/{token}` | Redeem do claim (redirect se plano Cardápio). Dev: rewrite Next; prod: `.htaccess` → `/{slug}/c` |
 | `/{slug}/bem-vindo` | PIN no primeiro aparelho |
 | `/{slug}/entrar` | PIN join (redirect se plano Cardápio) |
 | `/{slug}/comanda` | Nome + telefone **ou** parcial da comanda |

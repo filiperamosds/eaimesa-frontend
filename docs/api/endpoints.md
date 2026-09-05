@@ -71,7 +71,7 @@ O front **não deixa editar** o slug: gera a partir de `venueName`. **Não** há
 |--------|------|------|-----------|
 | GET | `/v1/public/venues/{slug}` | — | Venue + categorias ativas + itens ativos |
 | POST | `/v1/public/venues/{slug}/presence` | — | Body `{ mesa }` (menuCode). Cookie `eaimesa_presence` |
-| GET | `/v1/public/presence` | Cookie presença | Sessão atual ou 401 |
+| GET | `/v1/public/presence` | Cookie presença | `{ tableLabel, expiresAt, expiresInSeconds, waiterCall }` ou 401 |
 | POST | `/v1/public/waiter-calls` | Cookie presença | Abre chamado na mesa |
 
 Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
@@ -181,8 +181,8 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `printGroups`, …) |
-| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, representative? }` |
+| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `thermalAutoPrint`, `printGroups`, …) |
+| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, representative? }` (desligar `thermalAutoPrint` tira os pedidos da fila de impressão) |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |
@@ -242,9 +242,9 @@ Auth: cookie `eaimesa_owner`. `venue_id` da sessão.
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled`; some se a mesa foi encerrada) |
+| GET | `/v1/owner/orders` | Pedidos do venue (48 h; inclui `cancelled` e `printedAt`; some se a mesa foi encerrada) |
 | POST | `/v1/owner/orders` | Pedido de balcão (opcional `tabId`); snapshot de preço |
-| PATCH | `/v1/owner/orders/{id}` | `{ status }` |
+| PATCH | `/v1/owner/orders/{id}` | `{ status }` e/ou `{ printed: true }` |
 
 #### POST /v1/owner/orders (body)
 
@@ -307,8 +307,9 @@ Auth: cookie com `role: owner | staff` (caixa incluso: JWT `staff` + `member.rol
 | POST | `/v1/staff/tables/{tableId}/claims` | Gera claim (TTL, uso único). Sem caixa e `requireOpenCash` → 409 `CASH_SESSION_REQUIRED` |
 | GET | `/v1/staff/tables/{tableId}/tabs` | Comandas + parcial (`totalCents`, `serviceFeePercent`, `serviceFeeCents`, `dueCents`) + `table.pinDisplay` + `unassignedOrders` (pedidos da mesa sem `tab_id`) |
 | POST | `/v1/staff/tables/{tableId}/tabs` | Garçom abre comanda `{ name, phone }` (mesmo contrato do guest). Cria sessão/PIN se faltar |
-| POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false` |
+| POST | `/v1/staff/tabs/{tabId}/close` | Fecha uma comanda. Body: `{ discountCents?, waiveServiceFee?, payments[] }`. Garçom: 403 `CASHIER_REQUIRED` se `staffCanCloseTabs=false`. Fiado desligado + saldo → 400 `TAB_CREDIT_DISABLED` |
 | POST | `/v1/staff/tables/{tableId}/close` | Encerra a mesa (409 se ainda houver comanda aberta). Mesma regra de close |
+| POST | `/v1/staff/tables/{tableId}/transfer` | `{ toTableId }` — PIN e comandas vão para outra mesa livre. Destino ocupado → 409 `TABLE_OCCUPIED` |
 
 ### Staff — caixa por turno (financeiro)
 
@@ -316,9 +317,9 @@ Auth: cookie `role: owner | staff`. Gate `module:finance`. **Só dono e `cashier
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/staff/tabs/{tabId}/settlement` | Preview: subtotal, taxa, total devido |
+| GET | `/v1/staff/tabs/{tabId}/settlement` | Preview: subtotal, taxa, total devido, `allowUnpaidClose` |
 | POST | `/v1/staff/cash-sessions` | Abre caixa `{ openingFloatCents, onShiftMemberIds? }`; com `requireShiftOnOpenCash` a escala é obrigatória (`400 SHIFT_REQUIRED`); resposta inclui `expectedByMethod` |
-| GET | `/v1/staff/cash-sessions/roster` | `{ required, members: [{ id, name, role }] }` — garçom e caixa (sem painel) |
+| GET | `/v1/staff/cash-sessions/roster` | `{ required, members: [{ id, name, role }], suggestedOpeningFloatCents }` — garçom e caixa (sem painel). Fundo sugerido = dinheiro conferido do último caixa fechado |
 | GET | `/v1/staff/cash-sessions/current` | Caixa aberto + `expectedByMethod` ao vivo (vendas do turno + fundo + movimentações). 404 se nenhum |
 | POST | `/v1/staff/cash-sessions/{id}/movements` | `{ type: sangria\|suprimento\|ajuste, amountCents, reason }` |
 | POST | `/v1/staff/cash-sessions/{id}/close` | `{ countedByMethod }` — formas omitidas = esperado |
@@ -333,21 +334,21 @@ Auth: cookie `eaimesa_owner`. Gate `module:finance`. UI: `/painel/financeiro` (F
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/finance/summary` | `?from&to&groupBy=day\|method\|table\|waiter` — KPIs incluem `courtesyCents`, `discountCents`, `netCents` |
+| GET | `/v1/owner/finance/summary` | `?from&to` (Brasília; data ou data+hora) `&groupBy=day\|method\|table\|waiter` — KPIs incluem `soldCents`, `grossCents`, `courtesyCents`, `discountCents`, `netCents` |
 | GET | `/v1/owner/finance/top-items` | `?from&to&limit` |
-| GET | `/v1/owner/finance/export` | `?from&to` — CSV dos recebimentos |
+| GET | `/v1/owner/finance/export` | `?from&to` — CSV dos recebimentos (Quando, Mesa, Cliente, Forma, Valor) |
 | GET | `/v1/owner/cash-sessions` | `?from&to` — turnos + `movementsCents` |
 | GET | `/v1/owner/reports/overview` | KPIs operacionais + período anterior + `byHour` (pico, Brasília) |
 | GET | `/v1/owner/reports/orders` | Histórico de pedidos (`status`, `source`, `tableId`, página) |
 | GET | `/v1/owner/reports/tabs` | Comandas fechadas (`hasBalance`, `method`, página) |
 | GET | `/v1/owner/reports/categories` | Venda por categoria |
-| GET | `/v1/owner/reports/export` | `?kind=orders\|tabs\|items\|payments` |
+| GET | `/v1/owner/reports/export` | `?kind=orders\|tabs\|items\|payments` — CSV em português (datas em Brasília, valores em BRL) |
 
-`PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash } }`: se `true`, pedido, QR (`claims`) e abrir comanda exigem caixa aberto → 409 `CASH_SESSION_REQUIRED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
+`PATCH /v1/owner/modules/finance` `{ config: { requireOpenCash, allowUnpaidClose } }`: `requireOpenCash=true` → pedido, QR (`claims`) e abrir comanda exigem caixa aberto (`409 CASH_SESSION_REQUIRED`). `allowUnpaidClose=true` → fechar com saldo (fiado); senão `400 TAB_CREDIT_DISABLED`. `GET /v1/staff/tables` inclui `requireOpenCash` e `cashSessionOpen` para o front bloquear a UI.
 
 ### Owner — estoque (fatia 21)
 
-Auth: cookie `eaimesa_owner`. Gate `module:inventory`. UI: Configurações → Estoque (`/painel/configuracoes/estoque`) + receita no dialog de editar o item do cardápio. [ADR-037](../decisions/ADR-037-estoque.md).
+Auth: cookie `eaimesa_owner`. Gate `module:inventory`. UI: Configurações → Estoque (`/painel/configuracoes/estoque`) + receita no dialog de **editar** o item do cardápio (criar item é o mesmo overlay, sem receita). [ADR-037](../decisions/ADR-037-estoque.md).
 
 | Método | Path | Descrição |
 |--------|------|-----------|
@@ -371,7 +372,7 @@ Auth: cookie `role: owner | staff`. Mesmas regras de status do Kanban do dono. `
 |--------|------|-----------|
 | GET | `/v1/staff/orders` | Fila 48h (`pending`…`cancelled`); some se a mesa foi encerrada; painel filtra por categoria |
 | POST | `/v1/staff/orders` | Pedido na comanda (`tabId`) ou balcão; preço no servidor. Painel: 403 |
-| PATCH | `/v1/staff/orders/{id}` | `{ status }` (pedido inteiro; painel só se o pedido tiver item da estação) |
+| PATCH | `/v1/staff/orders/{id}` | `{ status }` e/ou `{ printed: true }` (pedido inteiro; painel só se o pedido tiver item da estação) |
 | GET | `/v1/staff/catalog` | Cardápio (leitura) para o dialog de lançar na comanda. Painel: 403 |
 
 Mesmo body de `POST /v1/owner/orders` (`tabId` opcional). Front: mesa → comanda → **Adicionar pedido**.
@@ -421,7 +422,7 @@ Cookie guest: `eaimesa_guest`.
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
-| POST | `/v1/public/venues/{slug}/c/{token}/redeem` | — | Abre/reusa TableSession, PIN (só na 1ª), Set-Cookie guest |
+| POST | `/v1/public/venues/{slug}/c/{token}/redeem` | — | Abre/reusa TableSession, PIN (só na 1ª), Set-Cookie guest; apaga presença do QR fixo |
 
 Resposta:
 
@@ -443,7 +444,7 @@ Cookie guest: `eaimesa_guest`. Join não exige cookie. Abrir comanda exige cooki
 
 | Método | Path | Auth | Descrição |
 |--------|------|------|-----------|
-| POST | `/v1/guest/tabs/join` | — | `{ slug, pin }` → sessão na mesa |
+| POST | `/v1/guest/tabs/join` | — | `{ slug, pin }` → sessão na mesa; apaga presença do QR fixo |
 | POST | `/v1/guest/tabs` | Cookie guest | `{ name, phone }` → cria comanda. 409 `TAB_ALREADY_OPEN` se o número já tem comanda `open` no estabelecimento (mesma mesa ou outra) |
 | GET | `/v1/guest/tab` | Cookie guest | Mesa + comanda + `pinDisplay` (PIN da mesa, para quem já entrou) |
 
@@ -518,7 +519,9 @@ Erros: `PIN_INVALID`, `PIN_LOCKED`, `TAB_CLOSED`, `TAB_REQUIRED`, `TABS_STILL_OP
 { "status": "preparing" }
 ```
 
-Valores: `pending` | `accepted` | `preparing` | `delivered` | `cancelled`. O board avança `pending` → `preparing` → `delivered`; `accepted` continua válido (legado).
+ou `{ "printed": true }` após a via da térmica. GET dos pedidos inclui `printedAt`.
+
+Valores de status: `pending` | `accepted` | `preparing` | `delivered` | `cancelled`. O board avança `pending` → `preparing` → `delivered`; `accepted` continua válido (legado).
 
 ## Planejado (fatias seguintes)
 
