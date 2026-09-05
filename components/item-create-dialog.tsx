@@ -18,6 +18,7 @@ export function ItemCreateDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [priceCents, setPriceCents] = useState<number | null>(null);
+  const [offerPriceCents, setOfferPriceCents] = useState<number | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +58,7 @@ export function ItemCreateDialog({
           name,
           description: description || null,
           priceCents: cents,
+          offerPriceCents: offerPriceCents,
           sortOrder,
         }),
       });
@@ -127,7 +129,16 @@ export function ItemCreateDialog({
             maxLength={280}
             className="field"
           />
-          <MoneyField cents={priceCents} onCentsChange={setPriceCents} className="field" required />
+          <MoneyField cents={priceCents} onCentsChange={setPriceCents} className="field" required placeholder="Preço" />
+          <div>
+            <MoneyField
+              cents={offerPriceCents}
+              onCentsChange={setOfferPriceCents}
+              className="field"
+              placeholder="Oferta (opcional)"
+            />
+            <p className="mt-1 text-xs text-ink-soft">Se preencher, o item entra em Ofertas no cardápio público.</p>
+          </div>
           {error ? <p className="text-sm text-chili">{error}</p> : null}
         </div>
         <div className="mt-5 flex justify-end gap-2">

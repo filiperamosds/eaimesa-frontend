@@ -26,6 +26,7 @@ export function ItemEditDialog({
   const [name, setName] = useState(item.name);
   const [description, setDescription] = useState(item.description ?? "");
   const [priceCents, setPriceCents] = useState<number | null>(item.priceCents);
+  const [offerPriceCents, setOfferPriceCents] = useState<number | null>(item.offerPriceCents ?? null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [draftRecipe, setDraftRecipe] = useState<RecipeLine[]>(recipe);
   const [saving, setSaving] = useState(false);
@@ -61,7 +62,12 @@ export function ItemEditDialog({
     try {
       await api(`/v1/owner/catalog/items/${item.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name, description: description || null, priceCents: cents }),
+        body: JSON.stringify({
+          name,
+          description: description || null,
+          priceCents: cents,
+          offerPriceCents,
+        }),
       });
       if (photoFile) {
         await apiUpload(`/v1/owner/catalog/items/${item.id}/image`, photoFile);
@@ -140,7 +146,16 @@ export function ItemEditDialog({
             maxLength={280}
             className="field"
           />
-          <MoneyField cents={priceCents} onCentsChange={setPriceCents} className="field" required />
+          <MoneyField cents={priceCents} onCentsChange={setPriceCents} className="field" required placeholder="Preço" />
+          <div>
+            <MoneyField
+              cents={offerPriceCents}
+              onCentsChange={setOfferPriceCents}
+              className="field"
+              placeholder="Oferta (opcional)"
+            />
+            <p className="mt-1 text-xs text-ink-soft">Vazio = sem oferta permanente. Happy hour é outro horário, abaixo.</p>
+          </div>
           {inventoryOn ? (
             <ItemRecipeEditor stockItems={stockItems} lines={draftRecipe} onChange={setDraftRecipe} />
           ) : null}
