@@ -31,8 +31,8 @@ export function FinancePeriodBar() {
       <label className="text-sm">
         <span className="mb-1 block text-ink-soft">De</span>
         <input
-          type="date"
-          className="field"
+          type="datetime-local"
+          className="field min-w-[13.5rem]"
           value={from}
           max={to}
           onChange={(e) => apply({ from: e.target.value, to })}
@@ -41,8 +41,8 @@ export function FinancePeriodBar() {
       <label className="text-sm">
         <span className="mb-1 block text-ink-soft">Até</span>
         <input
-          type="date"
-          className="field"
+          type="datetime-local"
+          className="field min-w-[13.5rem]"
           value={to}
           min={from}
           onChange={(e) => apply({ from, to: e.target.value })}
@@ -67,6 +67,9 @@ export function FinancePeriodBar() {
           </button>
         ))}
       </div>
+      <p className="basis-full text-xs text-ink-soft">
+        Horário de Brasília. Expediente noturno: ex. dia 2 às 18:00 até dia 3 às 03:00.
+      </p>
     </div>
   );
 }
@@ -74,5 +77,9 @@ export function FinancePeriodBar() {
 export function useFinanceQuery(): { from: string; to: string; qs: string } {
   const params = useSearchParams();
   const { from, to } = parseRange(params.get("from"), params.get("to"));
-  return { from, to, qs: `from=${from}&to=${to}` };
+  return {
+    from,
+    to,
+    qs: `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+  };
 }

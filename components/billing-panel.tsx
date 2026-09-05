@@ -9,7 +9,6 @@ import {
   isPaidPeriodOpen,
   isRepresentativeComplete,
   PAID_PERIOD_DAYS,
-  PLAN_FUTURE,
   planRank,
   upgradeQuoteLine,
   type CheckoutMode,
@@ -763,13 +762,6 @@ export function BillingPanel() {
           await load();
         }}
       />
-
-      <p className="text-xs text-ink-soft">
-        {PLAN_FUTURE.name}: {PLAN_FUTURE.blurb}{" "}
-        {asaas
-          ? "Cartão é informado neste painel e enviado ao provedor. Guardamos só o token e os últimos 4 dígitos. PIX continua na página do provedor e pede um novo pagamento a cada mês."
-          : "Pagamento simulado — sem cobrança real."}
-      </p>
     </section>
   );
 }

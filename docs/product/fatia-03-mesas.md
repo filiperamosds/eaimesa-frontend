@@ -9,7 +9,7 @@ O salão vira entidade. O dono cadastra as mesas do estabelecimento (até 15 no 
 - Limite de **15 mesas ativas** por venue (plano atual)
 - Pedido de balcão: mesa + comanda em `/garcom`; `table_label` continua snapshot no pedido
 - Seed local: **Seu Estabelecimento** (plano Cardápio) — sem mesas pré-cadastradas; o dono cria no painel
-- **QR fixo da mesa** (painel): aponta para o cardápio público `/{slug}`; exportável (PNG). Pode colar na mesa.
+- **QR fixo da mesa** (painel): aponta para o cardápio público `/{slug}`; **Imprimir** e PNG no adesivo **8 × 10 cm** (mesas e cardápio geral). **PDF para gráfica** junta todos os QRs num A4 paisagem (6 adesivos 8×10 cm por página, encostados). Rodapé com logo **EaiMesa** e `eaimesa.com.br`.
 
 O cardápio público `/{slug}` **não muda de contrato** — só leitura, sem pedir.
 
@@ -42,7 +42,7 @@ Ver [ADR-006](../decisions/ADR-006-mesas.md).
 - Rótulo (`Mesa 4`, `Balcão`, `Varanda`)
 - Ativa / oculta (oculta some do pedido de balcão; pedidos antigos mantêm o snapshot)
 - Ordem de exibição
-- QR fixo do cardápio ( `/{slug}?mesa={menuCode}` por mesa; adesivo também leva o **rótulo** impresso)
+- QR fixo do cardápio (`/{slug}?mesa={menuCode}` por mesa; adesivo **8 × 10 cm** com o **rótulo** impresso)
 
 ## Pedido de balcão
 

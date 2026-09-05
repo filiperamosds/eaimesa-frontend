@@ -8,8 +8,8 @@ O garçom abre a comanda na mesa. O dono cadastra usuários de **garçom** no pa
 - **Login único** em `/login` — cookie `eaimesa_owner` com JWT `role: owner | staff` (`member.role` distingue caixa e painel). Membership inativa → 403 `STAFF_INACTIVE` (“Seu usuário está inativo.”) — [ADR-031](../decisions/ADR-031-escala-abrir-caixa.md)
 - App `/garcom` — grade de mesas, gera QR; caixa e dono sempre encerram contas; garçom conforme `staffCanCloseTabs`. Painel **não** entra aqui.
 - API `POST /v1/staff/tables/{id}/claims` (staff ou dono). Quem gera o QR fica vinculado à mesa para a taxa de serviço ([ADR-032](../decisions/ADR-032-taxa-garcom-mesa.md))
-- Redeem `POST /v1/public/venues/{slug}/c/{token}/redeem` → tab + PIN + cookie `eaimesa_guest`
-- Página `/{slug}/c/{token}` no front (redeem) e `/{slug}/bem-vindo` (PIN grande)
+- Redeem `POST /v1/public/venues/{slug}/c/{token}/redeem` → tab + PIN + cookie `eaimesa_guest`. Encerra a sessão de **chamar garçom** (`eaimesa_presence`) se o cliente tinha escaneado o QR fixo de outra mesa.
+- Página `/{slug}/c/{token}` no front (redeem) e `/{slug}/bem-vindo` (PIN grande). O HTML é `/{slug}/c`: no `next dev` há rewrite; na Hostinger o `.htaccess` faz o mesmo.
 - Limite: **5 membros ativos** por venue (garçom + caixa + painel)
 - Seed local: sem garçom demo (plano Cardápio). Equipe do salão entra no Auto atendimento, no painel.
 

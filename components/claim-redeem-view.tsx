@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { clearStoredMesa } from "../lib/mesa-session-storage";
 import { useClaimToken, useVenueSlug } from "../lib/venue-path";
 
 import { WELCOME_KEY } from "../lib/welcome-storage";
@@ -37,6 +38,7 @@ export function ClaimRedeemView() {
           { method: "POST" },
         );
         if (cancelled) return;
+        clearStoredMesa(venueSlug);
         sessionStorage.setItem(
           WELCOME_KEY,
           JSON.stringify({

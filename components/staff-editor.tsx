@@ -168,12 +168,11 @@ export function StaffEditor() {
 
   return (
     <div>
-      <div className="surface mb-6 border-sage/20 bg-sage-soft/40 p-4 text-sm text-ink-soft">
-        <p className="font-medium text-ink">A equipe entra pelo mesmo login do painel.</p>
-        <p className="mt-1">
-          Informe nome, e-mail e perfil. Enviamos um link para a pessoa criar a senha. Garçom e
-          caixa vão para a tela da equipe. Painel abre a fila da cozinha ou do bar, só com as
-          categorias escolhidas. Máximo {maxActive} ativos no plano Auto atendimento.
+      <div className="surface mb-6 p-4">
+        <p className="font-medium">Usuário Painel</p>
+        <p className="mt-1 text-sm text-ink-soft">
+          Monitor da cozinha ou do bar: só a fila de pedidos, com as categorias que você marcar.
+          Não abre mesa nem caixa.
         </p>
       </div>
       <p className="mb-6 text-sm text-ink-soft">

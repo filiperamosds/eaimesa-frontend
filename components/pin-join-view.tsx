@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { clearStoredMesa } from "../lib/mesa-session-storage";
 import type { JoinTabResponse } from "../lib/types";
 import { useVenueSlug } from "../lib/venue-path";
 
@@ -25,6 +26,7 @@ export function PinJoinView() {
         body: JSON.stringify({ slug, pin }),
       });
       const href = result.redirectPath;
+      clearStoredMesa(slug);
       router.replace(href.endsWith("/") ? href : `${href}/`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível entrar na comanda.");

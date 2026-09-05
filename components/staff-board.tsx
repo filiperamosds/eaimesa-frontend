@@ -107,9 +107,7 @@ export function StaffBoard() {
 
   return (
     <div>
-      <p className="text-sm text-ink-soft">
-        {me.venue.name} · toque na mesa para ver PIN, comandas e lançar pedido
-      </p>
+      <p className="text-sm text-ink-soft">{me.venue.name}</p>
       {cashBlocked ? (
         <p className="mt-3 rounded-2xl border border-chili/30 bg-chili/5 px-4 py-3 text-sm text-chili">
           Caixa fechado. Abra o turno em Caixa para gerar QR e lançar pedidos.
@@ -170,6 +168,7 @@ export function StaffBoard() {
           venueName={me.venue.name}
           canClose={canClose}
           cashBlocked={cashBlocked}
+          tables={tables}
           onClose={() => {
             setOpenTable(null);
             void refreshTables();
@@ -180,6 +179,23 @@ export function StaffBoard() {
             void openClaim(t);
           }}
           onChanged={() => void refreshTables()}
+          onMoved={(next) => {
+            void refreshTables().then((list) => {
+              const found = list.find((t) => t.id === next.tableId);
+              setOpenTable(
+                found ?? {
+                  id: next.tableId,
+                  label: next.tableLabel,
+                  sortOrder: 0,
+                  sessionOpen: true,
+                  claimPending: false,
+                  openTabCount: openTable?.openTabCount ?? 0,
+                  openTabs: openTable?.openTabs ?? [],
+                  pinDisplay: openTable?.pinDisplay ?? null,
+                },
+              );
+            });
+          }}
         />
       ) : null}
       {activeClaim ? (

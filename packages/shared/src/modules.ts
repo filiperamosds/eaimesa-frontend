@@ -83,3 +83,10 @@ export function venueRequiresOpenCash(
 ): boolean {
   return venue?.modules?.finance?.config?.requireOpenCash === true;
 }
+
+/** Config `finance.allowUnpaidClose`: fechar comanda com saldo (fiado). */
+export function venueAllowsUnpaidClose(
+  venue: { modules?: VenueModules | null } | null | undefined,
+): boolean {
+  return venue?.modules?.finance?.config?.allowUnpaidClose === true;
+}

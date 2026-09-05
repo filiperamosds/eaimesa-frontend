@@ -16,6 +16,7 @@ export function FinanceSettings() {
   const [financeOn, setFinanceOn] = useState(false);
   const [feeOn, setFeeOn] = useState(false);
   const [requireOpenCash, setRequireOpenCash] = useState(false);
+  const [allowUnpaidClose, setAllowUnpaidClose] = useState(false);
   const [feeEnabled, setFeeEnabled] = useState(false);
   const [percent, setPercent] = useState(10);
   const [pending, setPending] = useState(false);
@@ -29,7 +30,10 @@ export function FinanceSettings() {
         const fee = d.modules.find((m) => m.key === "service_fee");
         setFinanceOn(Boolean(finance));
         setFeeOn(Boolean(fee));
-        if (finance) setRequireOpenCash(finance.config?.requireOpenCash === true);
+        if (finance) {
+          setRequireOpenCash(finance.config?.requireOpenCash === true);
+          setAllowUnpaidClose(finance.config?.allowUnpaidClose === true);
+        }
         if (fee) {
           setFeeEnabled(fee.enabled);
           const p = fee.config?.percent;
@@ -52,7 +56,7 @@ export function FinanceSettings() {
         tasks.push(
           api("/v1/owner/modules/finance", {
             method: "PATCH",
-            body: JSON.stringify({ config: { requireOpenCash } }),
+            body: JSON.stringify({ config: { requireOpenCash, allowUnpaidClose } }),
           }),
         );
       }
@@ -98,9 +102,26 @@ export function FinanceSettings() {
           </span>
         </label>
       ) : null}
+      {financeOn ? (
+        <label className="surface flex cursor-pointer items-start gap-3 p-4">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-chili"
+            checked={allowUnpaidClose}
+            onChange={(e) => setAllowUnpaidClose(e.target.checked)}
+          />
+          <span>
+            <span className="block font-medium">Permitir fechar com fiado</span>
+            <span className="mt-1 block text-sm text-ink-soft">
+              No fechamento da comanda, libera a opção de encerrar sem receber o total (saldo
+              pendente). Desligado: o caixa precisa registrar o recebimento.
+            </span>
+          </span>
+        </label>
+      ) : null}
       {feeOn ? (
-        <>
-          <label className="surface flex cursor-pointer items-start gap-3 p-4">
+        <div className="surface space-y-3 p-4">
+          <label className="flex cursor-pointer items-start gap-3">
             <input
               type="checkbox"
               className="mt-1 h-4 w-4 accent-chili"
@@ -115,11 +136,11 @@ export function FinanceSettings() {
               </span>
             </span>
           </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium">Percentual (%)</span>
+          <label className="flex items-center gap-3 text-sm sm:pl-7">
+            <span className="font-medium">Percentual (%)</span>
             <input
               type="number"
-              className="field max-w-[8rem]"
+              className="field max-w-[5.5rem]"
               min={0}
               max={100}
               step={1}
@@ -127,9 +148,8 @@ export function FinanceSettings() {
               disabled={!feeEnabled}
               onChange={(e) => setPercent(Number(e.target.value) || 0)}
             />
-            <span className="mt-1 block text-xs text-ink-soft">Comum: 10%. Entre 0 e 100.</span>
           </label>
-        </>
+        </div>
       ) : null}
       {error ? <p className="text-sm text-chili">{error}</p> : null}
       {msg ? <p className="text-sm text-sage">{msg}</p> : null}
