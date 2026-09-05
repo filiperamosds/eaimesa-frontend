@@ -44,13 +44,13 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 21 — estoque e receita](fatia-21-estoque.md).
+Implementação **agora**: [fatia 24 — ofertas e happy hour](fatia-24-ofertas-happy-hour.md).
 
 ### MVP (quando as fatias somarem)
 
 - Signup B2B: e-mail, senha, nome do estabelecimento, nome e CPF do responsável
 - Planos com `kind` Cardápio ou Auto atendimento (SKUs extras no console); trial 7 dias
-- Cardápio CRUD (texto, preço no servidor)
+- Cardápio CRUD (texto, preço no servidor, foto no disco, oferta e happy hour)
 - Auto atendimento: mesas + claim + PIN + pedido guest + fila staff
 - Estoque: insumos, receita no item, alerta ([fatia 21](fatia-21-estoque.md))
 - Multi-tenant com `venue_id` em toda query

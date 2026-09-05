@@ -1,6 +1,6 @@
 # Documentação EaiMesa
 
-Fatia atual: **fila de cupom no Kanban**; fatias 1–22 no repo.
+Fatia atual: **ofertas e happy hour**; fatias 1–24 no repo.
 
 1. [Fatia 1 — Cardápio](product/fatia-01-cardapio.md)
 1b. [Fatia 2 — Pedidos](product/fatia-02-pedidos.md) — Kanban / KDS no painel
@@ -24,20 +24,22 @@ Fatia atual: **fila de cupom no Kanban**; fatias 1–22 no repo.
 1t. [Fatia 20 — Relatórios](product/fatia-20-relatorios.md) — Faturamento + Relatórios em `/painel/financeiro` ([ADR-036](decisions/ADR-036-relatorios-estabelecimento.md))
 1u. [Fatia 21 — Estoque](product/fatia-21-estoque.md) — insumos, receita no item, alerta ([ADR-037](decisions/ADR-037-estoque.md))
 1v. [Fatia 22 — Fila de cupom](product/fatia-22-fila-cupom-kanban.md) — garçom no celular enfileira; Kanban imprime ([ADR-041](decisions/ADR-041-fila-cupom-kanban.md))
+1w. [Fatia 23 — Fotos no backend](product/fatia-23-imagens-cardapio.md) — upload no disco; deploy não apaga ([ADR-042](decisions/ADR-042-imagens-backend.md))
+1x. [Fatia 24 — Ofertas e happy hour](product/fatia-24-ofertas-happy-hour.md) — abas Ofertas / Happy hour / categorias ([ADR-043](decisions/ADR-043-ofertas-happy-hour.md))
 2. [Visão do produto](product/visao.md) — o quê, para quem, o que fica de fora
 3. [Fluxos](product/fluxos.md) — publicar cardápio; guest pede na mesa
 4. [Pricing](product/pricing.md) — Cardápio e Auto atendimento
 5. [Arquitetura](architecture/overview.md) — dois repos (Laravel + Next), um front
 6. [Sessão claim + PIN](architecture/sessao-claim-pin.md) — claim, PIN join, cookie guest
 7. [Segurança](security/modelo.md) — tenancy, cookies, ameaças
-8. [Modelo de dados](data/schema.md) — entidades fatia 1–22 + planejadas
-9. [API](api/endpoints.md) — REST fatia 1–22 + contrato futuro
+8. [Modelo de dados](data/schema.md) — entidades fatia 1–24 + planejadas
+9. [API](api/endpoints.md) — REST fatia 1–24 + contrato futuro
 9b. [Backend — caixa / close](api/backend-caixa-close.md) — o que o Laravel precisa alterar (`staffCanCloseTabs`, `cashier`)
 9c. [Backend — pedido na comanda](api/backend-staff-order-tab.md) — `tabId`, PIN no staff, `POST .../tabs`
 9d. [Backend — Kanban Painel](api/backend-kanban-painel.md) — `role=panel`, `categoryIds`, filtro da fila
 9e. [Backend — chamar garçom](api/backend-waiter-call.md) — presença `?mesa=`, cookie, fila (ADR-026)
 10. [Dev setup](ops/dev-setup.md) — Next local, seed, **GitHub Actions → Hostinger (`develop` / `main`)**
-11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**, **cupom ESC/POS USB (ADR-029)**, **escala na abertura do caixa (ADR-031)**, **taxa de serviço do garçom que abriu a mesa (ADR-032)**, **cancelar assinatura no fim da vigência (ADR-033)**, **e-mails transacionais (ADR-034)**, **grupos de impressão (ADR-035)**, **relatórios do estabelecimento (ADR-036)**, **estoque e receita (ADR-037)**, **front tarball SSH (ADR-038)**, **rsync exclude `app` vs chunks (ADR-040)**, **fila de cupom no Kanban (ADR-041)**
+11. [ADRs](decisions/ADR-001-stack.md) — … **chamar garçom QR mesa (ADR-026)**, **eventos de integração (ADR-027)**, **assinatura recorrente + troca de planos (ADR-028)**, **cupom ESC/POS USB (ADR-029)**, **escala na abertura do caixa (ADR-031)**, **taxa de serviço do garçom que abriu a mesa (ADR-032)**, **cancelar assinatura no fim da vigência (ADR-033)**, **e-mails transacionais (ADR-034)**, **grupos de impressão (ADR-035)**, **relatórios do estabelecimento (ADR-036)**, **estoque e receita (ADR-037)**, **front tarball SSH (ADR-038)**, **rsync exclude `app` vs chunks (ADR-040)**, **fila de cupom no Kanban (ADR-041)**, **fotos no disco da API (ADR-042)**, **ofertas e happy hour (ADR-043)**
 
 ## Cursor
 

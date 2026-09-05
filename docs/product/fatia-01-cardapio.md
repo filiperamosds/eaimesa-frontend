@@ -24,11 +24,11 @@ O cardápio público é **somente leitura**. Abrir `/{slug}` **não** autoriza p
 ## UX do cardápio público (`/{slug}`)
 
 - Itens agrupados pelas **categorias** ativas (Petiscos, Porções, …).
-- Barra de grupos no topo (âncoras) para pular de seção no celular.
+- Abas no topo **filtram** a lista (Ofertas, Happy hour, uma categoria por vez). Não são âncoras de scroll. [Fatia 24](fatia-24-ofertas-happy-hour.md).
 - Lista compacta: **miniatura + nome + preço**. Toque no item abre a **foto maior** e a descrição; toque de novo fecha. Só um item aberto por vez.
 - Sem descrição e sem foto: a linha não expande.
-- Foto: upload no painel (JPG/PNG/WebP, 2 MB) ou URL `https`. Seed demo usa arquivos em `public/seed/`.
-- Painel: **Adicionar item** e **Editar** abrem um **dialog** (nome, preço, descrição, foto). A edição inclui receita se o módulo `inventory` estiver ligado; um único **Salvar**. Descrição é **textarea** (até 280 caracteres). Preço no CRUD usa máscara com **2 casas** (`1250` → `R$ 12,50`); a API continua em centavos.
+- Foto: só upload no painel (JPG/PNG/WebP, 2 MB). Path `/v1/uploads/...` no servidor. Seed demo pode usar `/seed/` ou Unsplash. [Fatia 23](fatia-23-imagens-cardapio.md).
+- Painel: **Adicionar item** e **Editar** abrem um **dialog** (nome, preço, oferta opcional, descrição, foto). A edição inclui receita se o módulo `inventory` estiver ligado; um único **Salvar**. Descrição é **textarea** (até 280 caracteres). Preço no CRUD usa máscara com **2 casas** (`1250` → `R$ 12,50`); a API continua em centavos. Happy hour em Configurações → Cardápio.
 
 ## Superfície única
 
