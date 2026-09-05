@@ -23,10 +23,33 @@ body {
   color: var(--color-ink);
 }
 
+html.catalog-dark {
+  --color-paper: #14110f;
+  --color-paper-2: #1c1816;
+  --color-ink: #f4ece1;
+  --color-ink-soft: #b5a494;
+  --color-line: #3a322c;
+  --color-card: #1f1a17;
+  --color-sage-soft: #1a3d32;
+  color-scheme: dark;
+}
+
+html.catalog-dark,
+html.catalog-dark body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
 body {
   background-image:
     radial-gradient(1100px 520px at 8% -8%, rgba(226, 60, 20, 0.09), transparent 55%),
     radial-gradient(900px 480px at 100% 0%, rgba(29, 107, 79, 0.08), transparent 50%);
+}
+
+html.catalog-dark body {
+  background-image:
+    radial-gradient(1100px 520px at 8% -8%, rgba(226, 60, 20, 0.18), transparent 55%),
+    radial-gradient(900px 480px at 100% 0%, rgba(29, 107, 79, 0.12), transparent 50%);
 }
 
 ::selection {
@@ -68,6 +91,17 @@ body {
 
 .btn-secondary:hover {
   border-color: rgba(22, 19, 17, 0.28);
+}
+
+html.catalog-dark .btn-secondary {
+  border-color: rgba(244, 236, 225, 0.28);
+  background: #2c2622;
+  color: var(--color-ink);
+}
+
+html.catalog-dark .btn-secondary:hover {
+  border-color: rgba(226, 60, 20, 0.55);
+  background: #352e2a;
 }
 
 .btn-ghost {

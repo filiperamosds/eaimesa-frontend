@@ -6,12 +6,14 @@ import type { PublicMenu } from "./types";
 
 function normalizePublicMenu(raw: PublicMenu): PublicMenu {
   const v = raw.venue as PublicMenu["venue"] & Record<string, unknown>;
+  const catalogDark = pickBool(v, "catalogDark", "catalog_dark");
   const waiterCallEnabled = pickBool(v, "waiterCallEnabled", "waiter_call_enabled");
   const ttl = v.waiterCallTtlMinutes ?? v.waiter_call_ttl_minutes;
   return {
     ...raw,
     venue: {
       ...raw.venue,
+      catalogDark: catalogDark ?? raw.venue.catalogDark,
       waiterCallEnabled: waiterCallEnabled ?? raw.venue.waiterCallEnabled,
       waiterCallTtlMinutes:
         typeof ttl === "number" ? ttl : raw.venue.waiterCallTtlMinutes,

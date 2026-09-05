@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–24)
+## Implementado (fatias 1–25)
 
 ### Saúde
 
@@ -74,7 +74,7 @@ O front **não deixa editar** o slug: gera a partir de `venueName`. **Não** há
 | GET | `/v1/public/presence` | Cookie presença | `{ tableLabel, expiresAt, expiresInSeconds, waiterCall }` ou 401 |
 | POST | `/v1/public/waiter-calls` | Cookie presença | Abre chamado na mesa |
 
-Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
+Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)) e `catalogDark` ([fatia 25](../product/fatia-25-modo-escuro-cardapio.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
 
 Cada item público traz `priceCents` (efetivo), `listPriceCents` e `promo` (`offer` | `happy_hour` | `null`). Pedido guest/balcão snapshota o efetivo ([ADR-043](../decisions/ADR-043-ofertas-happy-hour.md)).
 
@@ -183,8 +183,8 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `thermalAutoPrint`, `printGroups`, …) |
-| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, representative? }` (desligar `thermalAutoPrint` tira os pedidos da fila de impressão) |
+| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `thermalAutoPrint`, `catalogDark`, `printGroups`, …) |
+| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, catalogDark?, representative? }` (desligar `thermalAutoPrint` tira os pedidos da fila de impressão) |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |
