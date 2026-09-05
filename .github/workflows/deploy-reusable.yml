@@ -199,6 +199,7 @@ jobs:
               --exclude=/cgi-bin/
               --exclude=/.well-known/
               --exclude=/.env
+              --exclude=/dev/
               --exclude=/api/
               --exclude=/apidev/
               --exclude=/backend/

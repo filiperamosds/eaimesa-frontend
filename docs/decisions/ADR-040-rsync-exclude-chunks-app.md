@@ -13,7 +13,7 @@ Depois do merge da identidade (#79), o HTML novo apontava para hashes novos; ess
 
 ## Decisão
 
-1. Excludes **ancorados na raiz do destino**: `/app/`, `/vendor/`, `/artisan`, `/api/`, … — não `app` solto.
+1. Excludes **ancorados na raiz do destino**: `/app/`, `/vendor/`, `/artisan`, `/api/`, `/dev/` (staging no mesmo `public_html`), … — não `app` solto.
 2. Dois `rsync`: primeiro sem `--delete` (publica hashes novos); depois com `--delete` (troca o HTML e limpa hashes velhos).
 3. Depois do rsync, falhar o job se algum `.js`/`.css` de `_next/` no tarball não existir no DEST.
 4. No browser: recarregar uma vez se chegar `ChunkLoadError` (tab aberto no `--delete`). HTML com `Cache-Control: no-cache`.
