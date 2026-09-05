@@ -2,7 +2,7 @@
 
 import { formatBrlFromCents, planAllowsService } from "@eaimesa/shared";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GuestCart, type CartLine } from "./guest-cart";
 import { GuestPartialDialog } from "./guest-partial-dialog";
 import { GuestTabBar } from "./guest-tab-bar";
@@ -69,6 +69,12 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const waiterFeatureOn = flag === true || (flag !== false && !servicePlan);
   const waiterEnabled = !suspended && waiterFeatureOn && (!ordering || tab === null);
   const waiter = useWaiterPresence(menu.venue.slug, waiterEnabled);
+
+  useEffect(() => {
+    const on = Boolean(menu.venue.catalogDark);
+    document.documentElement.classList.toggle("catalog-dark", on);
+    return () => document.documentElement.classList.remove("catalog-dark");
+  }, [menu.venue.catalogDark]);
 
   function addItem(item: PublicMenu["categories"][number]["items"][number]) {
     setCart((cur) => {
@@ -257,16 +263,16 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
                             <button
                               type="button"
                               onClick={() => addItem(item)}
-                              className="btn-secondary !px-3 !py-1.5 text-sm"
+                              className="btn-primary !px-3 !py-1.5 text-sm"
                             >
                               {qty > 0 ? `Adicionar · ${qty}` : "Adicionar"}
                             </button>
                           ) : tab?.needsProfile ? (
-                            <Link href={`/${menu.venue.slug}/comanda`} className="btn-secondary !px-3 !py-1.5 text-sm">
+                            <Link href={`/${menu.venue.slug}/comanda`} className="btn-primary !px-3 !py-1.5 text-sm">
                               Abrir comanda
                             </Link>
                           ) : (
-                            <Link href={`/${menu.venue.slug}/entrar`} className="btn-secondary !px-3 !py-1.5 text-sm">
+                            <Link href={`/${menu.venue.slug}/entrar`} className="btn-primary !px-3 !py-1.5 text-sm">
                               Entrar para pedir
                             </Link>
                           )}
