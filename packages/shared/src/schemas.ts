@@ -219,6 +219,7 @@ export const patchVenueSchema = z
     staffCanCloseTabs: z.boolean().optional(),
     requireShiftOnOpenCash: z.boolean().optional(),
     thermalAutoPrint: z.boolean().optional(),
+    catalogDark: z.boolean().optional(),
     representative: representativeSchema.optional(),
     waiterCallEnabled: z.boolean().optional(),
     waiterCallTtlMinutes: z
@@ -235,6 +236,7 @@ export const patchVenueSchema = z
       b.staffCanCloseTabs !== undefined ||
       b.requireShiftOnOpenCash !== undefined ||
       b.thermalAutoPrint !== undefined ||
+      b.catalogDark !== undefined ||
       b.representative !== undefined ||
       b.waiterCallEnabled !== undefined ||
       b.waiterCallTtlMinutes !== undefined,

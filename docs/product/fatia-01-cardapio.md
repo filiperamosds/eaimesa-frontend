@@ -29,6 +29,7 @@ O cardápio público é **somente leitura**. Abrir `/{slug}` **não** autoriza p
 - Sem descrição e sem foto: a linha não expande.
 - Foto: só upload no painel (JPG/PNG/WebP, 2 MB). Path `/v1/uploads/...` no servidor. Seed demo pode usar `/seed/` ou Unsplash. [Fatia 23](fatia-23-imagens-cardapio.md).
 - Painel: **Adicionar item** e **Editar** abrem um **dialog** (nome, preço, oferta opcional, descrição, foto). A edição inclui receita se o módulo `inventory` estiver ligado; um único **Salvar**. Descrição é **textarea** (até 280 caracteres). Preço no CRUD usa máscara com **2 casas** (`1250` → `R$ 12,50`); a API continua em centavos. Happy hour em Configurações → Cardápio.
+- Tema claro/escuro do `/{slug}`: interruptor na linha do título Cardápio ([fatia 25](fatia-25-modo-escuro-cardapio.md)).
 
 ## Superfície única
 

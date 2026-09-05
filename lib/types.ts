@@ -15,6 +15,7 @@ export type Venue = {
   staffCanCloseTabs?: boolean;
   requireShiftOnOpenCash?: boolean;
   thermalAutoPrint?: boolean;
+  catalogDark?: boolean;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
   /** Fatia 16 — módulos efetivos do venue (ADR-029). */
@@ -105,6 +106,7 @@ export type PublicMenu = {
     /** Plano Cardápio — chamar garçom (ADR-026). Ausente = tentar presença se houver ?mesa=. */
     waiterCallEnabled?: boolean;
     waiterCallTtlMinutes?: number;
+    catalogDark?: boolean;
   };
   categories: {
     id: string;
