@@ -261,17 +261,16 @@ export const imageUrlSchema = z
   .nullable()
   .optional()
   .transform((s) => (s ? s : null))
-  .refine(
-    (s) => s === null || s === undefined || s.startsWith("/v1/uploads/") || /^https?:\/\//i.test(s),
-    { message: "Imagem: URL http(s) ou arquivo enviado." },
-  );
+  .refine((s) => s === null || s === undefined || s.startsWith("/v1/uploads/"), {
+    message: "Imagem: envie o arquivo no painel (fica no servidor).",
+  });
 
 export const createItemSchema = z.object({
   categoryId: z.string().uuid(),
   name: z.string().trim().min(1).max(80),
   description: z.string().trim().max(280).optional().nullable(),
-  imageUrl: imageUrlSchema,
   priceCents: z.number().int().min(0).max(10_000_000),
+  offerPriceCents: z.number().int().min(0).max(10_000_000).nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
   active: z.boolean().optional(),
 });
@@ -280,10 +279,32 @@ export const patchItemSchema = z.object({
   categoryId: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(80).optional(),
   description: z.string().trim().max(280).optional().nullable(),
-  imageUrl: imageUrlSchema,
   priceCents: z.number().int().min(0).max(10_000_000).optional(),
+  offerPriceCents: z.number().int().min(0).max(10_000_000).nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
   active: z.boolean().optional(),
+});
+
+export const happyHourPutSchema = z.object({
+  windows: z
+    .array(
+      z.object({
+        name: z.string().trim().max(40).nullable().optional(),
+        days: z.array(z.number().int().min(0).max(6)).min(1).max(7),
+        startsAt: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+        endsAt: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+        items: z
+          .array(
+            z.object({
+              catalogItemId: z.string().uuid(),
+              priceCents: z.number().int().min(0).max(10_000_000),
+            }),
+          )
+          .min(1)
+          .max(80),
+      }),
+    )
+    .max(12),
 });
 
 export const createOrderSchema = z

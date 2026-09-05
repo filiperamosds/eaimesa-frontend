@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–21)
+## Implementado (fatias 1–24)
 
 ### Saúde
 
@@ -75,6 +75,8 @@ O front **não deixa editar** o slug: gera a partir de `venueName`. **Não** há
 | POST | `/v1/public/waiter-calls` | Cookie presença | Abre chamado na mesa |
 
 Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
+
+Cada item público traz `priceCents` (efetivo), `listPriceCents` e `promo` (`offer` | `happy_hour` | `null`). Pedido guest/balcão snapshota o efetivo ([ADR-043](../decisions/ADR-043-ofertas-happy-hour.md)).
 
 ### Billing (fatias 10 e 12 + ADR-028)
 
@@ -191,7 +193,9 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 | PATCH | `/v1/owner/catalog/items/{id}` | campos parciais |
 | POST | `/v1/owner/catalog/items/{id}/image` | multipart `file` (JPG/PNG/WebP, máx. 2 MB) |
 | DELETE | `/v1/owner/catalog/items/{id}` | remove item |
-| GET | `/v1/uploads/{file}` | — | Foto enviada (público, nome UUID) |
+| GET | `/v1/uploads/{file}` | Foto enviada (público, nome UUID) |
+| GET | `/v1/owner/happy-hour` | `{ windows: [{ id, name, days, startsAt, endsAt, items }] }` |
+| PUT | `/v1/owner/happy-hour` | Substitui as janelas. Máx. 12. `days` 0=Dom…6=Sáb. `startsAt`/`endsAt` `HH:mm` |
 
 ### Owner — grupos de impressão (fatia 19)
 
@@ -225,14 +229,34 @@ No Kanban que não é Painel, cada grupo com itens vira uma via ESC/POS com cort
   "categoryId": "uuid",
   "name": "Calabresa acebolada",
   "description": "Serve 2",
-  "imageUrl": "https://exemplo.com/calabresa.jpg",
   "priceCents": 3290,
+  "offerPriceCents": 2890,
   "sortOrder": 0,
   "active": true
 }
 ```
 
-`imageUrl` é opcional. Upload no painel grava um path `/v1/uploads/...` no mesmo campo. O menu público devolve `imageUrl` em cada item.
+Foto **não** vai neste POST: `POST /v1/owner/catalog/items/{id}/image` (multipart). `imageUrl` externo é rejeitado. O menu público devolve `imageUrl` = `/v1/uploads/...` quando houver foto.
+
+`offerPriceCents` opcional; se menor que `priceCents`, o item entra em Ofertas. Happy hour: `PUT /v1/owner/happy-hour`.
+
+#### PUT /v1/owner/happy-hour (body)
+
+```json
+{
+  "windows": [
+    {
+      "name": "Qua/Qui",
+      "days": [3, 4],
+      "startsAt": "17:00",
+      "endsAt": "21:00",
+      "items": [{ "catalogItemId": "uuid", "priceCents": 1200 }]
+    }
+  ]
+}
+```
+
+`days`: 0=Domingo … 6=Sábado. Janela que cruza meia-noite (`startsAt` > `endsAt`) vale. Lista vazia apaga as faixas.
 
 Preço **sempre** em centavos no servidor. O cliente do painel converte reais → cents.
 
