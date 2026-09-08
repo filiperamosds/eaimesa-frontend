@@ -3,7 +3,6 @@
 import {
   filterOrdersByCategories,
   formatBrlFromCents,
-  isPanelMember,
   KANBAN_COLUMNS,
   kanbanColumnFor,
   ORDER_NEXT,
@@ -12,11 +11,10 @@ import {
   type OrderStatus,
 } from "@eaimesa/shared";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
-import { hasGrantedThermalPrinter, printEscPosOrder, printEscPosReceipt } from "../lib/print-escpos";
-import { setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
-import type { Session, StaffOrder, TabReceiptPrintJob } from "../lib/types";
+import { useThermalAutoPrint } from "../lib/use-thermal-auto-print";
+import type { StaffOrder } from "../lib/types";
 
 function timeAgo(iso: string) {
   const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -65,115 +63,31 @@ export function OrdersBoard({
   const [openId, setOpenId] = useState<string | null>(null);
   const [fMesa, setFMesa] = useState("");
   const [fNome, setFNome] = useState("");
-  const [autoPrint, setAutoPrint] = useState(false);
-  const [printingId, setPrintingId] = useState<string | null>(null);
-  const [printGroups, setPrintGroups] = useState<{ name: string; categoryIds: string[] }[]>([]);
-  const autoPrintRef = useRef(false);
-  const hasPrinterRef = useRef(false);
-  const printChain = useRef(Promise.resolve());
-  const printingRef = useRef(new Set<string>());
-
-  autoPrintRef.current = autoPrint;
-  const printGroupsRef = useRef(printGroups);
-  printGroupsRef.current = printGroups;
-  const patchRef = useRef(endpoints.patch);
-  patchRef.current = endpoints.patch;
-
-  const drainReceiptQueue = useCallback(() => {
-    if (!hasPrinterRef.current) return;
-    printChain.current = printChain.current
-      .then(async () => {
-        while (hasPrinterRef.current) {
-          const data = await api<{ job: TabReceiptPrintJob | null }>("/v1/staff/print-jobs/next", {
-            method: "POST",
-          });
-          const job = data?.job;
-          if (!job) break;
-          try {
-            await printEscPosReceipt(job.venueName, job.tableLabel, job.tab, false);
-            await api(`/v1/staff/print-jobs/${job.id}`, {
-              method: "PATCH",
-              body: JSON.stringify({ status: "printed" }),
-            });
-          } catch (err) {
-            await api(`/v1/staff/print-jobs/${job.id}`, {
-              method: "PATCH",
-              body: JSON.stringify({ status: "failed" }),
-            }).catch(() => undefined);
-            throw err;
-          }
-        }
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Falha ao imprimir o cupom na térmica.");
-      });
-  }, []);
-
-  const enqueuePrint = useCallback((order: StaffOrder, requestDevice: boolean) => {
-    if (printingRef.current.has(order.id)) return;
-    printingRef.current.add(order.id);
-    setPrintingId(order.id);
-    printChain.current = printChain.current
-      .then(async () => {
-        await printEscPosOrder(order, requestDevice, printGroupsRef.current);
-        const updated = await api<StaffOrder>(patchRef.current(order.id), {
-          method: "PATCH",
-          body: JSON.stringify({ printed: true }),
-        });
-        setOrders((cur) =>
-          cur.map((o) => (o.id === order.id ? { ...o, printedAt: updated.printedAt } : o)),
-        );
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Falha ao imprimir na térmica.");
-      })
-      .finally(() => {
-        printingRef.current.delete(order.id);
-        setPrintingId((cur) => (cur === order.id ? null : cur));
-      });
-  }, []);
+  const { autoPrint, enqueuePrint, consumeOrders, printingId } = useThermalAutoPrint({
+    source: "kanban",
+    list: endpoints.list,
+    patch: endpoints.patch,
+    station,
+    categoryIds,
+    onPrinted: (order) => {
+      setOrders((cur) => cur.map((o) => (o.id === order.id ? { ...o, printedAt: order.printedAt } : o)));
+    },
+    onError: setError,
+  });
 
   const load = useCallback(async () => {
     const data = await api<{ orders: StaffOrder[] }>(endpoints.list);
-    const incoming = station ? filterOrdersByCategories(data.orders, categoryIds) : data.orders;
     setOrders(data.orders);
-    if (!autoPrintRef.current) return;
-    const fresh = incoming.filter(
-      (o) => o.status === "pending" && !o.printedAt && !printingRef.current.has(o.id),
-    );
-    for (const order of fresh) {
-      enqueuePrint(order, false);
-    }
-  }, [endpoints.list, station, categoryIds, enqueuePrint]);
+    consumeOrders(data.orders);
+  }, [endpoints.list, consumeOrders]);
 
   useEffect(() => {
     load().catch((e) => setError(e instanceof ApiError ? e.message : "Falha ao carregar pedidos."));
     const t = setInterval(() => {
       void load().catch(() => undefined);
-      drainReceiptQueue();
     }, 5000);
     return () => clearInterval(t);
-  }, [load, drainReceiptQueue]);
-
-  useEffect(() => {
-    void api<Session>("/v1/auth/me")
-      .then((session) => {
-        const panel = isPanelMember(session);
-        const viaGroups = !panel || session.member?.printViaGroups === true;
-        setPrintGroups(viaGroups ? (session.venue.printGroups ?? []) : []);
-        void hasGrantedThermalPrinter().then((ok) => {
-          hasPrinterRef.current = ok;
-          if (session.venue.thermalAutoPrint === true) {
-            if (ok) setAutoPrint(true);
-            else setThermalAutoPrintEnabled(false);
-          } else {
-            setAutoPrint(false);
-          }
-          if (ok) drainReceiptQueue();
-        });
-      })
-      .catch(() => setPrintGroups([]));
-  }, [drainReceiptQueue]);
+  }, [load]);
 
   useEffect(() => {
     if (!autoPrint) return;

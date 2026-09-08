@@ -3,6 +3,7 @@
 import { sessionCanCloseTabs } from "@eaimesa/shared";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { useThermalAutoPrint } from "../lib/use-thermal-auto-print";
 import type { ClaimResponse, Session, StaffTable } from "../lib/types";
 import { ClaimQrModal } from "./claim-qr-modal";
 import { StaffTableDialog } from "./staff-table-dialog";
@@ -29,6 +30,13 @@ export function StaffBoard() {
   const [claiming, setClaiming] = useState<string | null>(null);
   const [activeClaim, setActiveClaim] = useState<ClaimResponse | null>(null);
   const [openTable, setOpenTable] = useState<StaffTable | null>(null);
+  useThermalAutoPrint({
+    source: "tables",
+    list: "/v1/staff/orders",
+    patch: (id) => `/v1/staff/orders/${id}`,
+    poll: true,
+    onError: setError,
+  });
 
   const refreshTables = useCallback(async () => {
     const data = await api<TablesPayload>("/v1/staff/tables");

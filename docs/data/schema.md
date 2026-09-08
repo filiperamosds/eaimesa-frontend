@@ -22,7 +22,8 @@ Login do dono e da equipe.
 - `accepts_orders`: true só no Auto atendimento com assinatura válida
 - `staff_can_close_tabs` (default true): se false, garçom não fecha comanda/mesa (caixa e dono sim)
 - `require_shift_on_open_cash` / API `requireShiftOnOpenCash` (default false): se true, abrir o caixa exige a escala (garçom/caixa; painel de fora) ([ADR-031](../decisions/ADR-031-escala-abrir-caixa.md))
-- `thermal_auto_print` / API `thermalAutoPrint` (default false): auto-print no Kanban. Off → pedido nasce com `printed_at`; ligar depois não despeja a fila.
+- `thermal_auto_print` / API `thermalAutoPrint` (default false): auto-print no Kanban.
+- `thermal_auto_print_tables` / API `thermalAutoPrintTables` (default false): auto-print na aba Mesas. As duas off → pedido nasce com `printed_at`; ligar depois não despeja a fila.
 - `catalog_dark` / API `catalogDark` (default false): cardápio público em modo escuro ([fatia 25](../product/fatia-25-modo-escuro-cardapio.md))
 - `representative` (JSON/API camelCase): responsável / pagador Asaas — `name`, `cpfCnpj`, `email`, `phone`, `postalCode`, `addressNumber` ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)). No cadastro entram só `name` + `cpfCnpj`; o restante pode faltar até Configurações → Responsável.
 - `trial_ends_at` — null até confirmar o e-mail; depois agora + trial_days

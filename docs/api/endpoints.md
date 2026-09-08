@@ -183,8 +183,8 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 
 | Método | Path | Descrição |
 |--------|------|-----------|
-| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `thermalAutoPrint`, `catalogDark`, `printGroups`, …) |
-| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, catalogDark?, representative? }` (desligar `thermalAutoPrint` tira os pedidos da fila de impressão) |
+| GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `thermalAutoPrint`, `thermalAutoPrintTables`, `catalogDark`, `printGroups`, …) |
+| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, thermalAutoPrintTables?, catalogDark?, representative? }` (desligar a última flag de auto-print tira os pedidos da fila de impressão) |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |
