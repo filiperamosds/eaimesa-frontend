@@ -17,6 +17,7 @@ export function ConfigBarPanels() {
   const [staffCanCloseTabs, setStaffCanCloseTabs] = useState(true);
   const [requireShiftOnOpenCash, setRequireShiftOnOpenCash] = useState(false);
   const [thermalPrint, setThermalPrint] = useState(false);
+  const [thermalPrintTables, setThermalPrintTables] = useState(false);
   const [printGroups, setPrintGroups] = useState<DraftPrintGroup[]>([]);
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [printerBusy, setPrinterBusy] = useState(false);
@@ -41,6 +42,7 @@ export function ConfigBarPanels() {
         setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
         setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
         setThermalPrint(v.thermalAutoPrint === true);
+        setThermalPrintTables(v.thermalAutoPrintTables === true);
         setThermalAutoPrintEnabled(v.thermalAutoPrint === true);
         setCategories(catalog.categories);
         setPrintGroups(
@@ -64,7 +66,7 @@ export function ConfigBarPanels() {
     setMsg(null);
     setPending(true);
     try {
-      if (service && thermalPrint) {
+      if (service && (thermalPrint || thermalPrintTables)) {
         await connectThermalPrinter();
       }
       if (service) {
@@ -88,6 +90,7 @@ export function ConfigBarPanels() {
             staffCanCloseTabs?: boolean;
             requireShiftOnOpenCash?: boolean;
             thermalAutoPrint?: boolean;
+            thermalAutoPrintTables?: boolean;
           } = {
             name,
             slug: nextSlug,
@@ -96,6 +99,7 @@ export function ConfigBarPanels() {
             body.staffCanCloseTabs = staffCanCloseTabs;
             body.requireShiftOnOpenCash = requireShiftOnOpenCash;
             body.thermalAutoPrint = thermalPrint;
+            body.thermalAutoPrintTables = thermalPrintTables;
           }
           v = await api<Venue>("/v1/owner/venue", {
             method: "PATCH",
@@ -135,6 +139,7 @@ export function ConfigBarPanels() {
         setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
         setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
         setThermalPrint(v.thermalAutoPrint === true);
+        setThermalPrintTables(v.thermalAutoPrintTables === true);
       }
       if (service) setThermalAutoPrintEnabled(thermalPrint);
       if (service) setPrinterReady(await hasGrantedThermalPrinter());
@@ -200,10 +205,25 @@ export function ConfigBarPanels() {
                 onChange={(e) => setThermalPrint(e.target.checked)}
               />
               <span>
-                <span className="block font-medium">Imprimir pedidos novos na térmica</span>
+                <span className="block font-medium">Imprimir pedidos novos no Kanban</span>
                 <span className="mt-1 block text-sm text-ink-soft">
-                  Via dos pedidos novos no Kanban e cupom de conferência, neste Chrome, sem a caixa de
-                  imprimir do sistema. Desligada, o pedido não fica na fila para imprimir depois.
+                  Via dos pedidos novos no quadro Pedidos e cupom de conferência, neste Chrome, sem a
+                  caixa de imprimir do sistema.
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-chili"
+                checked={thermalPrintTables}
+                onChange={(e) => setThermalPrintTables(e.target.checked)}
+              />
+              <span>
+                <span className="block font-medium">Imprimir pedidos novos na aba Mesas</span>
+                <span className="mt-1 block text-sm text-ink-soft">
+                  Mesmas vias, com Mesas aberta neste Chrome. Use se o caixa fica nessa aba, não no
+                  Kanban. Desligadas as duas, o pedido não fica na fila para imprimir depois.
                 </span>
               </span>
             </label>

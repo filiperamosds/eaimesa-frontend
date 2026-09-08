@@ -8,13 +8,13 @@
 
 A POS80 fala USB/serial **neste Chrome**. O garçom no celular não tem a térmica. **Imprimir** no cupom da comanda falhava ou pedia um dispositivo que o telefone não tem.
 
-O Kanban (`/painel/pedidos`, `/garcom/pedidos`, monitor Painel) já é o lugar onde a térmica está autorizada.
+O Kanban (`/painel/pedidos`, `/garcom/pedidos`, monitor Painel) e a aba Mesas (`/painel/mesas`, `/garcom`) são os lugares onde a térmica pode estar autorizada.
 
 ## Decisão
 
 - Com térmica **já autorizada** neste Chrome: o cupom sai na hora (comportamento atual).
 - Sem térmica neste aparelho: `POST /v1/staff/tabs/{tabId}/print` cria um `print_jobs` (`kind=tab_receipt`, `pending`). Job `pending`/`printing` da mesma comanda é reusado (toque duplo não gera duas vias).
-- Kanban com USB/serial concedido: `POST /v1/staff/print-jobs/next` **reclama** o mais antigo (`pending` → `printing`, lock). Imprime ESC/POS e `PATCH { status: "printed" }`. Falha USB → `failed`. Claim parado > 60 s volta a `pending`. Job `pending` > 30 min → `expired`.
+- Chrome com USB/serial concedido (Kanban ou Mesas): `POST /v1/staff/print-jobs/next` **reclama** o mais antigo (`pending` → `printing`, lock). Imprime ESC/POS e `PATCH { status: "printed" }`. Falha USB → `failed`. Claim parado > 60 s volta a `pending`. Job `pending` > 30 min → `expired`.
 - Primeiro Kanban que reclama imprime; os outros não duplicam. Não é agente local nem fila por IP.
 
 ## Alternativas rejeitadas

@@ -280,7 +280,7 @@ export async function hasGrantedThermalPrinter(): Promise<boolean> {
   return Boolean(serial && (await serial.getPorts()).length > 0);
 }
 
-/** Pede a POS80 uma vez (gesto do usuário). Depois o Kanban imprime sem diálogo. */
+/** Pede a POS80 uma vez (gesto do usuário). Depois o Chrome imprime sem diálogo. */
 export async function connectThermalPrinter(): Promise<void> {
   if (await hasGrantedThermalPrinter()) return;
   await pickThermalPrinter();

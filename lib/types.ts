@@ -15,6 +15,7 @@ export type Venue = {
   staffCanCloseTabs?: boolean;
   requireShiftOnOpenCash?: boolean;
   thermalAutoPrint?: boolean;
+  thermalAutoPrintTables?: boolean;
   catalogDark?: boolean;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
