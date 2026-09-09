@@ -1,10 +1,11 @@
 "use client";
 
-import { type ModifierGroup, type RecipeLine, type StockItem } from "@eaimesa/shared";
+import { type RecipeLine, type StockItem } from "@eaimesa/shared";
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError, apiUpload } from "../lib/api";
 import { mediaSrc } from "../lib/media";
 import type { CatalogItem } from "../lib/types";
+import { ItemComplementsEditor } from "./item-complements-editor";
 import { ItemRecipeEditor } from "./item-recipe-editor";
 import { MoneyField } from "./masked-fields";
 
@@ -13,7 +14,6 @@ export function ItemEditDialog({
   inventoryOn,
   stockItems,
   recipe,
-  modifierGroups,
   onSaved,
   onClose,
 }: {
@@ -21,17 +21,16 @@ export function ItemEditDialog({
   inventoryOn: boolean;
   stockItems: StockItem[];
   recipe: RecipeLine[];
-  modifierGroups: ModifierGroup[];
   onSaved: () => Promise<void>;
   onClose: () => void;
 }) {
+  const [tab, setTab] = useState<"item" | "complements">("item");
   const [name, setName] = useState(item.name);
   const [description, setDescription] = useState(item.description ?? "");
   const [priceCents, setPriceCents] = useState<number | null>(item.priceCents);
   const [offerPriceCents, setOfferPriceCents] = useState<number | null>(item.offerPriceCents ?? null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [draftRecipe, setDraftRecipe] = useState<RecipeLine[]>(recipe);
-  const [groupIds, setGroupIds] = useState<string[]>(() => (item.modifierGroups ?? []).map((g) => g.id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +57,7 @@ export function ItemEditDialog({
     const cents = priceCents;
     if (cents === null) {
       setError("Informe o preço (ex. R$ 12,50).");
+      setTab("item");
       return;
     }
     setError(null);
@@ -70,7 +70,6 @@ export function ItemEditDialog({
           description: description || null,
           priceCents: cents,
           offerPriceCents,
-          modifierGroupIds: groupIds,
         }),
       });
       if (photoFile) {
@@ -95,6 +94,22 @@ export function ItemEditDialog({
     }
   }
 
+  const tabBtn = (id: "item" | "complements", label: string) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={tab === id}
+      onClick={() => setTab(id)}
+      className={
+        tab === id
+          ? "shrink-0 rounded-xl bg-card px-3 py-1.5 text-sm font-medium text-chili shadow-sm"
+          : "shrink-0 rounded-xl px-3 py-1.5 text-sm text-ink-soft hover:text-ink"
+      }
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-4 backdrop-blur-sm sm:items-center"
@@ -105,15 +120,20 @@ export function ItemEditDialog({
         if (e.target === e.currentTarget && !saving) onClose();
       }}
     >
-      <form
-        onSubmit={(e) => void save(e)}
-        className="surface flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden p-5"
-      >
+      <div className="surface flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden p-5">
         <p className="eyebrow">Cardápio</p>
         <h2 id="item-edit-title" className="mt-2 font-serif text-2xl">
-          Editar item
+          {item.name}
         </h2>
-        <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-0.5">
+        <div role="tablist" aria-label="Edição do item" className="mt-3 flex gap-1">
+          {tabBtn("item", "Item")}
+          {tabBtn("complements", "Complementos")}
+        </div>
+        <form
+          id="item-edit-form"
+          onSubmit={(e) => void save(e)}
+          className={`mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-0.5 ${tab === "item" ? "" : "hidden"}`}
+        >
           <div className="flex items-center gap-3">
             {photoPreview ? (
               <img src={photoPreview} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
@@ -163,46 +183,15 @@ export function ItemEditDialog({
           {inventoryOn ? (
             <ItemRecipeEditor stockItems={stockItems} lines={draftRecipe} onChange={setDraftRecipe} />
           ) : null}
-          <div className="rounded-xl bg-paper-2/80 p-3 text-sm">
-            <p className="mb-2 font-medium">Adicionais neste item</p>
-            {modifierGroups.length === 0 ? (
-              <p className="text-ink-soft">Cadastre categorias de adicional acima (molhos, extras, acompanhamentos).</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {modifierGroups.map((g) => {
-                  const on = groupIds.includes(g.id);
-                  return (
-                    <li key={g.id}>
-                      <label className="flex cursor-pointer items-start gap-2">
-                        <input
-                          type="checkbox"
-                          className="mt-1"
-                          checked={on}
-                          onChange={() =>
-                            setGroupIds((cur) => (on ? cur.filter((id) => id !== g.id) : [...cur, g.id]))
-                          }
-                        />
-                        <span>
-                          <span className="block font-medium">{g.name}</span>
-                          <span className="text-xs text-ink-soft">
-                            {g.minSelect === 0
-                              ? `opcional · até ${g.maxSelect}`
-                              : g.minSelect === g.maxSelect
-                                ? `obrigatório · ${g.minSelect}`
-                                : `${g.minSelect} a ${g.maxSelect}`}
-                            {" · "}
-                            {g.options.length} {g.options.length === 1 ? "item" : "itens"}
-                          </span>
-                        </span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-          {error ? <p className="text-sm text-chili">{error}</p> : null}
+        </form>
+        <div className={`mt-4 min-h-0 flex-1 overflow-y-auto pr-0.5 ${tab === "complements" ? "" : "hidden"}`}>
+          <ItemComplementsEditor
+            itemId={item.id}
+            groups={item.modifierGroups ?? []}
+            onChange={onSaved}
+          />
         </div>
+        {error ? <p className="mt-3 text-sm text-chili">{error}</p> : null}
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
@@ -210,13 +199,15 @@ export function ItemEditDialog({
             disabled={saving}
             onClick={onClose}
           >
-            Cancelar
+            {tab === "complements" ? "Fechar" : "Cancelar"}
           </button>
-          <button type="submit" className="btn-primary !py-2 text-sm" disabled={saving}>
-            {saving ? "Salvando…" : "Salvar"}
-          </button>
+          {tab === "item" ? (
+            <button type="submit" form="item-edit-form" className="btn-primary !py-2 text-sm" disabled={saving}>
+              {saving ? "Salvando…" : "Salvar"}
+            </button>
+          ) : null}
         </div>
-      </form>
+      </div>
     </div>
   );
 }

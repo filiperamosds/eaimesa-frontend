@@ -1,14 +1,16 @@
 "use client";
 
-import { modifierRuleLabel, type ModifierGroup } from "@eaimesa/shared";
+import { modifierRuleLabel, type ModifierGroup, type ModifierOption } from "@eaimesa/shared";
 import { useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { MoneyField } from "./masked-fields";
 
-export function ModifierGroupsEditor({
+export function ItemComplementsEditor({
+  itemId,
   groups,
   onChange,
 }: {
+  itemId: string;
   groups: ModifierGroup[];
   onChange: () => Promise<void>;
 }) {
@@ -23,7 +25,7 @@ export function ModifierGroupsEditor({
     setError(null);
     setSaving(true);
     try {
-      await api("/v1/owner/catalog/modifier-groups", {
+      await api(`/v1/owner/catalog/items/${itemId}/modifier-groups`, {
         method: "POST",
         body: JSON.stringify({
           name,
@@ -37,23 +39,22 @@ export function ModifierGroupsEditor({
       setMaxSelect(1);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível criar a categoria.");
+      setError(err instanceof ApiError ? err.message : "Não foi possível criar o grupo.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="surface p-5">
-      <h3 className="font-serif text-2xl">Adicionais e modos</h3>
-      <p className="mt-1 text-sm text-ink-soft">
-        Categorias reutilizáveis: molho, extra de bacon, acompanhamentos. Depois ligue no item.
+    <div className="space-y-4">
+      <p className="text-sm text-ink-soft">
+        Grupos deste produto: molho, extra, acompanhamento. Quem pede escolhe na hora; preço vazio = sem taxa.
       </p>
-      <form onSubmit={(e) => void addGroup(e)} className="mt-4 grid gap-2 sm:grid-cols-[1fr_5.5rem_5.5rem_auto]">
+      <form onSubmit={(e) => void addGroup(e)} className="grid gap-2 sm:grid-cols-[1fr_5.5rem_5.5rem_auto]">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nome (ex. Molhos)"
+          placeholder="Grupo (ex. Molhos)"
           className="field"
           required
         />
@@ -80,23 +81,23 @@ export function ModifierGroupsEditor({
           />
         </label>
         <button type="submit" className="btn-primary !bg-sage !py-2 text-sm shadow-none sm:self-end" disabled={saving}>
-          {saving ? "…" : "Criar categoria"}
+          {saving ? "…" : "Criar grupo"}
         </button>
       </form>
-      <p className="mt-2 text-xs text-ink-soft">
-        Mínimo 0 = opcional. 1 a 1 = um molho. 1 a 8 = acompanhamentos. Preço vazio no item = sem taxa.
+      <p className="text-xs text-ink-soft">
+        Mínimo 0 = opcional. 1 a 1 = um molho. 1 a 8 = acompanhamentos.
       </p>
-      {error ? <p className="mt-2 text-sm text-chili">{error}</p> : null}
+      {error ? <p className="text-sm text-chili">{error}</p> : null}
       {groups.length === 0 ? (
-        <p className="mt-4 text-sm text-ink-soft">Nenhuma categoria ainda.</p>
+        <p className="text-sm text-ink-soft">Nenhum complemento neste item ainda.</p>
       ) : (
-        <ul className="mt-5 space-y-4">
+        <ul className="space-y-3">
           {groups.map((group) => (
             <ModifierGroupBlock key={group.id} group={group} onChange={onChange} onError={setError} />
           ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -124,7 +125,7 @@ function ModifierGroupBlock({
       });
       await onChange();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao salvar a categoria.");
+      onError(err instanceof ApiError ? err.message : "Falha ao salvar o grupo.");
     }
   }
 
@@ -142,7 +143,7 @@ function ModifierGroupBlock({
   }
 
   async function remove() {
-    if (!confirm("Remover esta categoria e os itens dela?")) return;
+    if (!confirm("Remover este grupo e as opções dele?")) return;
     onError(null);
     try {
       await api(`/v1/owner/catalog/modifier-groups/${group.id}`, { method: "DELETE" });
@@ -168,12 +169,12 @@ function ModifierGroupBlock({
       setOptCents(null);
       await onChange();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao adicionar o item.");
+      onError(err instanceof ApiError ? err.message : "Falha ao adicionar a opção.");
     }
   }
 
   return (
-    <li className="rounded-2xl border border-line p-4">
+    <li className="rounded-2xl border border-line p-3">
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={name}
@@ -227,7 +228,7 @@ function ModifierGroupBlock({
         <input
           value={optName}
           onChange={(e) => setOptName(e.target.value)}
-          placeholder="Item (ex. Cheddar)"
+          placeholder="Opção (ex. Cheddar)"
           className="field min-w-40 flex-1 py-1.5 text-sm"
           required
         />
@@ -250,7 +251,7 @@ function ModifierOptionRow({
   onChange,
   onError,
 }: {
-  option: ModifierGroup["options"][number];
+  option: ModifierOption;
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
 }) {
@@ -266,7 +267,7 @@ function ModifierOptionRow({
       });
       await onChange();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Falha ao salvar o item.");
+      onError(err instanceof ApiError ? err.message : "Falha ao salvar a opção.");
     }
   }
 
@@ -284,7 +285,7 @@ function ModifierOptionRow({
   }
 
   async function remove() {
-    if (!confirm("Remover este item da categoria?")) return;
+    if (!confirm("Remover esta opção?")) return;
     onError(null);
     try {
       await api(`/v1/owner/catalog/modifier-options/${option.id}`, { method: "DELETE" });

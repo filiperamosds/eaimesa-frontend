@@ -139,6 +139,9 @@ export function ItemCreateDialog({
             />
             <p className="mt-1 text-xs text-ink-soft">Se preencher, o item entra em Ofertas no cardápio público.</p>
           </div>
+          <p className="text-xs text-ink-soft">
+            Molho, extra ou acompanhamento: depois de salvar, abra o item e use a aba Complementos.
+          </p>
           {error ? <p className="text-sm text-chili">{error}</p> : null}
         </div>
         <div className="mt-5 flex justify-end gap-2">
