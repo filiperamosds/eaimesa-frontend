@@ -108,6 +108,11 @@ export type PublicMenu = {
     waiterCallEnabled?: boolean;
     waiterCallTtlMinutes?: number;
     catalogDark?: boolean;
+    delivery?: {
+      enabled: boolean;
+      feeCents: number;
+      etaMinutes?: number | null;
+    };
   };
   categories: {
     id: string;
@@ -264,7 +269,7 @@ export type StaffTableTabsPayload = {
 export type StaffOrder = {
   id: string;
   status: OrderStatus;
-  source: "counter" | "guest";
+  source: "counter" | "guest" | "delivery";
   tableId: string | null;
   tableLabel: string;
   tabId: string | null;
@@ -274,6 +279,23 @@ export type StaffOrder = {
   createdAt: string;
   updatedAt: string;
   totalCents: number;
+  delivery?: {
+    customerName: string;
+    phoneMasked: string;
+    /** Dígitos; só no Kanban/staff, não no acompanhamento público. */
+    phone?: string | null;
+    address: {
+      street: string;
+      number: string;
+      neighborhood: string;
+      postalCode?: string | null;
+      city?: string | null;
+      state?: string | null;
+      complement?: string | null;
+    };
+    payOnDelivery: "cash" | "pix";
+    feeCents: number;
+  } | null;
   items: {
     id: string;
     catalogItemId: string | null;
@@ -286,6 +308,11 @@ export type StaffOrder = {
 };
 
 export type GuestOrder = StaffOrder;
+
+export type DeliveryPublicOrder = StaffOrder & {
+  trackToken?: string | null;
+  trackPath?: string;
+};
 
 export type GuestOrdersPayload = {
   orders: GuestOrder[];

@@ -9,11 +9,14 @@ const nextConfig: NextConfig = {
   ...(isDev
     ? {
         // Hostinger usa .htaccess no HTML estático. No `next dev` o Apache
-        // não entra — sem isto, /{slug}/c/{token} é 404 (a página é /{slug}/c).
+        // não entra — sem isto, /{slug}/c/{token} e /{slug}/delivery/p/{token}
+        // são 404 (as páginas são /{slug}/c e /{slug}/delivery/p).
         rewrites: async () => ({
           beforeFiles: [
             { source: "/:slug/c/:token", destination: "/:slug/c/" },
             { source: "/:slug/c/:token/", destination: "/:slug/c/" },
+            { source: "/:slug/delivery/p/:token", destination: "/:slug/delivery/p/" },
+            { source: "/:slug/delivery/p/:token/", destination: "/:slug/delivery/p/" },
           ],
         }),
       }

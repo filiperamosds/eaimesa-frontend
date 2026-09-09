@@ -42,6 +42,7 @@ const SERVICE_ONLY_PREFIXES = [
   "/painel/configuracoes/equipe",
   "/painel/bar/equipe",
   "/painel/bar/configuracoes",
+  "/painel/configuracoes/delivery",
 ];
 
 export function PainelShell({ children }: { children: React.ReactNode }) {

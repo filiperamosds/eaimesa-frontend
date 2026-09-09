@@ -13,6 +13,7 @@ export const MODULE_KEYS = [
   "finance",
   "service_fee",
   "inventory",
+  "delivery",
 ] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
@@ -39,6 +40,7 @@ export const MODULES: Record<ModuleKey, ModuleMeta> = {
   finance: { key: "finance", label: "Financeiro", type: "use", group: "operacao" },
   service_fee: { key: "service_fee", label: "Taxa de serviço", type: "config", group: "config" },
   inventory: { key: "inventory", label: "Estoque", type: "use", group: "operacao" },
+  delivery: { key: "delivery", label: "Delivery", type: "use", group: "operacao" },
 };
 
 export const MODULE_GROUP_LABEL: Record<ModuleGroup, string> = {
@@ -89,4 +91,11 @@ export function venueAllowsUnpaidClose(
   venue: { modules?: VenueModules | null } | null | undefined,
 ): boolean {
   return venue?.modules?.finance?.config?.allowUnpaidClose === true;
+}
+
+/** Config `delivery.printFullReceipt`: nota completa na térmica para o entregador. */
+export function venuePrintsDeliveryFullReceipt(
+  venue: { modules?: VenueModules | null } | null | undefined,
+): boolean {
+  return venue?.modules?.delivery?.config?.printFullReceipt === true;
 }

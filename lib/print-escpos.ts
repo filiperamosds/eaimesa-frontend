@@ -1,5 +1,5 @@
 import { kitchenTicketsForPrintGroups } from "@eaimesa/shared";
-import { encodeEscPosKitchenTicket, encodeEscPosKitchenTickets, encodeEscPosReceipt } from "./escpos-receipt";
+import { concatEscPos, encodeEscPosDeliveryReceipt, encodeEscPosKitchenTicket, encodeEscPosKitchenTickets, encodeEscPosReceipt } from "./escpos-receipt";
 import type { StaffOrder, StaffTableTab } from "./types";
 
 type UsbEndpoint = { direction: string; endpointNumber: number; packetSize: number };
@@ -314,11 +314,17 @@ export async function printEscPosOrder(
   order: StaffOrder,
   promptIfNeeded = true,
   groups?: readonly { name: string; categoryIds: readonly string[] }[] | null,
+  extras?: { venueName?: string; printFullReceipt?: boolean },
 ) {
   const jobs = kitchenTicketsForPrintGroups(order, groups);
-  const payload =
+  const kitchen =
     jobs.length === 1
       ? encodeEscPosKitchenTicket(jobs[0]!.order, jobs[0]!.groupName)
       : encodeEscPosKitchenTickets(jobs);
+  const slip =
+    extras?.printFullReceipt && order.source === "delivery" && order.delivery
+      ? encodeEscPosDeliveryReceipt(extras.venueName ?? "", order)
+      : null;
+  const payload = slip && slip.length > 0 ? concatEscPos([kitchen, slip]) : kitchen;
   await sendEscPos(payload, promptIfNeeded);
 }

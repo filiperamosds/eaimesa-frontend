@@ -23,7 +23,7 @@
 | Ameaça | Controle |
 |--------|----------|
 | IDOR entre estabelecimentos | Filtro `venue_id` da sessão; testes depois; RLS |
-| Pedido remoto | Claim + PIN + comanda pessoal; slug sozinho não cria pedido; plano Cardápio não tem pedido |
+| Pedido remoto | Claim + PIN + comanda pessoal; slug sozinho não cria pedido guest; plano Cardápio não tem pedido. Delivery só em `/{slug}/delivery` com módulo on (ADR-044) |
 | Plano / feature | `PLAN_FEATURE` no servidor; Cardápio tem mesas (QR), sem equipe/pedido/comanda |
 | Preço adulterado no pedido | Recalcular no servidor |
 | XSS no cardápio | Texto; escape no React; CSP depois |
@@ -36,7 +36,7 @@
 | Enumeração de slug | 404 genérico; slugs não sequenciais |
 | PII em log | Não logar senha; e-mail só em auth errors genéricos. Viewer `/admin/logs` só com cookie platform; texto escapado no React; limpar rotaciona para `laravel2.log` (não apaga) |
 | Eventos de integração | Body em `integration_events`; `meta.headers` **sem** token/Authorization/Cookie; listagem `/admin/integracoes` só cookie platform |
-| Secret na URL | Cookie httpOnly após login |
+| Secret na URL | Cookie httpOnly após login. Token de delivery (32 hex) é o segredo do acompanhamento; no banco só o hash SHA-256 |
 | Cadastro público de operador | Não existe rota pública. Só `POST /v1/platform/users` com cookie `eaimesa_platform` (`/admin/equipe`) |
 | Código de e-mail / convite | Código 6 dígitos hashed, 15 min; convite em query `token` (hash SHA-256, 7 dias). Sem cookie até confirmar |
 | SMTP | From `nao-responder@eaimesa.com`; sem Reply-To; `suporte@eaimesa.com` só no rodapé |
@@ -61,6 +61,7 @@
 | Redeem claim | 20/min/IP |
 | PIN join | 5 falhas / 15 min / IP+venue |
 | Pedido guest | 20/min/IP |
+| Pedido delivery | 20 / 10 min / IP+venue |
 | Checkout / pagador | 10/min/venue |
 
 Na fatia 1 o limiter de login pode ser in-memory (um processo).
@@ -70,8 +71,8 @@ Na fatia 1 o limiter de login pode ser in-memory (um processo).
 - **Controlador:** estabelecimento (quando houver pedidos).
 - **Operador:** EaiMesa (infra, processamento).
 - Cadastro B2B: e-mail, senha, nome do estabelecimento, **nome e CPF do responsável**. Telefone, CEP e número entram em Configurações → Responsável. CNPJ/CPF de **pagador** no checkout hosted se o responsável ainda não estiver completo. KYC extra entra em fatia posterior.
-- CPF do **consumidor** não coletar no MVP para pedir.
-- **Telefone + nome** na comanda pessoal (fatia 6): PII do estabelecimento (controlador). API staff devolve telefone **mascarado**. Não logar telefone.
+- CPF do **consumidor** na mesa: não. No delivery: CPF no cadastro por telefone do estabelecimento (mascarado na API; não vai no Kanban).
+- **Telefone + nome** na comanda pessoal (fatia 6). Delivery (fatia 26): telefone, nome, **CPF** e endereços no venue. API staff devolve telefone **mascarado**; CPF não vai no Kanban. Não logar telefone nem CPF.
 - PAN / CVV: só em trânsito HTTPS no `POST /v1/billing/checkout` e `POST /v1/billing/cards` até o Asaas. Não persistir, não logar. Guardamos token cifrado + last4 (+ brand). PIX continua na página hosted. [ADR-020](../decisions/ADR-020-cartao-no-painel.md), [ADR-028](../decisions/ADR-028-assinatura-recorrente-planos.md).
 
 ## Cadastro B2B (KYC — fatia posterior)

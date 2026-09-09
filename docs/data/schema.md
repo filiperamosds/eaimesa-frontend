@@ -55,7 +55,7 @@ Preço efetivo: happy hour ativo (menor) > oferta < lista > lista. Timezone `Ame
 
 - `id`, `venue_id`
 - `status`: `pending` | `accepted` | `preparing` | `delivered` | `cancelled`
-- `source`: `counter` | `guest`
+- `source`: `counter` | `guest` | `delivery`
 - `table_id` (nullable → VenueTable)
 - `table_label` (snapshot)
 - `tab_id` nullable → Tab (obrigatório quando `source = guest`; no `counter`, preenchido quando o staff lança na comanda)
@@ -71,6 +71,35 @@ Preço efetivo: happy hour ativo (menor) > oferta < lista > lista. Timezone `Ame
 - `catalog_item_id` (nullable se o item do cardápio for apagado)
 - `category_id` (snapshot da categoria no momento do pedido; Kanban Painel filtra por isto)
 - `name_snapshot`, `unit_price_cents_snapshot`, `qty`, `note`
+
+## Entidades — fatia 26 (delivery)
+
+### DeliveryCustomer
+
+Cadastro por telefone no venue (não é login). Unique `(venue_id, phone)`.
+
+- `id`, `venue_id`, `phone` (10–11), `name`, `cpf` (11 dígitos), timestamps
+
+### DeliveryAddress
+
+Vários por cliente (máx. 10).
+
+- `id`, `customer_id`, `venue_id`
+- `postal_code` (8), `street`, `number`, `neighborhood`, `city`, `state` (UF), `complement` nullable
+
+### DeliveryOrder
+
+Um-para-um com `orders` quando `source = delivery`. Snapshot do cliente e do endereço.
+
+- `id`, `order_id` UNIQUE, `venue_id`
+- `customer_id`, `address_id` nullable (FKs)
+- `customer_name`, `phone`, `customer_cpf` nullable
+- `address_street`, `address_number`, `address_neighborhood`, `address_postal_code`, `address_city`, `address_state`, `address_complement` nullable
+- `pay_on_delivery`: `cash` | `pix`
+- `fee_cents` (snapshot da taxa do módulo no momento do pedido)
+- Config do módulo: `printFullReceipt` (default off) — nota completa na térmica para o entregador
+- `public_token_hash` CHAR(64) UNIQUE — SHA-256 do token hex de 32 chars; o token só sai no POST
+- timestamps
 
 ## Entidades — fatia 3 (mesas)
 
@@ -295,12 +324,12 @@ Postgres (Fastify): `UNIQUE (table_id) WHERE status = open`. MySQL/MariaDB (Lara
 2. Menu público: `active = true` em categoria e item.
 3. DELETE categoria com itens → `CATEGORY_NOT_EMPTY`.
 4. `OrderItem` sempre grava snapshot de preço/nome; o cliente **não** envia preço.
-5. Pedido público pelo slug **exige** comanda pessoal `open` (fatia 7). Slug sozinho não autoriza.
+5. Pedido pelo `/{slug}` **exige** comanda pessoal `open` (fatia 7). Slug sozinho não autoriza. Delivery é outro path: `/{slug}/delivery` (fatia 26), sem mesa.
 6. Pedido de balcão com `table_id` só aceita mesa **ativa** do mesmo venue; grava snapshot do rótulo. Com `tabId`, a mesa vem da comanda `open` e o pedido grava `tab_id`.
 7. PIN join casa o PIN com uma **TableSession** `open`.
 8. Nome+telefone abre a comanda pessoal. Se já houver comanda `open` com esse número no estabelecimento, 409 `TAB_ALREADY_OPEN`.
 9. Encerrar mesa só se todas as comandas da sessão estão `closed`. Revoga sessões da comanda ao fechá-la.
-10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest.
+10. `Idempotency-Key` repetida no mesmo venue devolve o mesmo pedido guest **ou** delivery (se a chave já foi de outra origem → 409).
 11. Cookie `eaimesa_platform` não autoriza `/v1/owner/*` nem guest; cookie do dono não autoriza `/v1/platform/*`. Os dois (e o guest) podem existir juntos no browser.
 12. Plano `active` só no stub imediato ou no webhook. Redirect `?checkout=ok` não confirma.
 13. CPF/CNPJ do pagador não é persistido. PAN/CVV não são persistidos nem logados. Token Asaas em `venue_billing` (cifrado) e em `venue_payment_methods` (até 5).
@@ -346,6 +375,9 @@ erDiagram
   Venue ||--o{ Order : has
   Venue ||--o{ BillingEvent : checkouts
   Venue ||--o| VenueBilling : gateway
+  Order ||--o| DeliveryOrder : delivery
+  DeliveryCustomer ||--o{ DeliveryAddress : addresses
+  DeliveryCustomer ||--o{ DeliveryOrder : orders
   Order ||--|{ OrderItem : contains
   PlatformUser
   PlatformSettings

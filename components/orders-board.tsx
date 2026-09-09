@@ -6,8 +6,10 @@ import {
   KANBAN_COLUMNS,
   kanbanColumnFor,
   ORDER_NEXT,
-  ORDER_NEXT_LABEL,
+  ORDER_SOURCE_LABEL,
   ORDER_STATUS_LABEL,
+  orderAdvanceLabel,
+  PAY_ON_DELIVERY_LABEL,
   type OrderStatus,
 } from "@eaimesa/shared";
 import Link from "next/link";
@@ -63,6 +65,7 @@ export function OrdersBoard({
   const [openId, setOpenId] = useState<string | null>(null);
   const [fMesa, setFMesa] = useState("");
   const [fNome, setFNome] = useState("");
+  const [fSource, setFSource] = useState<"all" | "salon" | "delivery">("all");
   const { autoPrint, enqueuePrint, consumeOrders, printingId } = useThermalAutoPrint({
     source: "kanban",
     list: endpoints.list,
@@ -102,13 +105,15 @@ export function OrdersBoard({
   const filtered = useMemo(() => {
     const mesa = fMesa.trim().toLowerCase();
     const nome = fNome.trim().toLowerCase();
-    if (!mesa && !nome) return visible;
     return visible.filter((o) => {
+      const sourceOk =
+        fSource === "all" ||
+        (fSource === "delivery" ? o.source === "delivery" : o.source !== "delivery");
       const mesaOk = !mesa || (o.tableLabel ?? "").toLowerCase().includes(mesa);
       const nomeOk = !nome || (o.guestName ?? "").toLowerCase().includes(nome);
-      return mesaOk && nomeOk;
+      return sourceOk && mesaOk && nomeOk;
     });
-  }, [visible, fMesa, fNome]);
+  }, [visible, fMesa, fNome, fSource]);
 
   const byStatus = useMemo(() => {
     const map: Record<string, StaffOrder[]> = {};
@@ -152,33 +157,58 @@ export function OrdersBoard({
         ) : null}
       </div>
       {station ? null : (
-        <div className="mb-4 flex flex-wrap gap-2">
-          <input
-            className="field max-w-[12rem]"
-            placeholder="Filtrar por mesa"
-            value={fMesa}
-            onChange={(e) => setFMesa(e.target.value)}
-            aria-label="Filtrar por mesa"
-          />
-          <input
-            className="field max-w-[14rem]"
-            placeholder="Filtrar por comanda (nome)"
-            value={fNome}
-            onChange={(e) => setFNome(e.target.value)}
-            aria-label="Filtrar por nome de comanda"
-          />
-          {fMesa || fNome ? (
-            <button
-              type="button"
-              onClick={() => {
-                setFMesa("");
-                setFNome("");
-              }}
-              className="btn-ghost !py-2 text-sm"
-            >
-              Limpar
-            </button>
-          ) : null}
+        <div className="mb-4 space-y-3">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Origem do pedido">
+            {(
+              [
+                ["all", "Todos"],
+                ["salon", "Salão"],
+                ["delivery", "Delivery"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setFSource(value)}
+                className={
+                  fSource === value
+                    ? "rounded-full bg-chili px-3 py-1.5 text-sm font-medium text-white"
+                    : "rounded-full bg-card px-3 py-1.5 text-sm text-ink-soft"
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              className="field max-w-[12rem]"
+              placeholder="Filtrar por mesa"
+              value={fMesa}
+              onChange={(e) => setFMesa(e.target.value)}
+              aria-label="Filtrar por mesa"
+            />
+            <input
+              className="field max-w-[14rem]"
+              placeholder="Filtrar por comanda (nome)"
+              value={fNome}
+              onChange={(e) => setFNome(e.target.value)}
+              aria-label="Filtrar por nome de comanda"
+            />
+            {fMesa || fNome || fSource !== "all" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setFMesa("");
+                  setFNome("");
+                  setFSource("all");
+                }}
+                className="btn-ghost !py-2 text-sm"
+              >
+                Limpar
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
       {error ? <p className="mb-3 text-sm text-chili">{error}</p> : null}
@@ -238,7 +268,8 @@ function OrderCard({
   printing: boolean;
   onPrint: () => void;
 }) {
-  const nextLabel = ORDER_NEXT_LABEL[order.status];
+  const nextLabel = orderAdvanceLabel(order);
+  const d = order.delivery;
   return (
     <li className="surface p-3 shadow-none">
       <button type="button" onClick={onToggle} className="w-full text-left">
@@ -249,8 +280,12 @@ function OrderCard({
           </span>
           <span className="text-xs text-ink-soft">{timeAgo(order.createdAt)}</span>
         </div>
-        <p className="mt-0.5 text-[11px] uppercase tracking-wide text-ink-soft">
-          {order.source === "guest" ? "Cardápio" : "Balcão"}
+        <p
+          className={`mt-0.5 text-[11px] uppercase tracking-wide ${
+            order.source === "delivery" ? "text-chili" : "text-ink-soft"
+          }`}
+        >
+          {ORDER_SOURCE_LABEL[order.source] ?? order.source}
         </p>
         <p className="mt-1 line-clamp-2 text-sm text-ink-soft">
           {order.items.map((i) => `${i.qty}× ${i.name}`).join(" · ")}
@@ -273,6 +308,23 @@ function OrderCard({
             ))}
           </ul>
           {order.note ? <p className="mt-2 text-ink-soft">{order.note}</p> : null}
+          {d ? (
+            <div className="mt-2 space-y-0.5 text-ink-soft">
+              <p>
+                {d.address.street}, {d.address.number}
+                {d.address.complement ? ` — ${d.address.complement}` : ""}
+              </p>
+              <p>
+                {d.address.neighborhood}
+                {d.address.city ? ` · ${d.address.city}` : ""}
+                {d.address.state ? `/${d.address.state}` : ""}
+                {d.address.postalCode ? ` · ${d.address.postalCode}` : ""}
+              </p>
+              <p>{d.phoneMasked}</p>
+              <p>Pagar: {PAY_ON_DELIVERY_LABEL[d.payOnDelivery]}</p>
+              {d.feeCents > 0 ? <p>Taxa: {formatBrlFromCents(d.feeCents)}</p> : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">

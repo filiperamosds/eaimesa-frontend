@@ -95,6 +95,7 @@ export function ReportsOrders() {
           <option value="">Todas as origens</option>
           <option value="guest">Cliente (QR)</option>
           <option value="counter">Garçom</option>
+          <option value="delivery">Delivery</option>
         </select>
       </div>
       {error ? <p className="text-sm text-chili">{error}</p> : null}

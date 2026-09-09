@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–25)
+## Implementado (fatias 1–26)
 
 ### Saúde
 
@@ -76,7 +76,39 @@ O front **não deixa editar** o slug: gera a partir de `venueName`. **Não** há
 
 Itens inativos e categorias inativas **não** entram na resposta pública. Venue `suspended`: ainda retorna o cardápio com `subscriptionStatus` para o front avisar. `plan` e `planKind` entram no payload (`kind=cardapio` não oferece PIN/pedido). No front, plano Cardápio esconde “Entrar para pedir” e a faixa de PIN; `/{slug}/entrar` redireciona ao cardápio. Payload pode incluir `waiterCallEnabled` / `waiterCallTtlMinutes` ([ADR-026](../decisions/ADR-026-chamar-garcom-qr-mesa.md)) e `catalogDark` ([fatia 25](../product/fatia-25-modo-escuro-cardapio.md)); detalhe da presença: [backend-waiter-call.md](backend-waiter-call.md). Dono: `GET /v1/owner/waiter-calls?status=open`, `PATCH …/{id}` `{ status: "acked" }` — UI `/painel/chamados`.
 
-Cada item público traz `priceCents` (efetivo), `listPriceCents` e `promo` (`offer` | `happy_hour` | `null`). Pedido guest/balcão snapshota o efetivo ([ADR-043](../decisions/ADR-043-ofertas-happy-hour.md)).
+Cada item público traz `priceCents` (efetivo), `listPriceCents` e `promo` (`offer` | `happy_hour` | `null`). Pedido guest/balcão/delivery snapshota o efetivo ([ADR-043](../decisions/ADR-043-ofertas-happy-hour.md)). `venue.delivery`: `{ enabled, feeCents, etaMinutes }` — CTA e checkout só se `enabled`.
+
+### Público — delivery (fatia 26)
+
+Sem cookie. Sem mesa. Módulo `delivery` ligado. [ADR-044](../decisions/ADR-044-delivery-sem-conta.md). UI: `/{slug}/delivery`, acompanhamento `/{slug}/delivery/p/{token}` (export estático: a página é `/{slug}/delivery/p/`).
+
+| Método | Path | Auth | Descrição |
+|--------|------|------|-----------|
+| POST | `/v1/public/venues/{slug}/delivery/lookup` | — | `{ phone }` → `{ registered: false }` ou `{ registered, name, cpfMasked, addresses }` |
+| POST | `/v1/public/venues/{slug}/delivery/customers` | — | `{ phone, name, cpf }` — cria se novo; se já existe, devolve o cadastro |
+| POST | `/v1/public/venues/{slug}/delivery/addresses` | — | `{ phone, postalCode, street, number, neighborhood, city, state, complement? }` — máx. 10 |
+| POST | `/v1/public/venues/{slug}/delivery/orders` | — | `{ phone, addressId, payOnDelivery, items }` → `pending` |
+| GET | `/v1/public/venues/{slug}/delivery/orders/{token}` | — | Pedido pelo token hex (32). 404 se não casar |
+
+Header obrigatório no POST de pedido: `Idempotency-Key` (UUID). Mesma chave no venue devolve o mesmo pedido delivery; chave já usada em outra origem → 409. Rate limit pedido: 20 / 10 min por IP+venue. Token só na resposta do POST (`trackToken`, `trackPath`). GET **não** devolve o token. Lookup 30/10 min; cadastro/endereço 20/10 min.
+
+CEP é buscado no **ViaCEP pelo browser**; a API grava o endereço já preenchido. `CUSTOMER_REQUIRED` se pedir sem cadastro; `ADDRESS_NOT_FOUND` se o `addressId` não for deste telefone.
+
+#### POST /v1/public/venues/{slug}/delivery/orders (body)
+
+```json
+{
+  "phone": "11988887777",
+  "addressId": "uuid",
+  "payOnDelivery": "pix",
+  "note": "sem cebola",
+  "items": [{ "catalogItemId": "uuid", "qty": 1, "note": null }]
+}
+```
+
+Erros: `PLAN_FEATURE`, `FEATURE_DISABLED`, `VENUE_SUSPENDED` / billing, `ITEM_NOT_FOUND`, `VALIDATION_ERROR`. Não exige caixa aberto.
+
+`PATCH /v1/owner/modules/delivery` `{ enabled, config: { feeCents, etaMinutes, printFullReceipt } }`. `feeCents` 0–50000; `etaMinutes` null ou 10–180; `printFullReceipt` (default false) imprime a nota completa junto das vias dos itens. UI: Configurações → Delivery.
 
 ### Billing (fatias 10 e 12 + ADR-028)
 

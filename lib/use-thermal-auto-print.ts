@@ -1,6 +1,6 @@
 "use client";
 
-import { filterOrdersByCategories, isPanelMember } from "@eaimesa/shared";
+import { filterOrdersByCategories, isPanelMember, venuePrintsDeliveryFullReceipt } from "@eaimesa/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { hasGrantedThermalPrinter, printEscPosOrder, printEscPosReceipt } from "./print-escpos";
@@ -44,12 +44,16 @@ export function useThermalAutoPrint({
   const patchRef = useRef(patch);
   const onPrintedRef = useRef(onPrinted);
   const onErrorRef = useRef(onError);
+  const venueNameRef = useRef("");
+  const printFullReceiptRef = useRef(false);
+  const stationRef = useRef(station);
 
   autoPrintRef.current = autoPrint;
   printGroupsRef.current = printGroups;
   patchRef.current = patch;
   onPrintedRef.current = onPrinted;
   onErrorRef.current = onError;
+  stationRef.current = station;
 
   const drainReceiptQueue = useCallback(() => {
     if (!hasPrinterRef.current) return;
@@ -89,7 +93,10 @@ export function useThermalAutoPrint({
     setPrintingId(order.id);
     printChain.current = printChain.current
       .then(async () => {
-        await printEscPosOrder(order, requestDevice, printGroupsRef.current);
+        await printEscPosOrder(order, requestDevice, printGroupsRef.current, {
+          venueName: venueNameRef.current,
+          printFullReceipt: printFullReceiptRef.current && !stationRef.current,
+        });
         const updated = await api<StaffOrder>(patchRef.current(order.id), {
           method: "PATCH",
           body: JSON.stringify({ printed: true }),
@@ -130,6 +137,8 @@ export function useThermalAutoPrint({
         const panel = isPanelMember(session);
         const viaGroups = !panel || session.member?.printViaGroups === true;
         setPrintGroups(viaGroups ? (session.venue.printGroups ?? []) : []);
+        venueNameRef.current = session.venue.name;
+        printFullReceiptRef.current = venuePrintsDeliveryFullReceipt(session.venue);
         const flagOn =
           source === "tables"
             ? session.venue.thermalAutoPrintTables === true

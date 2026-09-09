@@ -31,6 +31,7 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 | **Garçom / caixa** | `/garcom` | Staff (`member.role` staff ou cashier) | Só Auto atendimento | — |
 | **Painel (KDS)** | `/painel/pedidos` | Staff (`member.role` panel) | Só Auto atendimento; categorias no cadastro | — |
 | **Cardápio público** | `/{slug}` | Cliente | Sempre leitura; pedido só Auto atendimento | — |
+| **Delivery** | `/{slug}/delivery` | Cliente | Módulo `delivery` (opt-in) | — |
 | **Platform** | `/admin` | Operador EaiMesa | Console: vendas, estabelecimentos, equipe, planos, logs, integrações | SSO/2FA |
 
 ## Personas
@@ -52,6 +53,7 @@ Implementação **agora**: [fatia 25 — modo escuro do cardápio](fatia-25-modo
 - Planos com `kind` Cardápio ou Auto atendimento (SKUs extras no console); trial 7 dias
 - Cardápio CRUD (texto, preço no servidor, foto no disco, oferta e happy hour)
 - Auto atendimento: mesas + claim + PIN + pedido guest + fila staff
+- Delivery opt-in: `/{slug}/delivery` wizard (itens, telefone, CPF se novo, endereços ViaCEP, pagamento na entrega)
 - Estoque: insumos, receita no item, alerta ([fatia 21](fatia-21-estoque.md))
 - Multi-tenant com `venue_id` em toda query
 - Billing: trial/vigência/suspensão; catálogo no banco; cartão no painel (token Asaas) ou PIX hosted
@@ -59,15 +61,16 @@ Implementação **agora**: [fatia 25 — modo escuro do cardápio](fatia-25-modo
 ### Fora do MVP
 
 - Pagamento da conta no app / split
-- CPF do consumidor para pedir
+- CPF do consumidor no pedido da **mesa** (comanda continua nome+telefone)
 - Agente impressora térmica (cozinha em processo local). Via USB no Kanban e cupom de conferência: [ADR-029](../decisions/ADR-029-cupom-escpos-usb.md). Cupom a partir do celular: [ADR-041](../decisions/ADR-041-fila-cupom-kanban.md). Vias por grupo: [ADR-035](../decisions/ADR-035-grupos-impressao.md).
-- Delivery, iFood, WhatsApp bot
+- iFood, WhatsApp bot
 - App nativo, domínio customizado por estabelecimento
 - NFC-e
 
 ## Métricas de sucesso (piloto)
 
-- Pedido remoto (só slug da casa) → **403** (quando houver pedido)
+- Pedido remoto (só slug da casa, sem `/delivery`) → **403** (quando houver pedido guest)
+- Delivery com módulo off → **403**; com módulo on, POST cria pedido e devolve `trackPath`
 - Dois estabelecimentos no mesmo DB → **isolamento** (A não lê B)
 - `/{slug}` de um estabelecimento não lista itens de outro
 - Sábado com rede ruim → fila staff funciona; claim expirado não abre tab
@@ -79,4 +82,5 @@ Implementação **agora**: [fatia 25 — modo escuro do cardápio](fatia-25-modo
 - Path do cardápio: `/{slug}` (ex. `/seu-estabelecimento`) — [ADR-004](../decisions/ADR-004-slug-publico.md)
 - Path de claim: `/{slug}/c/{claimToken}` (redirect após redeem)
 - Path de PIN join: `/{slug}/entrar`
+- Path de delivery: `/{slug}/delivery` e acompanhamento `/{slug}/delivery/p/{token}` ([ADR-044](../decisions/ADR-044-delivery-sem-conta.md))
 - `venue.public_id` opaco existe no banco; **não** é a URL do cardápio na fatia 1

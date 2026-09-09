@@ -55,18 +55,21 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/painel/estoque` | Redirect → `/painel/configuracoes/estoque` |
 | `/painel/financeiro/relatorios` | Dashboard operacional, pedidos, comandas, itens, turnos, equipe |
 | `/painel/mesas` | Redirect → `/painel/configuracoes/mesas` |
-| `/painel/configuracoes` | Hub: cardápio, estoque, bar, mesas, chamada, equipe, responsável |
+| `/painel/configuracoes` | Hub: cardápio, estoque, bar, mesas, chamada, equipe, financeiro, delivery, responsável |
 | `/painel/configuracoes/cardapio` | CRUD do cardápio; **Editar** abre dialog (foto, detalhes, receita) com um Salvar |
 | `/painel/configuracoes/estoque` | Insumos, saldo e alerta (fatia 21) — módulo `inventory` |
 | `/painel/configuracoes/bar` | Nome, slug, térmica (checkbox + configurar impressora) e encerramento; um Salvar |
 | `/painel/configuracoes/mesas` | Mesas (CRUD + QR fixo) — Cardápio e Auto |
 | `/painel/configuracoes/chamada` | Ligar/desligar “Chamar garçom” + TTL (ADR-026) |
 | `/painel/configuracoes/equipe` | Staff / caixa / painel |
+| `/painel/configuracoes/delivery` | Ligar delivery, taxa e previsão (fatia 26) |
 | `/painel/configuracoes/responsavel` | Responsável / pagador Asaas ([ADR-025](../decisions/ADR-025-responsavel-configuracoes.md)) |
 | `/painel/pagamento` | Checkout (cartão, PIX, cartões salvos, upgrade/downgrade). `/painel/bar/plano` redireciona para cá |
 | `/painel/chamados` | Fila “chamar garçom” (plano Cardápio / ADR-026) |
 | `/painel/cardapio`, `/painel/bar/*`, `/painel/equipe` | Redirects legados |
 | `/{slug}` | Cardápio público (pedido/PIN só no Auto atendimento) |
+| `/{slug}/delivery` | Pedido delivery (módulo on; sem mesa) |
+| `/{slug}/delivery/p/{token}` | Acompanhar delivery (token na URL; página estática `.../p/`) |
 | `/{slug}/c/{token}` | Redeem do claim (redirect se plano Cardápio). Dev: rewrite Next; prod: `.htaccess` → `/{slug}/c` |
 | `/{slug}/bem-vindo` | PIN no primeiro aparelho |
 | `/{slug}/entrar` | PIN join (redirect se plano Cardápio) |

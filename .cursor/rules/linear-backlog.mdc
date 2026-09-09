@@ -1,0 +1,14 @@
+---
+description: Abrir backlog no Linear para o dono verificar cada mudança
+alwaysApply: true
+---
+
+# Backlog Linear
+
+Toda mudança de produto, API ou UI gera um issue no Linear para o dono conferir depois.
+
+1. **No início:** crie o issue (time do workspace) com o que vai mudar e um checklist de verificação.
+2. **No meio:** comente se houver bloqueio, decisão ou desvio do combinado.
+3. **No fim:** comente o que foi feito (paths, como testar) e avance o status para revisão/Done. Não deixe o card parado sem update.
+
+Não commitar nem fazer push só por causa do Linear. Assignee: o dono do produto (`me` se for a sessão dele).

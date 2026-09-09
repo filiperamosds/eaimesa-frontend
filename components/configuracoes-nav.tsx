@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/painel/configuracoes/chamada", label: "Chamada", service: false, module: null },
   { href: "/painel/configuracoes/equipe", label: "Equipe", service: true, module: null },
   { href: "/painel/configuracoes/financeiro", label: "Financeiro", service: true, module: "finance" },
+  { href: "/painel/configuracoes/delivery", label: "Delivery", service: true, module: "delivery" },
   { href: "/painel/configuracoes/responsavel", label: "Responsável", service: false, module: null },
   { href: "/painel/pagamento", label: "Pagamento", service: false, module: null },
 ] as const;
@@ -24,6 +25,7 @@ export function ConfiguracoesNav() {
   const [service, setService] = useState(true);
   const [financeOn, setFinanceOn] = useState(true);
   const [inventoryOn, setInventoryOn] = useState(false);
+  const [deliveryOn, setDeliveryOn] = useState(false);
 
   useEffect(() => {
     api<Session>("/v1/auth/me")
@@ -33,6 +35,7 @@ export function ConfiguracoesNav() {
         const mods = s.venue.modules;
         setFinanceOn(mods ? Boolean(mods.finance || mods.service_fee) : svc);
         setInventoryOn(venueHasModule(s.venue, "inventory"));
+        setDeliveryOn(Boolean(mods?.delivery));
       })
       .catch(() => undefined);
   }, []);
@@ -41,6 +44,7 @@ export function ConfiguracoesNav() {
     if (l.service && !service) return false;
     if (l.module === "finance" && !financeOn) return false;
     if (l.module === "inventory" && !inventoryOn) return false;
+    if (l.module === "delivery" && !deliveryOn) return false;
     return true;
   });
 

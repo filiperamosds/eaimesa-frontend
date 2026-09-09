@@ -4,6 +4,8 @@ Front Next.js do EaiMesa. API: **eaimesa-backend** (Laravel, porta 8000).
 
 Produto e contratos: [`docs/`](docs/README.md). Spec e código mudam juntos (`.cursor/rules/docs-sync.mdc`).
 
+Toda mudança de produto/API/UI: issue no Linear no início, comentários se precisar, status de revisão/Done ao terminar (`.cursor/rules/linear-backlog.mdc`).
+
 Não invente endpoint. Um único app: `/` landing, `/login` `/cadastro` `/painel/*`, `/{slug}` cardápio, `/garcom`, `/admin`.
 
 Branch padrão: **`develop`** (staging). PRs do Cursor mergeiam em `develop`. **`main`** só com pedido explícito ou PR aberto no GitHub contra `main`.

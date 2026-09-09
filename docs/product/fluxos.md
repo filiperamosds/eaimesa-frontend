@@ -240,7 +240,7 @@ Na fatia 1, `suspended` ainda mostra o cardápio (read-only) com aviso, se o sta
 
 ## Impressora
 
-No Kanban (`/painel/pedidos`, `/garcom/pedidos`) e na aba Mesas (`/painel/mesas`, `/garcom`): auto-print liga em **Configurações → Estabelecimento** (`thermalAutoPrint` no quadro, `thermalAutoPrintTables` nas mesas). O botão **Configurar impressora** no card abre o picker USB/serial deste Chrome ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Com as duas flags desligadas, pedidos novos já entram como impressos e não saem depois. Com a flag da tela ligada, pedido novo em `pending` gera via ESC/POS nessa aba; se o estabelecimento tiver **grupos de impressão**, cada grupo com itens vira uma via e a térmica corta entre elas ([ADR-035](../decisions/ADR-035-grupos-impressao.md)). Cupom da comanda pedido no celular entra na fila `print_jobs` e o Chrome com a térmica (Kanban ou Mesas) imprime ([ADR-041](../decisions/ADR-041-fila-cupom-kanban.md)). Falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
+No Kanban (`/painel/pedidos`, `/garcom/pedidos`) e na aba Mesas (`/painel/mesas`, `/garcom`): auto-print liga em **Configurações → Estabelecimento** (`thermalAutoPrint` no quadro, `thermalAutoPrintTables` nas mesas). O botão **Configurar impressora** no card abre o picker USB/serial deste Chrome ([ADR-029](../decisions/ADR-029-cupom-escpos-usb.md)). Com as duas flags desligadas, pedidos novos já entram como impressos e não saem depois. Com a flag da tela ligada, pedido novo em `pending` gera via ESC/POS nessa aba; se o estabelecimento tiver **grupos de impressão**, cada grupo com itens vira uma via e a térmica corta entre elas ([ADR-035](../decisions/ADR-035-grupos-impressao.md)). Se o Delivery estiver com `printFullReceipt`, o Kanban (não o painel de estação) imprime em seguida a nota completa — itens, endereço, WhatsApp e total, sem taxa de serviço — para pregar no pedido. Cupom da comanda pedido no celular entra na fila `print_jobs` e o Chrome com a térmica (Kanban ou Mesas) imprime ([ADR-041](../decisions/ADR-041-fila-cupom-kanban.md)). Falha de print **não** cancela o pedido. Agente local (`print_pending` após `accepted`) continua fora do MVP.
 
 ## 5c. Relatórios (fatia 20)
 
@@ -252,3 +252,32 @@ Em `/painel/financeiro`: **Faturamento** (dinheiro) e **Relatórios** (pedidos, 
 2. No cardápio, **Adicionar item** e **Editar** abrem dialog (foto, detalhes; receita só na edição se o estoque estiver ligado).
 3. Pedido (QR ou garçom) baixa `qty da receita × qty do pedido`. Cancelar devolve o que foi baixado.
 4. Saldo ≤ alerta → banner em Pedidos e em Configurações → Estoque. Venda não trava. [ADR-037](../decisions/ADR-037-estoque.md).
+
+## 5e. Delivery (fatia 26)
+
+Detalhe em [fatia-26-delivery.md](fatia-26-delivery.md).
+
+```mermaid
+sequenceDiagram
+  participant C as Cliente
+  participant W as Next
+  participant API as API
+  participant K as Kanban
+
+  C->>W: /{slug}/delivery
+  W->>API: GET /v1/public/venues/{slug}
+  C->>W: wizard: itens → WhatsApp → nome/CPF se novo → CEP/endereço → Pix/dinheiro
+  W->>API: POST lookup / customers / addresses
+  W->>API: POST .../delivery/orders (Idempotency-Key)
+  API-->>W: pedido + trackPath
+  W->>C: /{slug}/delivery/p/{token}
+  C->>API: GET .../delivery/orders/{token} (poll)
+  K->>API: GET /v1/owner/orders
+  K->>API: PATCH status preparing / delivered (Saiu)
+```
+
+1. Dono liga o módulo em **Configurações → Delivery** (taxa, previsão e nota completa para o entregador, opcionais).
+2. Cliente pede em `/{slug}/delivery`. Wizard: itens → telefone; se novo, nome e CPF; escolhe ou cadastra endereço (CEP/ViaCEP); pagamento por último.
+3. Pedido cai no Kanban com selo Delivery. Cozinha marca **Saiu** (`delivered` = saiu da casa).
+4. Cliente acompanha pelo link secreto.
+

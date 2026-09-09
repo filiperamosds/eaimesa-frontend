@@ -31,6 +31,30 @@ export const ORDER_NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
   preparing: "Entregar",
 };
 
+export function orderAdvanceLabel(order: { status: OrderStatus; source?: string }): string | undefined {
+  if (order.status === "preparing" && order.source === "delivery") return "Saiu";
+  return ORDER_NEXT_LABEL[order.status];
+}
+
+export const ORDER_SOURCE_LABEL: Record<"counter" | "guest" | "delivery", string> = {
+  guest: "Cardápio",
+  counter: "Balcão",
+  delivery: "Delivery",
+};
+
+export const PAY_ON_DELIVERY_LABEL: Record<"cash" | "pix", string> = {
+  cash: "Dinheiro",
+  pix: "Pix",
+};
+
+export const DELIVERY_ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: "Recebido",
+  accepted: "Recebido",
+  preparing: "Preparando",
+  delivered: "Saiu para entrega",
+  cancelled: "Cancelado",
+};
+
 /** Status na comanda do cliente (não usa os rótulos da cozinha). */
 export const GUEST_ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   pending: "Na fila",

@@ -1,4 +1,4 @@
-import { formatBrlFromCents, GUEST_ORDER_STATUS_LABEL, type OrderStatus } from "@eaimesa/shared";
+import { formatBrlFromCents, formatPhoneInput, GUEST_ORDER_STATUS_LABEL, ORDER_SOURCE_LABEL, PAY_ON_DELIVERY_LABEL, type OrderStatus } from "@eaimesa/shared";
 import type { StaffOrder, StaffTableTab } from "./types";
 
 /** Font A em papel 80 mm: 48 colunas. */
@@ -109,6 +109,11 @@ function concat(chunks: Uint8Array[]): Uint8Array {
     o += c.length;
   }
   return out;
+}
+
+/** Junta várias vias ESC/POS (cada uma já pode terminar com corte). */
+export function concatEscPos(chunks: Uint8Array[]): Uint8Array {
+  return concat(chunks);
 }
 
 function cmd(...bytes: number[]) {
@@ -242,7 +247,7 @@ function qtyLine(qty: number, name: string, note: string | null): string {
 /** Via da cozinha/bar — um pedido (ou um grupo), sem total a receber. */
 export function encodeEscPosKitchenTicket(order: StaffOrder, groupName?: string | null): Uint8Array {
   const who = [order.tableLabel, order.guestName].filter(Boolean).join(" - ");
-  const source = order.source === "guest" ? "Cardápio" : "Balcão";
+  const source = ORDER_SOURCE_LABEL[order.source] ?? order.source;
   const chunks: Uint8Array[] = [
     cmd(ESC, 0x40),
     cmd(ESC, 0x74, 0x02),
@@ -276,6 +281,88 @@ export function encodeEscPosKitchenTicket(order: StaffOrder, groupName?: string 
   }
 
   chunks.push(text("\n\n"), cmd(GS, 0x56, 0x41, 0x03));
+  return concat(chunks);
+}
+
+function formatCep(raw: string | null | undefined): string {
+  const d = (raw ?? "").replace(/\D/g, "");
+  if (d.length === 8) return `${d.slice(0, 5)}-${d.slice(5)}`;
+  return raw?.trim() || "";
+}
+
+/** Nota completa do delivery (comanda fechada sem taxa de serviço) — para pregar no pedido. */
+export function encodeEscPosDeliveryReceipt(venueName: string, order: StaffOrder): Uint8Array {
+  const d = order.delivery;
+  if (!d) return new Uint8Array();
+
+  const itemsCents = order.items.reduce((s, i) => s + i.unitPriceCents * i.qty, 0);
+  const fee = d.feeCents;
+  const due = itemsCents + fee;
+  const phone = d.phone ? formatPhoneInput(d.phone) : d.phoneMasked;
+  const extra = d.address.complement ? ` — ${d.address.complement}` : "";
+  const city = [d.address.city, d.address.state].filter(Boolean).join("/");
+  const cep = formatCep(d.address.postalCode);
+  const pay = PAY_ON_DELIVERY_LABEL[d.payOnDelivery] ?? d.payOnDelivery;
+
+  const chunks: Uint8Array[] = [
+    cmd(ESC, 0x40),
+    cmd(ESC, 0x74, 0x02),
+    cmd(ESC, 0x61, 0x01),
+    text(`${center(venueName.toUpperCase())}\n`),
+    text(`${center("Pedido para entrega")}\n`),
+    cmd(ESC, 0x61, 0x00),
+    text(dash()),
+    text(`${center(d.customerName)}\n`),
+    text(`${center(phone)}\n`),
+    text(dash()),
+  ];
+
+  for (const line of wrap(`${d.address.street}, ${d.address.number}${extra}`, ESCPOS_COLS)) {
+    chunks.push(text(`${line}\n`));
+  }
+  if (d.address.neighborhood) {
+    for (const line of wrap(d.address.neighborhood, ESCPOS_COLS)) {
+      chunks.push(text(`${line}\n`));
+    }
+  }
+  const loc = [city, cep].filter(Boolean).join(" · ");
+  if (loc) {
+    for (const line of wrap(loc, ESCPOS_COLS)) {
+      chunks.push(text(`${line}\n`));
+    }
+  }
+
+  chunks.push(text(dash()));
+
+  if (order.items.length === 0) {
+    chunks.push(cmd(ESC, 0x61, 0x01), text("Nenhum item.\n"), cmd(ESC, 0x61, 0x00));
+  } else {
+    for (const item of order.items) {
+      chunks.push(text(itemBlock(item.qty, item.name, money(item.unitPriceCents * item.qty), item.note)));
+    }
+  }
+
+  if (order.note) {
+    chunks.push(text(`${wrap(`Obs.: ${order.note}`, ESCPOS_COLS).join("\n")}\n`));
+  }
+
+  chunks.push(text(dash()), text(`${pair("Itens", money(itemsCents))}\n`));
+  if (fee > 0) {
+    chunks.push(text(`${pair("Entrega", money(fee))}\n`));
+  }
+  chunks.push(
+    cmd(ESC, 0x61, 0x00),
+    cmd(GS, 0x21, 0x10),
+    text(`${pair("TOTAL", money(due))}\n`),
+    cmd(GS, 0x21, 0x00),
+    text(`${pair("Pagar na entrega", pay)}\n`),
+    cmd(ESC, 0x61, 0x01),
+    text("\nPregue no pedido\nDocumento de conferência\nnão é cupom fiscal.\n"),
+    cmd(ESC, 0x61, 0x00),
+    text("\n\n\n"),
+    cmd(GS, 0x56, 0x41, 0x03),
+  );
+
   return concat(chunks);
 }
 

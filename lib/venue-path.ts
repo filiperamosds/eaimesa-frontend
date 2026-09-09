@@ -21,6 +21,14 @@ function claimTokenFromPathname(pathname: string): string | null {
   return null;
 }
 
+function deliveryTokenFromPathname(pathname: string): string | null {
+  const parts = segmentsOf(pathname);
+  if (parts.length >= 4 && parts[1] === "delivery" && parts[2] === "p" && parts[3]) {
+    return decodeURIComponent(parts[3]);
+  }
+  return null;
+}
+
 /**
  * Path do browser. `undefined` até hidratar — o HTML estático de `__venue`
  * não tem o slug real; isso não é 404.
@@ -47,4 +55,10 @@ export function useClaimToken(): string | null | undefined {
   const path = useBrowserPathname();
   if (path === undefined) return undefined;
   return claimTokenFromPathname(path);
+}
+
+export function useDeliveryToken(): string | null | undefined {
+  const path = useBrowserPathname();
+  if (path === undefined) return undefined;
+  return deliveryTokenFromPathname(path);
 }

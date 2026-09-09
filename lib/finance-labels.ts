@@ -10,6 +10,7 @@ export const METHOD_LABEL: Record<string, string> = {
 export const SOURCE_LABEL: Record<string, string> = {
   guest: "Cliente (QR)",
   counter: "Garçom",
+  delivery: "Delivery",
 };
 
 export function planFeatureMessage(code: string | undefined, fallback: string): string {

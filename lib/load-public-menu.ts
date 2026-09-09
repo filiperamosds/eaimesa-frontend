@@ -17,6 +17,11 @@ function normalizePublicMenu(raw: PublicMenu): PublicMenu {
       waiterCallEnabled: waiterCallEnabled ?? raw.venue.waiterCallEnabled,
       waiterCallTtlMinutes:
         typeof ttl === "number" ? ttl : raw.venue.waiterCallTtlMinutes,
+      delivery: raw.venue.delivery ?? {
+        enabled: false,
+        feeCents: 0,
+        etaMinutes: null,
+      },
     },
   };
 }
@@ -29,6 +34,10 @@ export async function loadPublicMenu(slug: string): Promise<PublicMenu | null> {
   if (!res.ok) throw new Error("menu_unavailable");
   const data = (await res.json()) as PublicMenu;
   return normalizePublicMenu(data);
+}
+
+export function venueAllowsDelivery(menu: PublicMenu): boolean {
+  return menu.venue.delivery?.enabled === true && menu.venue.subscriptionStatus !== "suspended";
 }
 
 export function venueAllowsGuestOrdering(menu: PublicMenu): boolean {
