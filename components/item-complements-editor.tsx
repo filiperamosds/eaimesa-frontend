@@ -50,7 +50,7 @@ export function ItemComplementsEditor({
       <p className="text-sm text-ink-soft">
         Grupos deste produto: molho, extra, acompanhamento. Quem pede escolhe na hora; preço vazio = sem taxa.
       </p>
-      <form onSubmit={(e) => void addGroup(e)} className="grid gap-2 sm:grid-cols-[1fr_5.5rem_5.5rem_auto]">
+      <form onSubmit={(e) => void addGroup(e)} className="grid gap-2">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -58,31 +58,33 @@ export function ItemComplementsEditor({
           className="field"
           required
         />
-        <label className="text-sm">
-          <span className="mb-1 block text-xs text-ink-soft">Mínimo</span>
-          <input
-            type="number"
-            min={0}
-            max={40}
-            value={minSelect}
-            onChange={(e) => setMinSelect(Math.max(0, Number(e.target.value) || 0))}
-            className="field"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-xs text-ink-soft">Máximo</span>
-          <input
-            type="number"
-            min={1}
-            max={40}
-            value={maxSelect}
-            onChange={(e) => setMaxSelect(Math.max(1, Number(e.target.value) || 1))}
-            className="field"
-          />
-        </label>
-        <button type="submit" className="btn-primary !bg-sage !py-2 text-sm shadow-none sm:self-end" disabled={saving}>
-          {saving ? "…" : "Criar grupo"}
-        </button>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-sm">
+            <span className="mb-1 block text-xs text-ink-soft">Mínimo</span>
+            <input
+              type="number"
+              min={0}
+              max={40}
+              value={minSelect}
+              onChange={(e) => setMinSelect(Math.max(0, Number(e.target.value) || 0))}
+              className="field w-20"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-xs text-ink-soft">Máximo</span>
+            <input
+              type="number"
+              min={1}
+              max={40}
+              value={maxSelect}
+              onChange={(e) => setMaxSelect(Math.max(1, Number(e.target.value) || 1))}
+              className="field w-20"
+            />
+          </label>
+          <button type="submit" className="btn-primary !bg-sage !py-2 text-sm shadow-none" disabled={saving}>
+            {saving ? "…" : "Criar grupo"}
+          </button>
+        </div>
       </form>
       <p className="text-xs text-ink-soft">
         Mínimo 0 = opcional. 1 a 1 = um molho. 1 a 8 = acompanhamentos.
