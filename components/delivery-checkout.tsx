@@ -265,6 +265,7 @@ export function DeliveryCheckout({
           : step === "address"
             ? "Endereço"
             : "Pagamento";
+  const selectedAddress = addresses.find((a) => a.id === selectedId);
 
   return (
     <div
@@ -488,10 +489,8 @@ export function DeliveryCheckout({
 
           {step === "pay" ? (
             <>
-              {selectedId ? (
-                <p className="text-sm text-ink-soft">
-                  {formatAddress(addresses.find((a) => a.id === selectedId) ?? addresses[0])}
-                </p>
+              {selectedAddress ? (
+                <p className="text-sm text-ink-soft">{formatAddress(selectedAddress)}</p>
               ) : null}
               <fieldset className="text-sm">
                 <legend className="mb-2 text-ink-soft">Pagar na entrega</legend>
