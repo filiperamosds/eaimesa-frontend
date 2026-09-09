@@ -66,10 +66,11 @@ export function MoneyField({
         const inputType = (e.nativeEvent as InputEvent).inputType ?? "";
         apply(shiftMoneyCents(centsRef.current, inputType, e.target.value));
       }}
-      onBlur={() => {
+      onBlur={(e) => {
         setFocused(false);
         const current = centsRef.current;
         setText(current == null ? "" : formatBrlMasked(current));
+        rest.onBlur?.(e);
       }}
     />
   );

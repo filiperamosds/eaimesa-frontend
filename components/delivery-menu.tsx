@@ -1,15 +1,17 @@
 "use client";
 
-import { formatBrlFromCents, isReservedSlug } from "@eaimesa/shared";
+import { formatBrlFromCents, isReservedSlug, itemNeedsModifierPicker } from "@eaimesa/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { makeCartLine, qtyOfItem, upsertCartLine, type CartLine } from "../lib/cart-line";
 import { loadPublicMenu, venueAllowsDelivery } from "../lib/load-public-menu";
 import { mediaSrc } from "../lib/media";
 import type { PublicMenu } from "../lib/types";
 import { useVenueSlug } from "../lib/venue-path";
 import { DeliveryCheckout } from "./delivery-checkout";
-import { type CartLine } from "./guest-cart";
+import { ItemModifiersDialog } from "./item-modifiers-dialog";
+import { OrderItemExtras } from "./order-item-extras";
 import { Logo } from "./site-chrome";
 
 type MenuItem = PublicMenu["categories"][number]["items"][number];
@@ -133,6 +135,7 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
   const active = tabs.find((t) => t.id === (tabId && tabs.some((x) => x.id === tabId) ? tabId : tabs[0]?.id)) ?? tabs[0];
   const [openId, setOpenId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [picker, setPicker] = useState<MenuItem | null>(null);
   const [sheet, setSheet] = useState(false);
   const [query, setQuery] = useState("");
   const feeCents = menu.venue.delivery?.feeCents ?? 0;
@@ -164,36 +167,22 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
   }, [menu.venue.catalogDark]);
 
   function addItem(item: MenuItem) {
-    setCart((cur) => {
-      const existing = cur.find((l) => l.catalogItemId === item.id);
-      if (existing) {
-        return cur.map((l) =>
-          l.catalogItemId === item.id ? { ...l, qty: Math.min(99, l.qty + 1) } : l,
-        );
-      }
-      return [
-        ...cur,
-        {
-          catalogItemId: item.id,
-          name: item.name,
-          priceCents: item.priceCents,
-          qty: 1,
-          note: "",
-          maxNoteLength: item.maxNoteLength ?? 80,
-        },
-      ];
-    });
-  }
-
-  function setQty(id: string, qty: number) {
-    if (qty <= 0) {
-      setCart((cur) => cur.filter((l) => l.catalogItemId !== id));
+    if (itemNeedsModifierPicker(item.modifierGroups)) {
+      setPicker(item);
       return;
     }
-    setCart((cur) => cur.map((l) => (l.catalogItemId === id ? { ...l, qty } : l)));
+    setCart((cur) => upsertCartLine(cur, makeCartLine(item)));
   }
 
-  const qtyOf = (id: string) => cart.find((l) => l.catalogItemId === id)?.qty ?? 0;
+  function setQty(key: string, qty: number) {
+    if (qty <= 0) {
+      setCart((cur) => cur.filter((l) => l.key !== key));
+      return;
+    }
+    setCart((cur) => cur.map((l) => (l.key === key ? { ...l, qty } : l)));
+  }
+
+  const qtyOf = (id: string) => qtyOfItem(cart, id);
 
   return (
     <div className="min-h-screen bg-paper">
@@ -387,6 +376,17 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
         />
       ) : null}
 
+      {picker ? (
+        <ItemModifiersDialog
+          item={picker}
+          onConfirm={(ids) => {
+            setCart((cur) => upsertCartLine(cur, makeCartLine(picker, ids)));
+            setPicker(null);
+          }}
+          onClose={() => setPicker(null)}
+        />
+      ) : null}
+
       <footer className="pb-10 text-center text-xs text-ink-soft">
         Cardápio por{" "}
         <Link href="/" className="font-medium text-ink underline decoration-chili/40">
@@ -476,7 +476,7 @@ function DeliveryCartPanel({
   feeCents: number;
   cartCents: number;
   count: number;
-  onQty: (id: string, qty: number) => void;
+  onQty: (key: string, qty: number) => void;
   onContinue: () => void;
 }) {
   return (
@@ -494,9 +494,12 @@ function DeliveryCartPanel({
         <>
           <ul className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto">
             {cart.map((line) => (
-              <li key={line.catalogItemId}>
+              <li key={line.key}>
                 <div className="flex items-start justify-between gap-2">
-                  <span className="min-w-0 font-medium leading-snug">{line.name}</span>
+                  <span className="min-w-0 font-medium leading-snug">
+                    {line.name}
+                    <OrderItemExtras modifiers={line.modifiers} />
+                  </span>
                   <span className="shrink-0 tabular-nums text-sm">
                     {formatBrlFromCents(line.priceCents * line.qty)}
                   </span>
@@ -505,8 +508,9 @@ function DeliveryCartPanel({
                   <button
                     type="button"
                     className="grid h-7 w-7 place-items-center text-lg leading-none text-ink-soft"
-                    onClick={() => onQty(line.catalogItemId, line.qty - 1)}
+                    onClick={() => onQty(line.key, line.qty - 1)}
                     aria-label={`Diminuir ${line.name}`}
+                  >
                   >
                     −
                   </button>
@@ -514,7 +518,7 @@ function DeliveryCartPanel({
                   <button
                     type="button"
                     className="grid h-7 w-7 place-items-center text-lg leading-none text-chili"
-                    onClick={() => onQty(line.catalogItemId, Math.min(99, line.qty + 1))}
+                    onClick={() => onQty(line.key, Math.min(99, line.qty + 1))}
                     aria-label={`Aumentar ${line.name}`}
                   >
                     +

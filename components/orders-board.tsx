@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { useThermalAutoPrint } from "../lib/use-thermal-auto-print";
 import type { StaffOrder } from "../lib/types";
+import { OrderItemExtras } from "./order-item-extras";
 
 function timeAgo(iso: string) {
   const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -300,6 +301,7 @@ function OrderCard({
                 <span>
                   {i.qty}× {i.name}
                   {i.note ? <span className="text-ink-soft"> — {i.note}</span> : null}
+                  <OrderItemExtras modifiers={i.modifiers} />
                 </span>
                 <span className="tabular-nums">
                   {formatBrlFromCents(i.unitPriceCents * i.qty)}

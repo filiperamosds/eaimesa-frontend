@@ -3,17 +3,12 @@
 import { formatBrlFromCents, newUuid } from "@eaimesa/shared";
 import { useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import type { CartLine } from "../lib/cart-line";
 import type { GuestOrder } from "../lib/types";
 import { GuestPartial } from "./guest-partial";
+import { OrderItemExtras } from "./order-item-extras";
 
-export type CartLine = {
-  catalogItemId: string;
-  name: string;
-  priceCents: number;
-  qty: number;
-  note: string;
-  maxNoteLength: number;
-};
+export type { CartLine } from "../lib/cart-line";
 
 type Props = {
   cart: CartLine[];
@@ -48,12 +43,12 @@ export function GuestCart({
   const count = cart.reduce((s, l) => s + l.qty, 0);
   if (count === 0 && orders.length === 0) return null;
 
-  function setQty(id: string, qty: number) {
+  function setQty(key: string, qty: number) {
     if (qty <= 0) {
-      onChange(cart.filter((l) => l.catalogItemId !== id));
+      onChange(cart.filter((l) => l.key !== key));
       return;
     }
-    onChange(cart.map((l) => (l.catalogItemId === id ? { ...l, qty } : l)));
+    onChange(cart.map((l) => (l.key === key ? { ...l, qty } : l)));
   }
 
   async function submit() {
@@ -72,6 +67,7 @@ export function GuestCart({
             catalogItemId: l.catalogItemId,
             qty: l.qty,
             note: l.note.trim() || null,
+            modifierOptionIds: l.modifierOptionIds ?? [],
           })),
         }),
       });
@@ -144,9 +140,12 @@ export function GuestCart({
                   {orders.length > 0 ? <p className="mb-2 text-sm font-medium">Cesta</p> : null}
                   <ul className="space-y-3">
                     {cart.map((line) => (
-                      <li key={line.catalogItemId} className="border-b border-line pb-3">
+                      <li key={line.key} className="border-b border-line pb-3">
                         <div className="flex items-baseline justify-between gap-2">
-                          <span className="font-medium">{line.name}</span>
+                          <span className="min-w-0">
+                            <span className="font-medium">{line.name}</span>
+                            <OrderItemExtras modifiers={line.modifiers} />
+                          </span>
                           <span className="tabular-nums text-chili">
                             {formatBrlFromCents(line.priceCents * line.qty)}
                           </span>
@@ -155,7 +154,7 @@ export function GuestCart({
                           <button
                             type="button"
                             className="btn-secondary !px-3 !py-1 text-sm"
-                            onClick={() => setQty(line.catalogItemId, line.qty - 1)}
+                            onClick={() => setQty(line.key, line.qty - 1)}
                           >
                             −
                           </button>
@@ -163,7 +162,7 @@ export function GuestCart({
                           <button
                             type="button"
                             className="btn-secondary !px-3 !py-1 text-sm"
-                            onClick={() => setQty(line.catalogItemId, Math.min(99, line.qty + 1))}
+                            onClick={() => setQty(line.key, Math.min(99, line.qty + 1))}
                           >
                             +
                           </button>
@@ -176,7 +175,7 @@ export function GuestCart({
                           onChange={(e) =>
                             onChange(
                               cart.map((l) =>
-                                l.catalogItemId === line.catalogItemId ? { ...l, note: e.target.value } : l,
+                                l.key === line.key ? { ...l, note: e.target.value } : l,
                               ),
                             )
                           }

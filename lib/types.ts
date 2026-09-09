@@ -1,4 +1,4 @@
-import type { PrintGroup, VenueModules } from "@eaimesa/shared";
+import type { PrintGroup, VenueModules, ModifierGroup, OrderItemModifier } from "@eaimesa/shared";
 
 export type Venue = {
   id: string;
@@ -77,6 +77,7 @@ export type CatalogItem = {
   offerPriceCents?: number | null;
   sortOrder: number;
   active: boolean;
+  modifierGroups?: ModifierGroup[];
 };
 
 export type CatalogCategory = {
@@ -126,6 +127,7 @@ export type PublicMenu = {
       listPriceCents?: number;
       promo?: "offer" | "happy_hour" | null;
       maxNoteLength: number;
+      modifierGroups?: ModifierGroup[];
     }[];
   }[];
 };
@@ -304,6 +306,7 @@ export type StaffOrder = {
     unitPriceCents: number;
     qty: number;
     note: string | null;
+    modifiers?: OrderItemModifier[];
   }[];
 };
 

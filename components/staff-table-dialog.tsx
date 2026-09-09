@@ -13,6 +13,7 @@ import { api, ApiError } from "../lib/api";
 import type { StaffOrder, StaffTable, StaffTableTab, StaffTableTabsPayload } from "../lib/types";
 import { PhoneField } from "./masked-fields";
 import { StaffAddOrderDialog } from "./staff-add-order-dialog";
+import { OrderItemExtras } from "./order-item-extras";
 import { StaffCloseTabDialog } from "./staff-close-tab-dialog";
 import { StaffTabReceipt } from "./staff-tab-receipt";
 
@@ -335,6 +336,7 @@ export function StaffTableDialog({
                           {order.items.map((item) => (
                             <p key={item.id}>
                               {item.qty}× {item.name}
+                              <OrderItemExtras modifiers={item.modifiers} />
                             </p>
                           ))}
                           <p className="tabular-nums text-chili">{formatBrlFromCents(order.totalCents)}</p>
@@ -495,6 +497,7 @@ function StaffTabDetail({
                 <p key={item.id} className="flex justify-between gap-2">
                   <span>
                     {item.qty}× {item.name}
+                    <OrderItemExtras modifiers={item.modifiers} />
                   </span>
                   <span className="shrink-0 tabular-nums text-ink-soft">
                     {formatBrlFromCents(item.unitPriceCents * item.qty)}

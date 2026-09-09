@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { DeliveryPublicOrder } from "../lib/types";
 import { useDeliveryToken, useVenueSlug } from "../lib/venue-path";
+import { OrderItemExtras } from "./order-item-extras";
 
 const TOKEN_RE = /^[a-f0-9]{32}$/i;
 
@@ -94,6 +95,7 @@ export function DeliveryTrackPage() {
               <span>
                 {i.qty}× {i.name}
                 {i.note ? <span className="text-ink-soft"> — {i.note}</span> : null}
+                <OrderItemExtras modifiers={i.modifiers} />
               </span>
               <span className="tabular-nums">{formatBrlFromCents(i.unitPriceCents * i.qty)}</span>
             </li>

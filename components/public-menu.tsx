@@ -1,18 +1,20 @@
 "use client";
 
-import { formatBrlFromCents, planAllowsService } from "@eaimesa/shared";
+import { formatBrlFromCents, itemNeedsModifierPicker, planAllowsService } from "@eaimesa/shared";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { GuestCart, type CartLine } from "./guest-cart";
-import { GuestPartialDialog } from "./guest-partial-dialog";
-import { GuestTabBar } from "./guest-tab-bar";
-import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
+import { makeCartLine, qtyOfItem, upsertCartLine, type CartLine } from "../lib/cart-line";
 import { venueAllowsDelivery } from "../lib/load-public-menu";
 import { mediaSrc } from "../lib/media";
 import { useGuestOrders } from "../lib/use-guest-orders";
 import { useGuestTab } from "../lib/use-guest-tab";
 import { useWaiterPresence } from "../lib/use-waiter-presence";
 import type { PublicMenu } from "../lib/types";
+import { GuestCart } from "./guest-cart";
+import { GuestPartialDialog } from "./guest-partial-dialog";
+import { GuestTabBar } from "./guest-tab-bar";
+import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
+import { ItemModifiersDialog } from "./item-modifiers-dialog";
 
 type MenuItem = PublicMenu["categories"][number]["items"][number];
 
@@ -45,6 +47,7 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
   const active = tabs.find((t) => t.id === (tabId && tabs.some((x) => x.id === tabId) ? tabId : tabs[0]?.id)) ?? tabs[0];
   const [openId, setOpenId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [picker, setPicker] = useState<MenuItem | null>(null);
   const [partialOpen, setPartialOpen] = useState(false);
   const ordering =
     planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "") && Boolean(menu.venue.acceptsOrders);
@@ -77,29 +80,15 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
     return () => document.documentElement.classList.remove("catalog-dark");
   }, [menu.venue.catalogDark]);
 
-  function addItem(item: PublicMenu["categories"][number]["items"][number]) {
-    setCart((cur) => {
-      const existing = cur.find((l) => l.catalogItemId === item.id);
-      if (existing) {
-        return cur.map((l) =>
-          l.catalogItemId === item.id ? { ...l, qty: Math.min(99, l.qty + 1) } : l,
-        );
-      }
-      return [
-        ...cur,
-        {
-          catalogItemId: item.id,
-          name: item.name,
-          priceCents: item.priceCents,
-          qty: 1,
-          note: "",
-          maxNoteLength: item.maxNoteLength ?? 80,
-        },
-      ];
-    });
+  function addItem(item: MenuItem) {
+    if (itemNeedsModifierPicker(item.modifierGroups)) {
+      setPicker(item);
+      return;
+    }
+    setCart((cur) => upsertCartLine(cur, makeCartLine(item)));
   }
 
-  const qtyOf = (id: string) => cart.find((l) => l.catalogItemId === id)?.qty ?? 0;
+  const qtyOf = (id: string) => qtyOfItem(cart, id);
 
   return (
     <div className="min-h-screen">
@@ -276,7 +265,11 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
                               onClick={() => addItem(item)}
                               className="btn-primary !px-3 !py-1.5 text-sm"
                             >
-                              {qty > 0 ? `Adicionar · ${qty}` : "Adicionar"}
+                              {qty > 0
+                                ? `Adicionar · ${qty}`
+                                : itemNeedsModifierPicker(item.modifierGroups)
+                                  ? "Escolher"
+                                  : "Adicionar"}
                             </button>
                           ) : tab?.needsProfile ? (
                             <Link href={`/${menu.venue.slug}/comanda`} className="btn-primary !px-3 !py-1.5 text-sm">
@@ -321,6 +314,17 @@ export function PublicMenuView({ menu }: { menu: PublicMenu }) {
           serviceFeeCents={serviceFeeCents}
           error={ordersError}
           onClose={() => setPartialOpen(false)}
+        />
+      ) : null}
+
+      {picker ? (
+        <ItemModifiersDialog
+          item={picker}
+          onConfirm={(ids) => {
+            setCart((cur) => upsertCartLine(cur, makeCartLine(picker, ids)));
+            setPicker(null);
+          }}
+          onClose={() => setPicker(null)}
         />
       ) : null}
 

@@ -323,6 +323,7 @@ export const createOrderSchema = z
           catalogItemId: z.string().uuid(),
           qty: z.number().int().min(1).max(99),
           note: z.string().trim().max(80).optional().nullable(),
+          modifierOptionIds: z.array(z.string().uuid()).max(40).optional(),
         }),
       )
       .min(1, "Inclua pelo menos um item."),
@@ -441,6 +442,7 @@ const orderItemLineSchema = z.object({
   catalogItemId: z.string().uuid(),
   qty: z.number().int().min(1).max(99),
   note: z.string().trim().max(80).optional().nullable(),
+  modifierOptionIds: z.array(z.string().uuid()).max(40).optional(),
 });
 
 export const createGuestOrderSchema = z.object({

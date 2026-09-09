@@ -2,6 +2,7 @@
 
 import { formatBrlFromCents, GUEST_ORDER_STATUS_LABEL } from "@eaimesa/shared";
 import type { GuestOrder } from "../lib/types";
+import { OrderItemExtras } from "./order-item-extras";
 
 export function GuestPartial({
   orders,
@@ -39,6 +40,7 @@ export function GuestPartial({
                 <li key={item.id}>
                   {item.qty}× {item.name}
                   {item.note ? <span className="text-ink-soft"> — {item.note}</span> : null}
+                  <OrderItemExtras modifiers={item.modifiers} />
                 </li>
               ))}
             </ul>

@@ -1,4 +1,4 @@
-import { formatBrlFromCents, formatPhoneInput, GUEST_ORDER_STATUS_LABEL, ORDER_SOURCE_LABEL, PAY_ON_DELIVERY_LABEL, type OrderStatus } from "@eaimesa/shared";
+import { formatBrlFromCents, formatPhoneInput, groupedModifierLabels, GUEST_ORDER_STATUS_LABEL, ORDER_SOURCE_LABEL, PAY_ON_DELIVERY_LABEL, type OrderStatus } from "@eaimesa/shared";
 import type { StaffOrder, StaffTableTab } from "./types";
 
 /** Font A em papel 80 mm: 48 colunas. */
@@ -153,7 +153,13 @@ function dash() {
   return `${"-".repeat(ESCPOS_COLS)}\n`;
 }
 
-function itemBlock(qty: number, name: string, price: string, note: string | null): string {
+function itemBlock(
+  qty: number,
+  name: string,
+  price: string,
+  note: string | null,
+  modifiers?: { groupName: string; name: string }[] | null,
+): string {
   const left = `${qty}x ${name}`;
   const lines = [pair(left, price)];
   if (left.length + 1 + price.length > ESCPOS_COLS) {
@@ -161,6 +167,9 @@ function itemBlock(qty: number, name: string, price: string, note: string | null
     const firstWidth = Math.max(8, ESCPOS_COLS - price.length - 1);
     lines.push(pair(left.slice(0, firstWidth), price));
     lines.push(...wrap(left.slice(firstWidth).trim(), ESCPOS_COLS));
+  }
+  for (const extra of groupedModifierLabels(modifiers)) {
+    lines.push(...wrap(`  ${extra}`, ESCPOS_COLS));
   }
   if (note) lines.push(...wrap(`  ${note}`, ESCPOS_COLS));
   return `${lines.join("\n")}\n`;
@@ -191,7 +200,7 @@ export function encodeEscPosReceipt(venueName: string, tableLabel: string, tab: 
       const status = GUEST_ORDER_STATUS_LABEL[order.status as OrderStatus] ?? order.status;
       chunks.push(text(`${pair(status, when(order.createdAt))}\n`));
       for (const item of order.items) {
-        chunks.push(text(itemBlock(item.qty, item.name, money(item.unitPriceCents * item.qty), item.note)));
+        chunks.push(text(itemBlock(item.qty, item.name, money(item.unitPriceCents * item.qty), item.note, item.modifiers)));
       }
       if (order.note) chunks.push(text(`${wrap(`Obs.: ${order.note}`, ESCPOS_COLS).join("\n")}\n`));
       chunks.push(text("\n"));
@@ -238,8 +247,16 @@ function centerW(value: string, width: number): string {
   return `${" ".repeat(pad)}${value}`;
 }
 
-function qtyLine(qty: number, name: string, note: string | null): string {
+function qtyLine(
+  qty: number,
+  name: string,
+  note: string | null,
+  modifiers?: { groupName: string; name: string }[] | null,
+): string {
   const lines = wrap(`${qty}x ${name}`, ESCPOS_COLS);
+  for (const extra of groupedModifierLabels(modifiers)) {
+    lines.push(...wrap(`  ${extra}`, ESCPOS_COLS));
+  }
   if (note) lines.push(...wrap(`  ${note}`, ESCPOS_COLS));
   return `${lines.join("\n")}\n`;
 }
@@ -272,7 +289,7 @@ export function encodeEscPosKitchenTicket(order: StaffOrder, groupName?: string 
     chunks.push(cmd(ESC, 0x61, 0x01), text("Nenhum item.\n"), cmd(ESC, 0x61, 0x00));
   } else {
     for (const item of order.items) {
-      chunks.push(text(qtyLine(item.qty, item.name, item.note)));
+      chunks.push(text(qtyLine(item.qty, item.name, item.note, item.modifiers)));
     }
   }
 
@@ -338,7 +355,7 @@ export function encodeEscPosDeliveryReceipt(venueName: string, order: StaffOrder
     chunks.push(cmd(ESC, 0x61, 0x01), text("Nenhum item.\n"), cmd(ESC, 0x61, 0x00));
   } else {
     for (const item of order.items) {
-      chunks.push(text(itemBlock(item.qty, item.name, money(item.unitPriceCents * item.qty), item.note)));
+      chunks.push(text(itemBlock(item.qty, item.name, money(item.unitPriceCents * item.qty), item.note, item.modifiers)));
     }
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { type RecipeLine, type StockItem } from "@eaimesa/shared";
+import { type ModifierGroup, type RecipeLine, type StockItem } from "@eaimesa/shared";
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError, apiUpload } from "../lib/api";
 import { mediaSrc } from "../lib/media";
@@ -13,6 +13,7 @@ export function ItemEditDialog({
   inventoryOn,
   stockItems,
   recipe,
+  modifierGroups,
   onSaved,
   onClose,
 }: {
@@ -20,6 +21,7 @@ export function ItemEditDialog({
   inventoryOn: boolean;
   stockItems: StockItem[];
   recipe: RecipeLine[];
+  modifierGroups: ModifierGroup[];
   onSaved: () => Promise<void>;
   onClose: () => void;
 }) {
@@ -29,6 +31,7 @@ export function ItemEditDialog({
   const [offerPriceCents, setOfferPriceCents] = useState<number | null>(item.offerPriceCents ?? null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [draftRecipe, setDraftRecipe] = useState<RecipeLine[]>(recipe);
+  const [groupIds, setGroupIds] = useState<string[]>(() => (item.modifierGroups ?? []).map((g) => g.id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +70,7 @@ export function ItemEditDialog({
           description: description || null,
           priceCents: cents,
           offerPriceCents,
+          modifierGroupIds: groupIds,
         }),
       });
       if (photoFile) {
@@ -159,6 +163,44 @@ export function ItemEditDialog({
           {inventoryOn ? (
             <ItemRecipeEditor stockItems={stockItems} lines={draftRecipe} onChange={setDraftRecipe} />
           ) : null}
+          <div className="rounded-xl bg-paper-2/80 p-3 text-sm">
+            <p className="mb-2 font-medium">Adicionais neste item</p>
+            {modifierGroups.length === 0 ? (
+              <p className="text-ink-soft">Cadastre categorias de adicional acima (molhos, extras, acompanhamentos).</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {modifierGroups.map((g) => {
+                  const on = groupIds.includes(g.id);
+                  return (
+                    <li key={g.id}>
+                      <label className="flex cursor-pointer items-start gap-2">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={on}
+                          onChange={() =>
+                            setGroupIds((cur) => (on ? cur.filter((id) => id !== g.id) : [...cur, g.id]))
+                          }
+                        />
+                        <span>
+                          <span className="block font-medium">{g.name}</span>
+                          <span className="text-xs text-ink-soft">
+                            {g.minSelect === 0
+                              ? `opcional · até ${g.maxSelect}`
+                              : g.minSelect === g.maxSelect
+                                ? `obrigatório · ${g.minSelect}`
+                                : `${g.minSelect} a ${g.maxSelect}`}
+                            {" · "}
+                            {g.options.length} {g.options.length === 1 ? "item" : "itens"}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
           {error ? <p className="text-sm text-chili">{error}</p> : null}
         </div>
         <div className="mt-5 flex justify-end gap-2">

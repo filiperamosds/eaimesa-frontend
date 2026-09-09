@@ -1,15 +1,17 @@
 "use client";
 
-import { formatBrlFromCents, venueHasModule, type RecipeLine, type StockItem } from "@eaimesa/shared";
+import { formatBrlFromCents, venueHasModule, type ModifierGroup, type RecipeLine, type StockItem } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { mediaSrc } from "../lib/media";
 import type { CatalogCategory, Session } from "../lib/types";
 import { ItemCreateDialog } from "./item-create-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
+import { ModifierGroupsEditor } from "./modifier-groups-editor";
 
 export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogCategory[]) => void }) {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
+  const [modifierGroups, setModifierGroups] = useState<ModifierGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newCat, setNewCat] = useState("");
@@ -35,8 +37,9 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
   }
 
   async function load() {
-    const data = await api<{ categories: CatalogCategory[] }>("/v1/owner/catalog");
+    const data = await api<{ categories: CatalogCategory[]; modifierGroups?: ModifierGroup[] }>("/v1/owner/catalog");
     setCategories(data.categories);
+    setModifierGroups(data.modifierGroups ?? []);
     onCategories?.(data.categories);
     await loadInventory().catch(() => undefined);
   }
@@ -66,6 +69,7 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
 
   return (
     <div className="space-y-8">
+      <ModifierGroupsEditor groups={modifierGroups} onChange={load} />
       <form onSubmit={addCategory} className="flex flex-wrap gap-2">
         <input
           value={newCat}
@@ -91,6 +95,7 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
           inventoryOn={inventoryOn}
           stockItems={stockItems}
           recipes={recipes}
+          modifierGroups={modifierGroups}
         />
       ))}
     </div>
@@ -104,6 +109,7 @@ function CategoryBlock({
   inventoryOn,
   stockItems,
   recipes,
+  modifierGroups,
 }: {
   category: CatalogCategory;
   onChange: () => Promise<void>;
@@ -111,6 +117,7 @@ function CategoryBlock({
   inventoryOn: boolean;
   stockItems: StockItem[];
   recipes: Record<string, RecipeLine[]>;
+  modifierGroups: ModifierGroup[];
 }) {
   const [name, setName] = useState(category.name);
   const [creating, setCreating] = useState(false);
@@ -181,6 +188,7 @@ function CategoryBlock({
             inventoryOn={inventoryOn}
             stockItems={stockItems}
             recipe={recipes[item.id] ?? []}
+            modifierGroups={modifierGroups}
           />
         ))}
       </ul>
@@ -210,6 +218,7 @@ function ItemRow({
   inventoryOn,
   stockItems,
   recipe,
+  modifierGroups,
 }: {
   item: CatalogCategory["items"][number];
   onChange: () => Promise<void>;
@@ -217,6 +226,7 @@ function ItemRow({
   inventoryOn: boolean;
   stockItems: StockItem[];
   recipe: RecipeLine[];
+  modifierGroups: ModifierGroup[];
 }) {
   const [editing, setEditing] = useState(false);
   const photo = mediaSrc(item.imageUrl);
@@ -262,6 +272,11 @@ function ItemRow({
               {!item.active ? <span className="ml-2 text-xs">oculto</span> : null}
             </p>
             {item.description ? <p className="text-sm text-ink-soft">{item.description}</p> : null}
+            {(item.modifierGroups ?? []).length > 0 ? (
+              <p className="text-xs text-ink-soft">
+                {(item.modifierGroups ?? []).map((g) => g.name).join(" · ")}
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -286,6 +301,7 @@ function ItemRow({
           inventoryOn={inventoryOn}
           stockItems={stockItems}
           recipe={recipe}
+          modifierGroups={modifierGroups}
           onSaved={onChange}
           onClose={() => setEditing(false)}
         />

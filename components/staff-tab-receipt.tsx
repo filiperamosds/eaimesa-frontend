@@ -6,6 +6,7 @@ import { api, ApiError } from "../lib/api";
 import { hasGrantedThermalPrinter, printEscPosReceipt } from "../lib/print-escpos";
 import { printSystemReceipt } from "../lib/print-thermal-receipt";
 import type { StaffTableTab } from "../lib/types";
+import { OrderItemExtras } from "./order-item-extras";
 
 type Props = {
   venueName: string;
@@ -126,6 +127,7 @@ export function StaffTabReceipt({ venueName, tableLabel, tab, onClose }: Props) 
                       <li key={item.id} className="flex justify-between gap-3">
                         <span className="min-w-0">
                           {item.qty}× {item.name}
+                          <OrderItemExtras modifiers={item.modifiers} />
                           {item.note ? <span className="block text-xs text-ink-soft">{item.note}</span> : null}
                         </span>
                         <span className="shrink-0 tabular-nums">

@@ -12,8 +12,9 @@ import {
 import { useRef, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { DeliveryPublicOrder } from "../lib/types";
-import { type CartLine } from "./guest-cart";
+import { type CartLine } from "../lib/cart-line";
 import { PhoneField } from "./masked-fields";
+import { OrderItemExtras } from "./order-item-extras";
 
 type Step = "items" | "phone" | "profile" | "address" | "pay";
 
@@ -107,12 +108,12 @@ export function DeliveryCheckout({
   const sending = useRef(false);
   const cartCents = cart.reduce((s, l) => s + l.priceCents * l.qty, 0);
 
-  function setQty(id: string, qty: number) {
+  function setQty(key: string, qty: number) {
     if (qty <= 0) {
-      onChange(cart.filter((l) => l.catalogItemId !== id));
+      onChange(cart.filter((l) => l.key !== key));
       return;
     }
-    onChange(cart.map((l) => (l.catalogItemId === id ? { ...l, qty } : l)));
+    onChange(cart.map((l) => (l.key === key ? { ...l, qty } : l)));
   }
 
   async function lookupPhone() {
@@ -241,6 +242,7 @@ export function DeliveryCheckout({
             catalogItemId: l.catalogItemId,
             qty: l.qty,
             note: l.note.trim() || null,
+            modifierOptionIds: l.modifierOptionIds ?? [],
           })),
         }),
       });
@@ -288,9 +290,12 @@ export function DeliveryCheckout({
               ) : (
                 <ul className="space-y-3">
                   {cart.map((line) => (
-                    <li key={line.catalogItemId} className="border-b border-line pb-3">
+                    <li key={line.key} className="border-b border-line pb-3">
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-medium">{line.name}</span>
+                        <span className="min-w-0">
+                          <span className="font-medium">{line.name}</span>
+                          <OrderItemExtras modifiers={line.modifiers} />
+                        </span>
                         <span className="tabular-nums text-chili">
                           {formatBrlFromCents(line.priceCents * line.qty)}
                         </span>
@@ -299,7 +304,7 @@ export function DeliveryCheckout({
                         <button
                           type="button"
                           className="btn-secondary !px-3 !py-1 text-sm"
-                          onClick={() => setQty(line.catalogItemId, line.qty - 1)}
+                          onClick={() => setQty(line.key, line.qty - 1)}
                         >
                           −
                         </button>
@@ -307,7 +312,7 @@ export function DeliveryCheckout({
                         <button
                           type="button"
                           className="btn-secondary !px-3 !py-1 text-sm"
-                          onClick={() => setQty(line.catalogItemId, Math.min(99, line.qty + 1))}
+                          onClick={() => setQty(line.key, Math.min(99, line.qty + 1))}
                         >
                           +
                         </button>
@@ -320,7 +325,7 @@ export function DeliveryCheckout({
                         onChange={(e) =>
                           onChange(
                             cart.map((l) =>
-                              l.catalogItemId === line.catalogItemId ? { ...l, note: e.target.value } : l,
+                              l.key === line.key ? { ...l, note: e.target.value } : l,
                             ),
                           )
                         }

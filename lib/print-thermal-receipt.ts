@@ -1,4 +1,4 @@
-import { formatBrlFromCents, GUEST_ORDER_STATUS_LABEL, type OrderStatus } from "@eaimesa/shared";
+import { formatBrlFromCents, groupedModifierLabels, GUEST_ORDER_STATUS_LABEL, type OrderStatus } from "@eaimesa/shared";
 import type { StaffTableTab } from "./types";
 
 function esc(value: string) {
@@ -32,8 +32,11 @@ export function thermalReceiptHtml(venueName: string, tableLabel: string, tab: S
     .map((order) => {
       const lines = order.items
         .map((item) => {
+          const extras = groupedModifierLabels(item.modifiers)
+            .map((line) => `<div class="muted">${esc(line)}</div>`)
+            .join("");
           const note = item.note ? `<div class="muted">${esc(item.note)}</div>` : "";
-          return `<div class="row"><span>${item.qty}x ${esc(item.name)}${note}</span><span>${esc(formatBrlFromCents(item.unitPriceCents * item.qty))}</span></div>`;
+          return `<div class="row"><span>${item.qty}x ${esc(item.name)}${extras}${note}</span><span>${esc(formatBrlFromCents(item.unitPriceCents * item.qty))}</span></div>`;
         })
         .join("");
       const obs = order.note ? `<div class="muted">Obs.: ${esc(order.note)}</div>` : "";

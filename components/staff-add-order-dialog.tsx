@@ -1,9 +1,10 @@
 "use client";
 
-import { formatBrlFromCents } from "@eaimesa/shared";
+import { extraCentsFromOptions, formatBrlFromCents, itemNeedsModifierPicker, modifierSummary, pickerGroups, snapshotFromPicks } from "@eaimesa/shared";
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import type { CatalogCategory, CatalogItem, StaffOrder } from "../lib/types";
+import { ItemModifiersDialog } from "./item-modifiers-dialog";
 
 type Props = {
   tableId: string;
@@ -25,6 +26,8 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
   const [catalog, setCatalog] = useState<CatalogCategory[] | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [qty, setQty] = useState<Record<string, number>>({});
+  const [optionIds, setOptionIds] = useState<Record<string, string[]>>({});
+  const [picker, setPicker] = useState<CatalogItem | null>(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -59,19 +62,38 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
         .filter((l): l is { item: CatalogItem; qty: number } => l !== null),
     [qty, itemsById],
   );
-  const totalCents = lines.reduce((s, l) => s + l.item.priceCents * l.qty, 0);
+  const totalCents = lines.reduce((s, l) => {
+    const extra = extraCentsFromOptions(pickerGroups(l.item.modifierGroups), optionIds[l.item.id] ?? []);
+    return s + (l.item.priceCents + extra) * l.qty;
+  }, 0);
   const count = lines.reduce((s, l) => s + l.qty, 0);
+
+  function bumpItem(item: CatalogItem, next: number) {
+    const n = Math.max(0, Math.min(99, next));
+    if (n > 0 && itemNeedsModifierPicker(item.modifierGroups) && (qty[item.id] ?? 0) === 0) {
+      setPicker(item);
+      return;
+    }
+    setItemQty(item.id, n);
+  }
 
   function setItemQty(id: string, next: number) {
     const n = Math.max(0, Math.min(99, next));
     setQty((cur) => {
       if (n === 0) {
-        const next = { ...cur };
-        delete next[id];
-        return next;
+        const copy = { ...cur };
+        delete copy[id];
+        return copy;
       }
       return { ...cur, [id]: n };
     });
+    if (n === 0) {
+      setOptionIds((cur) => {
+        const copy = { ...cur };
+        delete copy[id];
+        return copy;
+      });
+    }
   }
 
   async function submit() {
@@ -88,7 +110,11 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
           tabId,
           tableId,
           note: note.trim() || null,
-          items: lines.map((l) => ({ catalogItemId: l.item.id, qty: l.qty })),
+          items: lines.map((l) => ({
+            catalogItemId: l.item.id,
+            qty: l.qty,
+            modifierOptionIds: optionIds[l.item.id] ?? [],
+          })),
         }),
       });
       onCreated(order);
@@ -203,11 +229,29 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
             <ul className="mt-3 min-h-0 flex-1 divide-y divide-line overflow-y-auto">
               {selected.items.map((item) => {
                 const n = qty[item.id] ?? 0;
+                const extras = extraCentsFromOptions(pickerGroups(item.modifierGroups), optionIds[item.id] ?? []);
+                const needs = itemNeedsModifierPicker(item.modifierGroups);
+                const summary = modifierSummary(
+                  snapshotFromPicks(pickerGroups(item.modifierGroups), optionIds[item.id] ?? []),
+                );
                 return (
                   <li key={item.id} className="flex items-center justify-between gap-3 py-3">
-                    <span>
+                    <span className="min-w-0">
                       <span className="block text-sm font-medium">{item.name}</span>
-                      <span className="text-xs tabular-nums text-ink-soft">{formatBrlFromCents(item.priceCents)}</span>
+                      <span className="text-xs tabular-nums text-ink-soft">
+                        {formatBrlFromCents(item.priceCents + extras)}
+                        {needs ? " · com opções" : ""}
+                      </span>
+                      {n > 0 && summary ? <span className="mt-0.5 block text-xs text-ink-soft">{summary}</span> : null}
+                      {n > 0 && needs ? (
+                        <button
+                          type="button"
+                          className="mt-1 text-xs text-chili"
+                          onClick={() => setPicker(item)}
+                        >
+                          Alterar opções
+                        </button>
+                      ) : null}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
@@ -224,7 +268,7 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
                         type="button"
                         aria-label={`Mais ${item.name}`}
                         disabled={n >= 99}
-                        onClick={() => setItemQty(item.id, n + 1)}
+                        onClick={() => bumpItem(item, n + 1)}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-chili text-lg leading-none text-white disabled:opacity-40"
                       >
                         +
@@ -266,6 +310,19 @@ export function StaffAddOrderDialog({ tableId, tableLabel, tabId, guestName, onC
           ) : null}
         </div>
       </div>
+      {picker ? (
+        <ItemModifiersDialog
+          item={picker}
+          initialOptionIds={optionIds[picker.id]}
+          confirmLabel={(qty[picker.id] ?? 0) > 0 ? "Atualizar" : "Adicionar"}
+          onConfirm={(ids) => {
+            setOptionIds((cur) => ({ ...cur, [picker.id]: ids }));
+            setQty((cur) => ({ ...cur, [picker.id]: Math.max(1, cur[picker.id] ?? 1) }));
+            setPicker(null);
+          }}
+          onClose={() => setPicker(null)}
+        />
+      ) : null}
     </div>
   );
 }
