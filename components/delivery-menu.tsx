@@ -511,7 +511,6 @@ function DeliveryCartPanel({
                     onClick={() => onQty(line.key, line.qty - 1)}
                     aria-label={`Diminuir ${line.name}`}
                   >
-                  >
                     −
                   </button>
                   <span className="w-4 text-center text-sm tabular-nums">{line.qty}</span>
