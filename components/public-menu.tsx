@@ -15,6 +15,7 @@ import { GuestPartialDialog } from "./guest-partial-dialog";
 import { GuestTabBar } from "./guest-tab-bar";
 import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
 import { ItemModifiersDialog } from "./item-modifiers-dialog";
+import { ModernMenuView } from "./delivery-menu";
 
 type MenuItem = PublicMenu["categories"][number]["items"][number];
 
@@ -33,6 +34,13 @@ function itemsWithPromo(groups: PublicMenu["categories"], promo: "offer" | "happ
 }
 
 export function PublicMenuView({ menu }: { menu: PublicMenu }) {
+  if (menu.venue.catalogModern) {
+    return <ModernMenuView menu={menu} variant="table" />;
+  }
+  return <PublicMenuClassicView menu={menu} />;
+}
+
+function PublicMenuClassicView({ menu }: { menu: PublicMenu }) {
   const groups = menu.categories.filter((c) => c.items.length > 0);
   const offers = useMemo(() => itemsWithPromo(groups, "offer"), [groups]);
   const happyHour = useMemo(() => itemsWithPromo(groups, "happy_hour"), [groups]);

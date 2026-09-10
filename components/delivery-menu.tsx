@@ -1,6 +1,6 @@
 "use client";
 
-import { formatBrlFromCents, isReservedSlug, itemNeedsModifierPicker } from "@eaimesa/shared";
+import { formatBrlFromCents, isReservedSlug, itemNeedsModifierPicker, planAllowsService } from "@eaimesa/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -8,8 +8,15 @@ import { makeCartLine, qtyOfItem, upsertCartLine, type CartLine } from "../lib/c
 import { loadPublicMenu, venueAllowsDelivery } from "../lib/load-public-menu";
 import { mediaSrc } from "../lib/media";
 import type { PublicMenu } from "../lib/types";
+import { useGuestOrders } from "../lib/use-guest-orders";
+import { useGuestTab } from "../lib/use-guest-tab";
+import { useWaiterPresence } from "../lib/use-waiter-presence";
 import { useVenueSlug } from "../lib/venue-path";
 import { DeliveryCheckout } from "./delivery-checkout";
+import { GuestCart } from "./guest-cart";
+import { GuestPartialDialog } from "./guest-partial-dialog";
+import { GuestTabBar } from "./guest-tab-bar";
+import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
 import { ItemModifiersDialog } from "./item-modifiers-dialog";
 import { OrderItemExtras } from "./order-item-extras";
 import { Logo } from "./site-chrome";
@@ -116,10 +123,17 @@ export function DeliveryMenuPage() {
     );
   }
 
-  return <DeliveryMenuView menu={menu} />;
+  return <ModernMenuView menu={menu} variant="delivery" />;
 }
 
-function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
+export function ModernMenuView({
+  menu,
+  variant,
+}: {
+  menu: PublicMenu;
+  variant: "delivery" | "table";
+}) {
+  const isTable = variant === "table";
   const router = useRouter();
   const groups = menu.categories.filter((c) => c.items.length > 0);
   const offers = useMemo(() => itemsWithPromo(groups, "offer"), [groups]);
@@ -159,6 +173,29 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
   }, [searching, active, tabs, q]);
   const sectionTitle = searching ? "Resultados" : (active?.name ?? "Cardápio");
   const promoTab = happyHour.length > 0 ? "__happy_hour" : offers.length > 0 ? "__offers" : null;
+  const ordering =
+    isTable &&
+    planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "") &&
+    Boolean(menu.venue.acceptsOrders);
+  const tab = useGuestTab(menu.venue.slug, ordering);
+  const suspended = menu.venue.subscriptionStatus === "suspended";
+  const canOrder = Boolean(ordering && tab && !tab.needsProfile && !suspended);
+  const hasTab = Boolean(ordering && tab && !tab.needsProfile);
+  const {
+    orders,
+    totalCents,
+    subtotalCents,
+    serviceFeePercent,
+    serviceFeeCents,
+    error: ordersError,
+    reload,
+  } = useGuestOrders(hasTab);
+  const servicePlan = planAllowsService(menu.venue.planKind ?? menu.venue.plan ?? "");
+  const waiterFlag = menu.venue.waiterCallEnabled;
+  const waiterFeatureOn = waiterFlag === true || (waiterFlag !== false && !servicePlan);
+  const waiterEnabled = isTable && !suspended && waiterFeatureOn && (!ordering || tab === null);
+  const waiter = useWaiterPresence(menu.venue.slug, waiterEnabled);
+  const [partialOpen, setPartialOpen] = useState(false);
 
   useEffect(() => {
     const on = Boolean(menu.venue.catalogDark);
@@ -188,12 +225,12 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
     <div className="min-h-screen bg-paper">
       <header className="sticky top-0 z-30 border-b border-line/80 bg-card/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <Logo className="shrink-0" href={`/${menu.venue.slug}/delivery`} />
+          <Logo className="shrink-0" href={isTable ? `/${menu.venue.slug}` : `/${menu.venue.slug}/delivery`} />
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Buscar no cardápio</span>
             <svg
               viewBox="0 0 24 24"
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -203,12 +240,13 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
               <path d="M20 20l-3-3" />
             </svg>
             <input
-              className="field !rounded-full !py-2 pl-9 pr-3 text-sm"
+              className="field !rounded-full !py-2 !pl-10 pr-3 text-sm"
               placeholder="Buscar no cardápio…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
+          {!isTable ? (
           <button
             type="button"
             className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-card text-ink lg:hidden"
@@ -222,19 +260,85 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
               </span>
             ) : null}
           </button>
+          ) : null}
         </div>
       </header>
+      {isTable && ordering ? (
+        <GuestTabBar
+          slug={menu.venue.slug}
+          tab={tab}
+          partialCents={totalCents}
+          showJoin
+          onOpenPartial={hasTab ? () => setPartialOpen(true) : undefined}
+        />
+      ) : null}
+      {waiterEnabled ? (
+        <GuestWaiterCallBar
+          presence={waiter.presence}
+          mesaStored={waiter.mesaStored}
+          loadError={waiter.loadError}
+          featureHint={waiterFlag === true}
+          calling={waiter.calling}
+          callMsg={waiter.callMsg}
+          callError={waiter.callError}
+          onCall={() => void waiter.callWaiter()}
+        />
+      ) : null}
 
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_19.5rem] lg:items-start">
-        <div className={count > 0 ? "pb-24 lg:pb-8" : "pb-8"}>
+      <div
+        className={`mx-auto grid max-w-6xl gap-8 px-4 py-6 lg:items-start ${
+          isTable ? "" : "lg:grid-cols-[minmax(0,1fr)_19.5rem]"
+        }`}
+      >
+        <div
+          className={
+            isTable
+              ? cart.length > 0 || orders.length > 0
+                ? "pb-28"
+                : "pb-8"
+              : count > 0
+                ? "pb-24 lg:pb-8"
+                : "pb-8"
+          }
+        >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-chili">Delivery</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-chili">
+                {isTable ? "Cardápio" : "Delivery"}
+              </p>
               <h1 className="mt-1 font-serif text-3xl leading-tight sm:text-4xl">{menu.venue.name}</h1>
-              <p className="mt-1 text-sm text-ink-soft">Peça pelo celular. Pagamento na entrega.</p>
+              {isTable ? (
+                <p className="mt-1 text-sm text-ink-soft">
+                  {suspended
+                    ? "Assinatura inativa — só leitura."
+                    : canOrder
+                      ? "Toque em adicionar e envie o pedido pela cesta."
+                      : ordering
+                        ? "Cardápio só leitura até entrar na mesa. Peça o QR do garçom ou use o PIN."
+                        : waiter.presence
+                          ? "Precisa de ajuda? Chame o garçom pela faixa abaixo."
+                          : null}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-ink-soft">Peça pelo celular. Pagamento na entrega.</p>
+              )}
             </div>
-            <span className="rounded-full bg-sage-soft px-3 py-1 text-sm font-medium text-sage">Delivery</span>
+            {!isTable ? (
+              <span className="rounded-full bg-sage-soft px-3 py-1 text-sm font-medium text-sage">Delivery</span>
+            ) : null}
           </div>
+          {isTable ? (
+            venueAllowsDelivery(menu) ? (
+              <div className="mt-4">
+                <Link
+                  href={`/${menu.venue.slug}/delivery`}
+                  className="rounded-full border border-line bg-card px-3 py-1.5 text-sm text-ink-soft hover:text-chili"
+                >
+                  Pedir delivery
+                </Link>
+              </div>
+            ) : null
+          ) : (
           <div className="mt-4 flex flex-wrap gap-2">
             {eta ? (
               <span className="rounded-full border border-line bg-card px-3 py-1.5 text-sm">{eta} min</span>
@@ -249,6 +353,7 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
               Cardápio da mesa
             </Link>
           </div>
+          )}
 
           {promoTab ? (
             <button
@@ -326,7 +431,14 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
                         onToggle={() =>
                           setOpenId((cur) => (cur === item.id ? null : item.id))
                         }
-                        onAdd={() => addItem(item)}
+                        onAdd={!isTable || canOrder ? () => addItem(item) : undefined}
+                        addHref={
+                          isTable && ordering && !canOrder && !suspended
+                            ? tab?.needsProfile
+                              ? `/${menu.venue.slug}/comanda`
+                              : `/${menu.venue.slug}/entrar`
+                            : undefined
+                        }
                       />
                     </li>
                   ))}
@@ -336,19 +448,21 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
           )}
         </div>
 
-        <aside className="hidden lg:sticky lg:top-20 lg:block">
-          <DeliveryCartPanel
-            cart={cart}
-            feeCents={feeCents}
-            cartCents={cartCents}
-            count={count}
-            onQty={setQty}
-            onContinue={() => setSheet(true)}
-          />
-        </aside>
+        {!isTable ? (
+          <aside className="hidden lg:sticky lg:top-20 lg:block">
+            <DeliveryCartPanel
+              cart={cart}
+              feeCents={feeCents}
+              cartCents={cartCents}
+              count={count}
+              onQty={setQty}
+              onContinue={() => setSheet(true)}
+            />
+          </aside>
+        ) : null}
       </div>
 
-      {count > 0 ? (
+      {!isTable && count > 0 ? (
         <div className="fixed inset-x-4 bottom-4 z-30 lg:hidden">
           <button
             type="button"
@@ -365,7 +479,7 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
         </div>
       ) : null}
 
-      {sheet ? (
+      {!isTable && sheet ? (
         <DeliveryCheckout
           slug={menu.venue.slug}
           cart={cart}
@@ -373,6 +487,33 @@ function DeliveryMenuView({ menu }: { menu: PublicMenu }) {
           feeCents={feeCents}
           onClose={() => setSheet(false)}
           onPlaced={(path) => router.push(path.endsWith("/") ? path : `${path}/`)}
+        />
+      ) : null}
+
+      {isTable && ordering ? (
+        <GuestCart
+          cart={cart}
+          onChange={setCart}
+          canOrder={canOrder}
+          orders={orders}
+          partialCents={totalCents}
+          subtotalCents={subtotalCents}
+          serviceFeePercent={serviceFeePercent}
+          serviceFeeCents={serviceFeeCents}
+          onOrdered={() => void reload()}
+        />
+      ) : null}
+
+      {isTable && partialOpen && tab && !tab.needsProfile ? (
+        <GuestPartialDialog
+          guestName={tab.guestName ?? "Sua comanda"}
+          tableLabel={tab.tableLabel}
+          orders={orders}
+          totalCents={subtotalCents}
+          serviceFeePercent={serviceFeePercent}
+          serviceFeeCents={serviceFeeCents}
+          error={ordersError}
+          onClose={() => setPartialOpen(false)}
         />
       ) : null}
 
@@ -403,17 +544,21 @@ function DeliveryItemCard({
   open,
   onToggle,
   onAdd,
+  addHref,
 }: {
   item: MenuItem;
   qty: number;
   open: boolean;
   onToggle: () => void;
-  onAdd: () => void;
+  onAdd?: () => void;
+  addHref?: string;
 }) {
   const photo = mediaSrc(item.imageUrl);
   const expandable = Boolean(item.description || photo);
   const badge = itemBadge(item);
   const onPromo = itemOnPromo(item);
+  const addClass =
+    "absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full bg-chili text-lg font-medium leading-none text-white shadow-md shadow-chili/40";
 
   return (
     <article className="surface flex min-h-36 overflow-hidden p-0 shadow-sm">
@@ -451,14 +596,20 @@ function DeliveryItemCard({
         ) : (
           <span className="absolute inset-0 bg-paper-2" aria-hidden />
         )}
-        <button
-          type="button"
-          onClick={onAdd}
-          aria-label={qty > 0 ? `Adicionar ${item.name}, ${qty} na cesta` : `Adicionar ${item.name}`}
-          className="absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full bg-chili text-lg font-medium leading-none text-white shadow-md shadow-chili/40"
-        >
-          {qty > 0 ? <span className="text-sm tabular-nums">{qty}</span> : "+"}
-        </button>
+        {onAdd ? (
+          <button
+            type="button"
+            onClick={onAdd}
+            aria-label={qty > 0 ? `Adicionar ${item.name}, ${qty} na cesta` : `Adicionar ${item.name}`}
+            className={addClass}
+          >
+            {qty > 0 ? <span className="text-sm tabular-nums">{qty}</span> : "+"}
+          </button>
+        ) : addHref ? (
+          <Link href={addHref} aria-label={`Entrar para pedir ${item.name}`} className={addClass}>
+            +
+          </Link>
+        ) : null}
       </div>
     </article>
   );

@@ -17,6 +17,7 @@ export type Venue = {
   thermalAutoPrint?: boolean;
   thermalAutoPrintTables?: boolean;
   catalogDark?: boolean;
+  catalogModern?: boolean;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
   /** Fatia 16 — módulos efetivos do venue (ADR-029). */
@@ -109,6 +110,7 @@ export type PublicMenu = {
     waiterCallEnabled?: boolean;
     waiterCallTtlMinutes?: number;
     catalogDark?: boolean;
+    catalogModern?: boolean;
     delivery?: {
       enabled: boolean;
       feeCents: number;

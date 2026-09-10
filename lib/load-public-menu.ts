@@ -7,6 +7,7 @@ import type { PublicMenu } from "./types";
 function normalizePublicMenu(raw: PublicMenu): PublicMenu {
   const v = raw.venue as PublicMenu["venue"] & Record<string, unknown>;
   const catalogDark = pickBool(v, "catalogDark", "catalog_dark");
+  const catalogModern = pickBool(v, "catalogModern", "catalog_modern");
   const waiterCallEnabled = pickBool(v, "waiterCallEnabled", "waiter_call_enabled");
   const ttl = v.waiterCallTtlMinutes ?? v.waiter_call_ttl_minutes;
   return {
@@ -14,6 +15,7 @@ function normalizePublicMenu(raw: PublicMenu): PublicMenu {
     venue: {
       ...raw.venue,
       catalogDark: catalogDark ?? raw.venue.catalogDark,
+      catalogModern: catalogModern ?? raw.venue.catalogModern,
       waiterCallEnabled: waiterCallEnabled ?? raw.venue.waiterCallEnabled,
       waiterCallTtlMinutes:
         typeof ttl === "number" ? ttl : raw.venue.waiterCallTtlMinutes,

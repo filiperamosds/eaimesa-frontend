@@ -221,6 +221,7 @@ export const patchVenueSchema = z
     thermalAutoPrint: z.boolean().optional(),
     thermalAutoPrintTables: z.boolean().optional(),
     catalogDark: z.boolean().optional(),
+    catalogModern: z.boolean().optional(),
     representative: representativeSchema.optional(),
     waiterCallEnabled: z.boolean().optional(),
     waiterCallTtlMinutes: z
@@ -239,6 +240,7 @@ export const patchVenueSchema = z
       b.thermalAutoPrint !== undefined ||
       b.thermalAutoPrintTables !== undefined ||
       b.catalogDark !== undefined ||
+      b.catalogModern !== undefined ||
       b.representative !== undefined ||
       b.waiterCallEnabled !== undefined ||
       b.waiterCallTtlMinutes !== undefined,
