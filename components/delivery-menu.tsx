@@ -224,7 +224,7 @@ export function ModernMenuView({
   return (
     <div className="min-h-screen bg-paper">
       <header className="sticky top-0 z-30 border-b border-line/80 bg-card/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
           <Logo className="shrink-0" href={isTable ? `/${menu.venue.slug}` : `/${menu.venue.slug}/delivery`} />
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Buscar no cardápio</span>
@@ -286,7 +286,7 @@ export function ModernMenuView({
       ) : null}
 
       <div
-        className={`mx-auto grid max-w-6xl gap-8 px-4 py-6 lg:items-start ${
+        className={`mx-auto grid max-w-6xl gap-8 px-4 pt-3 lg:items-start ${
           isTable ? "" : "lg:grid-cols-[minmax(0,1fr)_19.5rem]"
         }`}
       >
@@ -295,65 +295,38 @@ export function ModernMenuView({
             isTable
               ? cart.length > 0 || orders.length > 0
                 ? "pb-28"
-                : "pb-8"
+                : "pb-6"
               : count > 0
-                ? "pb-24 lg:pb-8"
-                : "pb-8"
+                ? "pb-24 lg:pb-6"
+                : "pb-6"
           }
         >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-chili">
-                {isTable ? "Cardápio" : "Delivery"}
-              </p>
-              <h1 className="mt-1 font-serif text-3xl leading-tight sm:text-4xl">{menu.venue.name}</h1>
-              {isTable ? (
-                <p className="mt-1 text-sm text-ink-soft">
-                  {suspended
-                    ? "Assinatura inativa — só leitura."
-                    : canOrder
-                      ? "Toque em adicionar e envie o pedido pela cesta."
-                      : ordering
-                        ? "Cardápio só leitura até entrar na mesa. Peça o QR do garçom ou use o PIN."
-                        : waiter.presence
-                          ? "Precisa de ajuda? Chame o garçom pela faixa abaixo."
-                          : null}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-ink-soft">Peça pelo celular. Pagamento na entrega.</p>
-              )}
-            </div>
+          <div>
+            <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{menu.venue.name}</h1>
             {!isTable ? (
-              <span className="rounded-full bg-sage-soft px-3 py-1 text-sm font-medium text-sage">Delivery</span>
+              <p className="mt-2 flex flex-wrap gap-1">
+                {eta ? (
+                  <span className="rounded-full border border-line bg-card px-3 py-1.5 text-sm">{eta} min</span>
+                ) : null}
+                <span className="rounded-full border border-line bg-card px-3 py-1.5 text-sm">
+                  {feeCents > 0 ? `Entrega ${formatBrlFromCents(feeCents)}` : "Entrega grátis"}
+                </span>
+              </p>
             ) : null}
           </div>
           {isTable ? (
-            venueAllowsDelivery(menu) ? (
-              <div className="mt-4">
-                <Link
-                  href={`/${menu.venue.slug}/delivery`}
-                  className="rounded-full border border-line bg-card px-3 py-1.5 text-sm text-ink-soft hover:text-chili"
-                >
-                  Pedir delivery
-                </Link>
-              </div>
-            ) : null
-          ) : (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {eta ? (
-              <span className="rounded-full border border-line bg-card px-3 py-1.5 text-sm">{eta} min</span>
-            ) : null}
-            <span className="rounded-full border border-line bg-card px-3 py-1.5 text-sm">
-              {feeCents > 0 ? `Entrega ${formatBrlFromCents(feeCents)}` : "Entrega grátis"}
-            </span>
-            <Link
-              href={`/${menu.venue.slug}`}
-              className="rounded-full border border-line bg-card px-3 py-1.5 text-sm text-ink-soft hover:text-chili"
-            >
-              Cardápio da mesa
-            </Link>
-          </div>
-          )}
+            <p className="mt-1 text-sm text-ink-soft">
+              {suspended
+                ? "Assinatura inativa — só leitura."
+                : canOrder
+                  ? "Toque em adicionar e envie o pedido pela cesta."
+                  : ordering
+                    ? "Cardápio só leitura até entrar na mesa. Peça o QR do garçom ou use o PIN."
+                    : waiter.presence
+                      ? "Precisa de ajuda? Chame o garçom pela faixa abaixo."
+                      : null}
+            </p>
+          ) : null}
 
           {promoTab ? (
             <button
@@ -363,7 +336,7 @@ export function ModernMenuView({
                 setTabId(promoTab);
                 setOpenId(null);
               }}
-              className="relative mt-5 w-full overflow-hidden rounded-2xl bg-chili px-5 py-4 text-left text-white"
+              className="relative mt-3 w-full overflow-hidden rounded-2xl bg-chili px-5 py-3 text-left text-white"
             >
               <span className="absolute -right-6 -top-8 h-28 w-28 rounded-full bg-white/10" aria-hidden />
               <span className="absolute -bottom-10 right-10 h-24 w-24 rounded-full bg-white/10" aria-hidden />
@@ -379,7 +352,7 @@ export function ModernMenuView({
           ) : null}
 
           {tabs.length > 0 && !searching ? (
-            <nav className="sticky top-[3.65rem] z-20 -mx-4 mt-5 bg-paper/90 px-4 py-3 backdrop-blur-xl" aria-label="Categorias do cardápio">
+            <nav className="sticky top-[3.25rem] z-20 -mx-4 mt-3 bg-paper/90 px-4 py-2 backdrop-blur-xl" aria-label="Categorias do cardápio">
               <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {tabs.map((t) => {
                   const selected = active?.id === t.id;
@@ -409,8 +382,8 @@ export function ModernMenuView({
           {!active && !searching ? (
             <p className="py-16 text-center text-ink-soft">Cardápio em montagem.</p>
           ) : (
-            <section className="mt-4">
-              <div className="mb-4 flex items-baseline justify-between gap-3">
+            <section className="mt-3">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
                 <h2 className="font-serif text-2xl">{sectionTitle}</h2>
                 <span className="text-sm text-ink-soft">
                   {visibleItems.length} {visibleItems.length === 1 ? "item" : "itens"}

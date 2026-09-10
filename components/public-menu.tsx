@@ -4,7 +4,6 @@ import { formatBrlFromCents, itemNeedsModifierPicker, planAllowsService } from "
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { makeCartLine, qtyOfItem, upsertCartLine, type CartLine } from "../lib/cart-line";
-import { venueAllowsDelivery } from "../lib/load-public-menu";
 import { mediaSrc } from "../lib/media";
 import { useGuestOrders } from "../lib/use-guest-orders";
 import { useGuestTab } from "../lib/use-guest-tab";
@@ -116,16 +115,6 @@ function PublicMenuClassicView({ menu }: { menu: PublicMenu }) {
           ) : waiter.presence ? (
             <p className="mt-4 text-sm text-white/65">
               Precisa de ajuda? Chame o garçom pela faixa abaixo.
-            </p>
-          ) : null}
-          {venueAllowsDelivery(menu) ? (
-            <p className="mt-4">
-              <Link
-                href={`/${menu.venue.slug}/delivery`}
-                className="inline-block rounded-full border border-white/25 px-4 py-1.5 text-sm text-white/90 hover:border-white/50"
-              >
-                Pedir delivery
-              </Link>
             </p>
           ) : null}
         </div>
