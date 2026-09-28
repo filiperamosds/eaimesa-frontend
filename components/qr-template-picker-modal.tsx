@@ -2,20 +2,23 @@
 
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
+import { api, ApiError } from "../lib/api";
 import {
   downloadQrPosterPng,
-  loadQrPrintTemplateId,
+  parseQrPrintTemplateId,
   printQrPoster,
   QR_PRINT_TEMPLATES,
-  saveQrPrintTemplateId,
   type QrPrintTemplateId,
 } from "../lib/qr-print-templates";
 import { publicMenuUrl } from "../lib/public-url";
+import type { Venue } from "../lib/types";
 import { QrPoster } from "./qr-poster";
 
 type Props = {
   slug: string;
   venueName: string;
+  templateId: string;
+  onSaved: (venue: Venue) => void;
   onClose: () => void;
 };
 
@@ -38,11 +41,15 @@ async function qrPng(target: string) {
   });
 }
 
-export function QrTemplatePickerModal({ slug, venueName, onClose }: Props) {
-  const [selected, setSelected] = useState<QrPrintTemplateId>(loadQrPrintTemplateId);
+export function QrTemplatePickerModal({ slug, venueName, templateId, onSaved, onClose }: Props) {
+  const [selected, setSelected] = useState<QrPrintTemplateId>(() => parseQrPrintTemplateId(templateId));
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setSelected(parseQrPrintTemplateId(templateId));
+  }, [templateId]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -63,6 +70,25 @@ export function QrTemplatePickerModal({ slug, venueName, onClose }: Props) {
     venueName,
     qrDataUrl,
   };
+
+  async function persist(id: QrPrintTemplateId) {
+    const previous = selected;
+    setSelected(id);
+    setError(null);
+    setBusy(true);
+    try {
+      const venue = await api<Venue>("/v1/owner/venue", {
+        method: "PATCH",
+        body: JSON.stringify({ qrPrintTemplate: id }),
+      });
+      onSaved(venue);
+    } catch (err) {
+      setSelected(previous);
+      setError(err instanceof ApiError ? err.message : "Não foi possível salvar o template.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function printSelected() {
     const template = QR_PRINT_TEMPLATES.find((t) => t.id === selected);
@@ -109,7 +135,7 @@ export function QrTemplatePickerModal({ slug, venueName, onClose }: Props) {
           Escolha o template
         </h2>
         <p className="mt-2 text-sm text-ink-soft">
-          O QR aponta para o cardápio geral, sem identificar a mesa. Poster 8 × 11 cm.
+          A escolha fica salva no estabelecimento. Impressão de mesa e PDF usam este layout. Poster 8 × 11 cm.
         </p>
         <div className="mt-6 grid gap-8 sm:grid-cols-2">
           {QR_PRINT_TEMPLATES.map((template) => {
@@ -118,11 +144,12 @@ export function QrTemplatePickerModal({ slug, venueName, onClose }: Props) {
               <button
                 key={template.id}
                 type="button"
+                disabled={busy}
                 onClick={() => {
-                  setSelected(template.id);
-                  saveQrPrintTemplateId(template.id);
+                  if (template.id === selected) return;
+                  void persist(template.id);
                 }}
-                className="w-full cursor-pointer border-0 bg-transparent p-0 text-left"
+                className="w-full cursor-pointer border-0 bg-transparent p-0 text-left disabled:cursor-wait"
                 aria-pressed={active}
               >
                 <div

@@ -22,6 +22,9 @@ export const QR_POSTER_LAYOUT = {
 
 export const QR_POSTER_SITE = "eaimesa.com";
 
+export const QR_PRINT_TEMPLATE_DEFAULT = "restaurant";
+
+/** Ids conhecidos hoje. Novos posters entram nesta união e em `QR_PRINT_TEMPLATES`. */
 export type QrPrintTemplateId = "restaurant" | "bar";
 
 export type QrPrintTemplate = {
@@ -67,10 +70,20 @@ export const QR_PRINT_TEMPLATES: QrPrintTemplate[] = [
   },
 ];
 
-export function qrPrintTemplateById(id: QrPrintTemplateId): QrPrintTemplate {
+export function isQrPrintTemplateId(id: string): id is QrPrintTemplateId {
+  return QR_PRINT_TEMPLATES.some((t) => t.id === id);
+}
+
+export function parseQrPrintTemplateId(raw: string | null | undefined): QrPrintTemplateId {
+  return raw && isQrPrintTemplateId(raw) ? raw : QR_PRINT_TEMPLATE_DEFAULT;
+}
+
+export function qrPrintTemplateById(id: string | null | undefined): QrPrintTemplate {
   const found = QR_PRINT_TEMPLATES.find((t) => t.id === id);
-  if (!found) throw new Error("Template de QR desconhecido.");
-  return found;
+  if (found) return found;
+  const fallback = QR_PRINT_TEMPLATES.find((t) => t.id === QR_PRINT_TEMPLATE_DEFAULT);
+  if (!fallback) throw new Error("Nenhum template de QR cadastrado.");
+  return fallback;
 }
 
 export type QrPosterCopy = {
@@ -81,14 +94,15 @@ export type QrPosterCopy = {
 
 const TEMPLATE_STORAGE_KEY = "eaimesa.qrPrintTemplate";
 
+/** Só para migrar escolha antiga do navegador para o venue. */
 export function loadQrPrintTemplateId(): QrPrintTemplateId {
-  if (typeof window === "undefined") return "restaurant";
-  const saved = window.localStorage.getItem(TEMPLATE_STORAGE_KEY);
-  return saved === "bar" || saved === "restaurant" ? saved : "restaurant";
+  if (typeof window === "undefined") return QR_PRINT_TEMPLATE_DEFAULT;
+  return parseQrPrintTemplateId(window.localStorage.getItem(TEMPLATE_STORAGE_KEY));
 }
 
-export function saveQrPrintTemplateId(id: QrPrintTemplateId) {
-  window.localStorage.setItem(TEMPLATE_STORAGE_KEY, id);
+export function clearQrPrintTemplateLocal() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(TEMPLATE_STORAGE_KEY);
 }
 
 function esc(value: string) {

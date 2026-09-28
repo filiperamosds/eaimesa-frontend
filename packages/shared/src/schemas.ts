@@ -222,6 +222,12 @@ export const patchVenueSchema = z
     thermalAutoPrintTables: z.boolean().optional(),
     catalogDark: z.boolean().optional(),
     catalogModern: z.boolean().optional(),
+    qrPrintTemplate: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^[a-z][a-z0-9-]{0,31}$/, "Template de QR inválido.")
+      .optional(),
     representative: representativeSchema.optional(),
     waiterCallEnabled: z.boolean().optional(),
     waiterCallTtlMinutes: z
@@ -241,6 +247,7 @@ export const patchVenueSchema = z
       b.thermalAutoPrintTables !== undefined ||
       b.catalogDark !== undefined ||
       b.catalogModern !== undefined ||
+      b.qrPrintTemplate !== undefined ||
       b.representative !== undefined ||
       b.waiterCallEnabled !== undefined ||
       b.waiterCallTtlMinutes !== undefined,

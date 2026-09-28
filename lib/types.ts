@@ -18,6 +18,8 @@ export type Venue = {
   thermalAutoPrintTables?: boolean;
   catalogDark?: boolean;
   catalogModern?: boolean;
+  /** Id do poster de QR (`restaurant`, `bar`, …). Novos templates só entram no front. */
+  qrPrintTemplate?: string;
   waiterCallEnabled?: boolean;
   waiterCallTtlMinutes?: number;
   /** Fatia 16 — módulos efetivos do venue (ADR-029). */

@@ -6,7 +6,13 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { pickStr } from "../lib/api-case";
 import { downloadTablesQrPdf } from "../lib/qr-sheet-pdf";
-import { loadQrPrintTemplateId, qrPrintTemplateById } from "../lib/qr-print-templates";
+import {
+  clearQrPrintTemplateLocal,
+  loadQrPrintTemplateId,
+  parseQrPrintTemplateId,
+  QR_PRINT_TEMPLATE_DEFAULT,
+  qrPrintTemplateById,
+} from "../lib/qr-print-templates";
 import type { Venue, VenueTable } from "../lib/types";
 import { MenuQrModal } from "./menu-qr-modal";
 import { QrTemplatePickerModal } from "./qr-template-picker-modal";
@@ -65,6 +71,22 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
     setMaxActive(tablesData.maxActive);
     setActiveCount(tablesData.activeCount);
     setVenue(venueData);
+    const saved = parseQrPrintTemplateId(venueData.qrPrintTemplate);
+    const local = loadQrPrintTemplateId();
+    if (saved === QR_PRINT_TEMPLATE_DEFAULT && local !== QR_PRINT_TEMPLATE_DEFAULT) {
+      try {
+        const migrated = await api<Venue>("/v1/owner/venue", {
+          method: "PATCH",
+          body: JSON.stringify({ qrPrintTemplate: local }),
+        });
+        setVenue(migrated);
+        clearQrPrintTemplateLocal();
+      } catch {
+        /* escolha continua no navegador até o próximo save */
+      }
+    } else {
+      clearQrPrintTemplateLocal();
+    }
   }
 
   useEffect(() => {
@@ -104,7 +126,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
         includeGeneral: showVenueQr,
         tables,
         fileName: `eaimesa-${slugifyFile(venue.slug)}-mesas.pdf`,
-        template: qrPrintTemplateById(loadQrPrintTemplateId()),
+        template: qrPrintTemplateById(venue.qrPrintTemplate),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível gerar o PDF.");
@@ -208,6 +230,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           venueName={venue.name}
           tableLabel={qrTable.label}
           mesaCode={qrTable.menuCode}
+          templateId={venue.qrPrintTemplate}
           servicePlan={service}
           onClose={() => setQrTable(null)}
         />
@@ -216,6 +239,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
         <MenuQrModal
           slug={venue.slug}
           venueName={venue.name}
+          templateId={venue.qrPrintTemplate}
           servicePlan={service}
           onClose={() => setVenueQr(false)}
         />
@@ -224,6 +248,8 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
         <QrTemplatePickerModal
           slug={venue.slug}
           venueName={venue.name}
+          templateId={venue.qrPrintTemplate ?? QR_PRINT_TEMPLATE_DEFAULT}
+          onSaved={setVenue}
           onClose={() => setTemplatePicker(false)}
         />
       ) : null}
