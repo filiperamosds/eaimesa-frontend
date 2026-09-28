@@ -25,7 +25,7 @@ export const QR_POSTER_SITE = "eaimesa.com";
 export const QR_PRINT_TEMPLATE_DEFAULT = "restaurant";
 
 /** Ids conhecidos hoje. Novos posters entram nesta união e em `QR_PRINT_TEMPLATES`. */
-export type QrPrintTemplateId = "restaurant" | "bar";
+export type QrPrintTemplateId = "generic" | "restaurant" | "quibes" | "bar";
 
 export type QrPrintTemplate = {
   id: QrPrintTemplateId;
@@ -36,12 +36,22 @@ export type QrPrintTemplate = {
   circle: string;
   brand: string;
   pill: string;
-  photoSrc: string;
-  photoFit: "contain" | "cover";
-  photoHeight: number;
+  photoSrc?: string;
+  photoFit?: "contain" | "cover";
+  photoHeight?: number;
 };
 
 export const QR_PRINT_TEMPLATES: QrPrintTemplate[] = [
+  {
+    id: "generic",
+    name: "Genérico",
+    subtitle: "Sem ilustração",
+    tagline: "Escaneie e explore",
+    background: "#E8E3D2",
+    circle: "#2C241F",
+    brand: "#2C241F",
+    pill: "#F4EFE1",
+  },
   {
     id: "restaurant",
     name: "Restaurante",
@@ -54,6 +64,19 @@ export const QR_PRINT_TEMPLATES: QrPrintTemplate[] = [
     photoSrc: "/qr-templates/restaurant.png?v=7",
     photoFit: "contain",
     photoHeight: 0.28,
+  },
+  {
+    id: "quibes",
+    name: "Quibes",
+    subtitle: "Sem identificação da mesa",
+    tagline: "Escaneie e explore",
+    background: "#EDE4D0",
+    circle: "#6B3E1F",
+    brand: "#6B3E1F",
+    pill: "#F6EEDC",
+    photoSrc: "/qr-templates/quibes.png?v=1",
+    photoFit: "contain",
+    photoHeight: 0.32,
   },
   {
     id: "bar",
@@ -230,8 +253,8 @@ function posterCss(template: QrPrintTemplate): string {
       left: 0;
       width: 100%;
       bottom: ${L.footerH * 100}%;
-      height: ${template.photoHeight * 100}%;
-      object-fit: ${template.photoFit};
+      height: ${(template.photoHeight ?? 0.28) * 100}%;
+      object-fit: ${template.photoFit ?? "contain"};
       object-position: center bottom;
       pointer-events: none;
     }
@@ -265,7 +288,11 @@ function qrPosterInnerHtml(template: QrPrintTemplate, copy: QrPosterCopy): strin
       ${table}
       <div class="qr-poster-qr"><img src="${esc(copy.qrDataUrl)}" alt="" /></div>
       <p class="qr-poster-tagline">${esc(template.tagline)}</p>
-      <img class="qr-poster-photo" src="${esc(assetHref(template.photoSrc))}" alt="" />
+      ${
+        template.photoSrc
+          ? `<img class="qr-poster-photo" src="${esc(assetHref(template.photoSrc))}" alt="" />`
+          : ""
+      }
       <div class="qr-poster-footer">${esc(QR_POSTER_SITE)}</div>
     </div>`;
 }
@@ -391,7 +418,7 @@ export async function renderQrPosterCanvas(
 
   const [qr, photo] = await Promise.all([
     loadImage(copy.qrDataUrl),
-    loadImage(assetHref(template.photoSrc)),
+    template.photoSrc ? loadImage(assetHref(template.photoSrc)) : Promise.resolve(null),
   ]);
 
   ctx.fillStyle = template.background;
@@ -420,15 +447,18 @@ export async function renderQrPosterCanvas(
   ctx.font = `650 ${Math.round(w * 0.0345)}px Outfit, sans-serif`;
   ctx.fillText(template.tagline.toUpperCase(), w / 2, h * L.taglineCy, w * 0.82);
 
-  drawPhoto(
-    ctx,
-    photo,
-    0,
-    h * (1 - L.footerH - template.photoHeight),
-    w,
-    h * template.photoHeight,
-    template.photoFit,
-  );
+  if (photo && template.photoSrc) {
+    const photoHeight = template.photoHeight ?? 0.28;
+    drawPhoto(
+      ctx,
+      photo,
+      0,
+      h * (1 - L.footerH - photoHeight),
+      w,
+      h * photoHeight,
+      template.photoFit ?? "contain",
+    );
+  }
 
   const pillW = w * L.pillWidth;
   const pillH = h * L.pillHeight;

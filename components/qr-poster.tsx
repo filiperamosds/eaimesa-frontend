@@ -90,17 +90,19 @@ export function QrPoster({
       >
         {template.tagline}
       </p>
-      <img
-        src={template.photoSrc}
-        alt=""
-        className={`pointer-events-none absolute left-0 z-[2] w-full object-bottom ${
-          template.photoFit === "cover" ? "object-cover" : "object-contain"
-        }`}
-        style={{
-          bottom: `${L.footerH * 100}%`,
-          height: `${template.photoHeight * 100}%`,
-        }}
-      />
+      {template.photoSrc ? (
+        <img
+          src={template.photoSrc}
+          alt=""
+          className={`pointer-events-none absolute left-0 z-[2] w-full object-bottom ${
+            template.photoFit === "cover" ? "object-cover" : "object-contain"
+          }`}
+          style={{
+            bottom: `${L.footerH * 100}%`,
+            height: `${(template.photoHeight ?? 0.28) * 100}%`,
+          }}
+        />
+      ) : null}
       <div
         className="absolute inset-x-0 bottom-0 z-[5] flex items-center justify-center"
         style={{
