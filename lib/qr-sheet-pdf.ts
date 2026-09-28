@@ -1,16 +1,17 @@
 import QRCode from "qrcode";
 import {
-  QR_STICKER_HEIGHT_MM,
-  QR_STICKER_WIDTH_MM,
-  renderQrStickerCanvas,
-  type QrStickerCopy,
-} from "./print-qr-sticker";
+  QR_POSTER_HEIGHT_MM,
+  QR_POSTER_WIDTH_MM,
+  renderQrPosterCanvas,
+  type QrPosterCopy,
+  type QrPrintTemplate,
+} from "./qr-print-templates";
 import { publicMenuUrl } from "./public-url";
 
-/** A4 paisagem: 3 × 2 adesivos de 8 × 10 cm, sem folga entre eles. */
-const PAGE_W_MM = 297;
-const PAGE_H_MM = 210;
-const COLS = 3;
+/** A4 retrato: 2 × 2 posters de 8 × 11 cm, sem folga entre eles. */
+const PAGE_W_MM = 210;
+const PAGE_H_MM = 297;
+const COLS = 2;
 const ROWS = 2;
 const PER_PAGE = COLS * ROWS;
 
@@ -57,8 +58,8 @@ type Placed = {
 function packStickers(
   items: { jpeg: Uint8Array; pixelW: number; pixelH: number }[],
 ): Placed[][] {
-  const gridW = COLS * QR_STICKER_WIDTH_MM;
-  const gridH = ROWS * QR_STICKER_HEIGHT_MM;
+  const gridW = COLS * QR_POSTER_WIDTH_MM;
+  const gridH = ROWS * QR_POSTER_HEIGHT_MM;
   const ox = (PAGE_W_MM - gridW) / 2;
   const oyTop = (PAGE_H_MM - gridH) / 2;
   const pages: Placed[][] = [];
@@ -68,12 +69,12 @@ function packStickers(
       slice.map((item, idx) => {
         const col = idx % COLS;
         const row = Math.floor(idx / COLS);
-        const xMm = ox + col * QR_STICKER_WIDTH_MM;
-        const yFromTop = oyTop + row * QR_STICKER_HEIGHT_MM;
+        const xMm = ox + col * QR_POSTER_WIDTH_MM;
+        const yFromTop = oyTop + row * QR_POSTER_HEIGHT_MM;
         return {
           ...item,
           xMm,
-          yMm: PAGE_H_MM - yFromTop - QR_STICKER_HEIGHT_MM,
+          yMm: PAGE_H_MM - yFromTop - QR_POSTER_HEIGHT_MM,
         };
       }),
     );
@@ -84,8 +85,8 @@ function packStickers(
 function pdfFromPages(pages: Placed[][]): Uint8Array {
   const pageW = mmToPt(PAGE_W_MM);
   const pageH = mmToPt(PAGE_H_MM);
-  const sw = mmToPt(QR_STICKER_WIDTH_MM);
-  const sh = mmToPt(QR_STICKER_HEIGHT_MM);
+  const sw = mmToPt(QR_POSTER_WIDTH_MM);
+  const sh = mmToPt(QR_POSTER_HEIGHT_MM);
 
   const inners = new Map<number, Uint8Array>();
   let next = 3;
@@ -170,8 +171,9 @@ export async function downloadTablesQrPdf(opts: {
   includeGeneral: boolean;
   tables: { label: string; menuCode?: string | null }[];
   fileName: string;
+  template: QrPrintTemplate;
 }) {
-  const copies: QrStickerCopy[] = [];
+  const copies: QrPosterCopy[] = [];
   if (opts.includeGeneral) {
     copies.push({
       venueName: opts.venueName,
@@ -191,7 +193,7 @@ export async function downloadTablesQrPdf(opts: {
 
   const rendered: { jpeg: Uint8Array; pixelW: number; pixelH: number }[] = [];
   for (const copy of copies) {
-    const canvas = await renderQrStickerCanvas(copy);
+    const canvas = await renderQrPosterCanvas(opts.template, copy);
     rendered.push({
       jpeg: await canvasJpeg(canvas),
       pixelW: canvas.width,

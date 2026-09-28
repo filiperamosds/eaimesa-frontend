@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { pickStr } from "../lib/api-case";
 import { downloadTablesQrPdf } from "../lib/qr-sheet-pdf";
+import { loadQrPrintTemplateId, qrPrintTemplateById } from "../lib/qr-print-templates";
 import type { Venue, VenueTable } from "../lib/types";
 import { MenuQrModal } from "./menu-qr-modal";
+import { QrTemplatePickerModal } from "./qr-template-picker-modal";
 
 type TablesPayload = {
   tables: VenueTable[];
@@ -51,6 +53,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
   const [label, setLabel] = useState("");
   const [qrTable, setQrTable] = useState<VenueTable | null>(null);
   const [venueQr, setVenueQr] = useState(false);
+  const [templatePicker, setTemplatePicker] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
 
   async function load() {
@@ -101,6 +104,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
         includeGeneral: showVenueQr,
         tables,
         fileName: `eaimesa-${slugifyFile(venue.slug)}-mesas.pdf`,
+        template: qrPrintTemplateById(loadQrPrintTemplateId()),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível gerar o PDF.");
@@ -120,6 +124,14 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           {service ? ". Pedido de balcão e claim usam esta lista." : "."}
         </p>
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn-secondary !py-1.5 text-sm"
+            disabled={!venue}
+            onClick={() => setTemplatePicker(true)}
+          >
+            Templates de QR
+          </button>
           <button
             type="button"
             className="btn-secondary !py-1.5 text-sm"
@@ -206,6 +218,13 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
           venueName={venue.name}
           servicePlan={service}
           onClose={() => setVenueQr(false)}
+        />
+      ) : null}
+      {templatePicker && venue ? (
+        <QrTemplatePickerModal
+          slug={venue.slug}
+          venueName={venue.name}
+          onClose={() => setTemplatePicker(false)}
         />
       ) : null}
     </div>

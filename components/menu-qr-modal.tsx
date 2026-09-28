@@ -2,13 +2,18 @@
 
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
-import { downloadQrStickerPng, printQrSticker } from "../lib/print-qr-sticker";
+import {
+  downloadQrPosterPng,
+  loadQrPrintTemplateId,
+  printQrPoster,
+  qrPrintTemplateById,
+} from "../lib/qr-print-templates";
 import { publicMenuUrl } from "../lib/public-url";
 
 type Props = {
   slug: string;
   venueName: string;
-  /** Rótulo impresso no adesivo (ex. Mesa 4). */
+  /** Rótulo impresso no poster (ex. Mesa 4). */
   tableLabel?: string;
   /** Código opaco → URL `?mesa=` (plano Cardápio / chamada). */
   mesaCode?: string | null;
@@ -62,7 +67,7 @@ export function MenuQrModal({
     }).catch(() => setError("Não foi possível gerar o QR."));
   }, [slug, mesaCode]);
 
-  async function stickerCopy() {
+  async function posterCopy() {
     const target = url || publicMenuUrl(slug, { mesa: mesaCode });
     return {
       venueName,
@@ -78,21 +83,21 @@ export function MenuQrModal({
       const name = tableLabel
         ? `eaimesa-${slugifyFile(slug)}-${slugifyFile(tableLabel)}.png`
         : `eaimesa-${slugifyFile(slug)}-cardapio.png`;
-      await downloadQrStickerPng(await stickerCopy(), name);
+      await downloadQrPosterPng(qrPrintTemplateById(loadQrPrintTemplateId()), await posterCopy(), name);
     } catch {
-      setError("Não foi possível exportar o adesivo.");
+      setError("Não foi possível exportar o poster.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function printSticker() {
+  async function printPoster() {
     setError(null);
     setBusy(true);
     try {
-      printQrSticker(await stickerCopy());
+      await printQrPoster(qrPrintTemplateById(loadQrPrintTemplateId()), await posterCopy());
     } catch {
-      setError("Não foi possível imprimir o adesivo.");
+      setError("Não foi possível imprimir o poster.");
     } finally {
       setBusy(false);
     }
@@ -128,7 +133,7 @@ export function MenuQrModal({
           {url ? (
             <p className="mt-3 break-all text-center text-xs text-ink-soft">{url.replace(/^https?:\/\//, "")}</p>
           ) : null}
-          <p className="mt-2 text-center text-xs text-ink-soft">Adesivo 8 × 10 cm</p>
+          <p className="mt-2 text-center text-xs text-ink-soft">Poster 8 × 11 cm</p>
         </div>
         <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-ghost">
@@ -137,7 +142,7 @@ export function MenuQrModal({
           <button
             type="button"
             disabled={busy || !url}
-            onClick={() => void printSticker()}
+            onClick={() => void printPoster()}
             className="btn-secondary !py-2 text-sm"
           >
             Imprimir
