@@ -8,6 +8,7 @@ import { pickStr } from "../lib/api-case";
 import { downloadTablesQrPdf } from "../lib/qr-sheet-pdf";
 import {
   clearQrPrintTemplateLocal,
+  ensureQrPrintTemplates,
   loadQrPrintTemplateId,
   parseQrPrintTemplateId,
   QR_PRINT_TEMPLATE_DEFAULT,
@@ -71,6 +72,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
     setMaxActive(tablesData.maxActive);
     setActiveCount(tablesData.activeCount);
     setVenue(venueData);
+    await ensureQrPrintTemplates();
     const saved = parseQrPrintTemplateId(venueData.qrPrintTemplate);
     const local = loadQrPrintTemplateId();
     if (saved === QR_PRINT_TEMPLATE_DEFAULT && local !== QR_PRINT_TEMPLATE_DEFAULT) {
@@ -120,6 +122,7 @@ export function TablesEditor({ showVenueQr = false }: { showVenueQr?: boolean })
     setError(null);
     setPdfBusy(true);
     try {
+      await ensureQrPrintTemplates();
       await downloadTablesQrPdf({
         venueName: venue.name,
         slug: venue.slug,

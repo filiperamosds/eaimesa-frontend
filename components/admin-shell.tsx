@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/admin/equipe", label: "Equipe" },
   { href: "/admin/planos", label: "Planos" },
   { href: "/admin/modulos", label: "Módulos" },
+  { href: "/admin/templates-qr", label: "Templates QR" },
   { href: "/admin/logs", label: "Logs" },
   { href: "/admin/integracoes", label: "Integrações" },
 ];

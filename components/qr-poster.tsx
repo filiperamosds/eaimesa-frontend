@@ -121,6 +121,32 @@ export function QrPoster({
             height: `${(template.photoHeight ?? 0.28) * 100}%`,
           }}
         />
+      ) : template.photoCaption ? (
+        <div
+          className="pointer-events-none absolute z-[3] flex items-center justify-center gap-[0.55em]"
+          style={{
+            left: "7%",
+            right: "7%",
+            bottom: `${L.footerH * 100}%`,
+            height: `${(template.photoHeight ?? 0.28) * 100}%`,
+            color: template.brand,
+          }}
+        >
+          <span className="h-px min-w-[10%] flex-1 bg-current opacity-[0.38]" />
+          <span
+            className="font-serif text-center"
+            style={{
+              maxWidth: "72%",
+              fontWeight: 650,
+              fontSize: "5.1cqw",
+              lineHeight: 1.2,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {template.photoCaption}
+          </span>
+          <span className="h-px min-w-[10%] flex-1 bg-current opacity-[0.38]" />
+        </div>
       ) : null}
       <div
         className="absolute inset-x-0 bottom-0 z-[5] flex items-center justify-center"

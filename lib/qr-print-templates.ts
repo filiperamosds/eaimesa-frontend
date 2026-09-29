@@ -1,4 +1,5 @@
-/** Poster do QR fixo: 8 cm × 11 cm (mesas e cardápio geral). */
+import { api } from "./api";
+import { mediaSrc } from "./media";
 
 export const QR_POSTER_WIDTH_MM = 80;
 export const QR_POSTER_HEIGHT_MM = 110;
@@ -24,8 +25,8 @@ export const QR_POSTER_SITE = "eaimesa.com";
 
 export const QR_PRINT_TEMPLATE_DEFAULT = "restaurant";
 
-/** Ids conhecidos hoje. Novos posters entram nesta união e em `QR_PRINT_TEMPLATES`. */
-export type QrPrintTemplateId = "generic" | "restaurant" | "quibes" | "bar";
+/** Ids conhecidos no fallback local. Novos posters vêm do admin. */
+export type QrPrintTemplateId = string;
 
 export type QrPrintTemplate = {
   id: QrPrintTemplateId;
@@ -39,6 +40,8 @@ export type QrPrintTemplate = {
   photoSrc?: string;
   photoFit?: "contain" | "cover";
   photoHeight?: number;
+  /** Frase no lugar da foto (ex. “O que vai pedir hoje?”). */
+  photoCaption?: string;
 };
 
 export const QR_PRINT_TEMPLATES: QrPrintTemplate[] = [
@@ -51,6 +54,7 @@ export const QR_PRINT_TEMPLATES: QrPrintTemplate[] = [
     circle: "#2C241F",
     brand: "#2C241F",
     pill: "#F4EFE1",
+    photoCaption: "O que vai pedir hoje?",
   },
   {
     id: "restaurant",
@@ -74,7 +78,7 @@ export const QR_PRINT_TEMPLATES: QrPrintTemplate[] = [
     circle: "#6B3E1F",
     brand: "#6B3E1F",
     pill: "#F6EEDC",
-    photoSrc: "/qr-templates/quibes.png?v=1",
+    photoSrc: "/qr-templates/quibes.png?v=2",
     photoFit: "contain",
     photoHeight: 0.32,
   },
@@ -94,17 +98,73 @@ export const QR_PRINT_TEMPLATES: QrPrintTemplate[] = [
 ];
 
 export function isQrPrintTemplateId(id: string): id is QrPrintTemplateId {
-  return QR_PRINT_TEMPLATES.some((t) => t.id === id);
+  return /^[a-z][a-z0-9-]{0,31}$/.test(id);
 }
 
 export function parseQrPrintTemplateId(raw: string | null | undefined): QrPrintTemplateId {
-  return raw && isQrPrintTemplateId(raw) ? raw : QR_PRINT_TEMPLATE_DEFAULT;
+  const id = (raw ?? "").trim().toLowerCase();
+  return id && isQrPrintTemplateId(id) ? id : QR_PRINT_TEMPLATE_DEFAULT;
+}
+
+export type QrPrintTemplateDto = {
+  id: string;
+  name: string;
+  subtitle: string;
+  tagline: string;
+  caption: string | null;
+  background: string;
+  circle: string;
+  brand: string;
+  pill: string;
+  photoUrl: string | null;
+  photoFit: "contain" | "cover" | null;
+  photoHeight: number | null;
+  active: boolean;
+  sortOrder: number;
+};
+
+export function mapQrPrintTemplateDto(row: QrPrintTemplateDto): QrPrintTemplate {
+  const photo = mediaSrc(row.photoUrl) ?? row.photoUrl ?? undefined;
+  return {
+    id: row.id,
+    name: row.name,
+    subtitle: row.subtitle,
+    tagline: row.tagline,
+    background: row.background,
+    circle: row.circle,
+    brand: row.brand,
+    pill: row.pill,
+    photoSrc: photo || undefined,
+    photoFit: row.photoFit ?? "contain",
+    photoHeight: row.photoHeight ?? 0.28,
+    photoCaption: row.caption || undefined,
+  };
+}
+
+let cachedTemplates: QrPrintTemplate[] | null = null;
+
+export function clearQrPrintTemplateCache() {
+  cachedTemplates = null;
+}
+
+export async function ensureQrPrintTemplates(force = false): Promise<QrPrintTemplate[]> {
+  if (!force && cachedTemplates) return cachedTemplates;
+  try {
+    const data = await api<{ templates: QrPrintTemplateDto[] }>("/v1/owner/qr-print-templates");
+    cachedTemplates = (data.templates ?? []).map(mapQrPrintTemplateDto);
+    if (cachedTemplates.length > 0) return cachedTemplates;
+  } catch {
+    /* fallback local */
+  }
+  cachedTemplates = QR_PRINT_TEMPLATES;
+  return cachedTemplates;
 }
 
 export function qrPrintTemplateById(id: string | null | undefined): QrPrintTemplate {
-  const found = QR_PRINT_TEMPLATES.find((t) => t.id === id);
+  const list = cachedTemplates ?? QR_PRINT_TEMPLATES;
+  const found = list.find((t) => t.id === id);
   if (found) return found;
-  const fallback = QR_PRINT_TEMPLATES.find((t) => t.id === QR_PRINT_TEMPLATE_DEFAULT);
+  const fallback = list.find((t) => t.id === QR_PRINT_TEMPLATE_DEFAULT) ?? list[0] ?? QR_PRINT_TEMPLATES[0];
   if (!fallback) throw new Error("Nenhum template de QR cadastrado.");
   return fallback;
 }
@@ -137,8 +197,10 @@ function esc(value: string) {
 }
 
 function assetHref(src: string) {
-  if (typeof window === "undefined") return src;
-  return new URL(src, window.location.origin).href;
+  const resolved = mediaSrc(src) ?? src;
+  if (typeof window === "undefined") return resolved;
+  if (/^https?:\/\//i.test(resolved)) return resolved;
+  return new URL(resolved, window.location.origin).href;
 }
 
 function px(mm: number) {
@@ -260,6 +322,35 @@ function posterCss(template: QrPrintTemplate): string {
       text-transform: uppercase;
       white-space: nowrap;
     }
+    .qr-poster-caption {
+      position: absolute;
+      z-index: 3;
+      left: 7%;
+      right: 7%;
+      bottom: ${L.footerH * 100}%;
+      height: ${(template.photoHeight ?? 0.28) * 100}%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55em;
+      color: ${template.brand};
+      pointer-events: none;
+    }
+    .qr-poster-caption-line {
+      flex: 1 1 12%;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.38;
+    }
+    .qr-poster-caption-text {
+      max-width: 72%;
+      text-align: center;
+      font-family: Fraunces, ui-serif, Georgia, serif;
+      font-weight: 650;
+      font-size: 5.1cqw;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
     .qr-poster-photo {
       position: absolute;
       z-index: 2;
@@ -304,7 +395,9 @@ function qrPosterInnerHtml(template: QrPrintTemplate, copy: QrPosterCopy): strin
       ${
         template.photoSrc
           ? `<img class="qr-poster-photo" src="${esc(assetHref(template.photoSrc))}" alt="" />`
-          : ""
+          : template.photoCaption
+            ? `<div class="qr-poster-caption"><span class="qr-poster-caption-line"></span><span class="qr-poster-caption-text">${esc(template.photoCaption)}</span><span class="qr-poster-caption-line"></span></div>`
+            : ""
       }
       <div class="qr-poster-footer">${esc(QR_POSTER_SITE)}</div>
     </div>`;
@@ -317,7 +410,7 @@ function posterHtml(template: QrPrintTemplate, copy: QrPosterCopy): string {
   <meta charset="utf-8" />
   <title>${esc(copy.venueName)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@600;700&display=swap" />
   <style>
     @page { size: ${QR_POSTER_WIDTH_MM}mm ${QR_POSTER_HEIGHT_MM}mm; margin: 0; }
     * { box-sizing: border-box; }
@@ -471,6 +564,30 @@ export async function renderQrPosterCanvas(
       h * photoHeight,
       template.photoFit ?? "contain",
     );
+  } else if (template.photoCaption) {
+    const bandH = h * (template.photoHeight ?? 0.28);
+    const cy = h * (1 - L.footerH) - bandH / 2;
+    const fontSize = Math.round(w * 0.048);
+    ctx.fillStyle = template.brand;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `650 ${fontSize}px Fraunces, Georgia, serif`;
+    const maxText = w * 0.62;
+    const text = ellipsis(ctx, template.photoCaption, maxText);
+    ctx.fillText(text, w / 2, cy, maxText);
+    const tw = Math.min(ctx.measureText(text).width, maxText);
+    const gap = w * 0.028;
+    ctx.save();
+    ctx.globalAlpha = 0.38;
+    ctx.strokeStyle = template.brand;
+    ctx.lineWidth = Math.max(1, w * 0.0025);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.08, cy);
+    ctx.lineTo(w / 2 - tw / 2 - gap, cy);
+    ctx.moveTo(w / 2 + tw / 2 + gap, cy);
+    ctx.lineTo(w * 0.92, cy);
+    ctx.stroke();
+    ctx.restore();
   }
 
   const pillW = w * L.pillWidth;

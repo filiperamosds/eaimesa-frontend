@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
 import {
   downloadQrPosterPng,
+  ensureQrPrintTemplates,
   printQrPoster,
   qrPrintTemplateById,
 } from "../lib/qr-print-templates";
@@ -85,6 +86,7 @@ export function MenuQrModal({
       const name = tableLabel
         ? `eaimesa-${slugifyFile(slug)}-${slugifyFile(tableLabel)}.png`
         : `eaimesa-${slugifyFile(slug)}-cardapio.png`;
+      await ensureQrPrintTemplates();
       await downloadQrPosterPng(qrPrintTemplateById(templateId), await posterCopy(), name);
     } catch {
       setError("Não foi possível exportar o poster.");
@@ -97,6 +99,7 @@ export function MenuQrModal({
     setError(null);
     setBusy(true);
     try {
+      await ensureQrPrintTemplates();
       await printQrPoster(qrPrintTemplateById(templateId), await posterCopy());
     } catch {
       setError("Não foi possível imprimir o poster.");

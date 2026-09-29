@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import {
   downloadQrPosterPng,
+  ensureQrPrintTemplates,
   parseQrPrintTemplateId,
   printQrPoster,
-  QR_PRINT_TEMPLATES,
+  type QrPrintTemplate,
   type QrPrintTemplateId,
 } from "../lib/qr-print-templates";
 import { publicMenuUrl } from "../lib/public-url";
@@ -42,6 +43,7 @@ async function qrPng(target: string) {
 }
 
 export function QrTemplatePickerModal({ slug, venueName, templateId, onSaved, onClose }: Props) {
+  const [templates, setTemplates] = useState<QrPrintTemplate[]>([]);
   const [selected, setSelected] = useState<QrPrintTemplateId>(() => parseQrPrintTemplateId(templateId));
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,15 @@ export function QrTemplatePickerModal({ slug, venueName, templateId, onSaved, on
   useEffect(() => {
     setSelected(parseQrPrintTemplateId(templateId));
   }, [templateId]);
+
+  useEffect(() => {
+    ensureQrPrintTemplates(true)
+      .then((rows) => {
+        setTemplates(rows);
+        setSelected((cur) => (rows.some((t) => t.id === cur) ? cur : (rows[0]?.id ?? cur)));
+      })
+      .catch(() => setError("Não foi possível carregar os templates."));
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -91,7 +102,7 @@ export function QrTemplatePickerModal({ slug, venueName, templateId, onSaved, on
   }
 
   async function printSelected() {
-    const template = QR_PRINT_TEMPLATES.find((t) => t.id === selected);
+    const template = templates.find((t) => t.id === selected);
     if (!template || !qrDataUrl) return;
     setError(null);
     setBusy(true);
@@ -105,7 +116,7 @@ export function QrTemplatePickerModal({ slug, venueName, templateId, onSaved, on
   }
 
   async function downloadSelected() {
-    const template = QR_PRINT_TEMPLATES.find((t) => t.id === selected);
+    const template = templates.find((t) => t.id === selected);
     if (!template || !qrDataUrl) return;
     setError(null);
     setBusy(true);
@@ -141,8 +152,8 @@ export function QrTemplatePickerModal({ slug, venueName, templateId, onSaved, on
           </p>
         </div>
         <div className="-mx-4 mt-4 min-h-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain sm:-mx-6 sm:mt-6">
-          <div className="flex snap-x snap-mandatory gap-3 px-4 pb-1 sm:gap-5 sm:px-6">
-            {QR_PRINT_TEMPLATES.map((template) => {
+          <div className="flex snap-x snap-mandatory gap-3 pl-4 pr-2 pt-3 pb-2 sm:gap-5 sm:pl-6 sm:pr-3 sm:pt-4">
+            {templates.map((template) => {
               const active = selected === template.id;
               return (
                 <button
@@ -157,23 +168,26 @@ export function QrTemplatePickerModal({ slug, venueName, templateId, onSaved, on
                   aria-pressed={active}
                 >
                   <div
-                    className={`overflow-hidden rounded-md transition ${
+                    className={`rounded-md transition ${
                       active
                         ? "ring-2 ring-chili ring-offset-2 ring-offset-card sm:ring-offset-4"
                         : "ring-1 ring-transparent"
                     }`}
                   >
-                    {qrDataUrl ? (
-                      <QrPoster template={template} copy={copy} />
-                    ) : (
-                      <div className="aspect-[8/11] animate-pulse bg-line/60" />
-                    )}
+                    <div className="overflow-hidden rounded-md">
+                      {qrDataUrl ? (
+                        <QrPoster template={template} copy={copy} />
+                      ) : (
+                        <div className="aspect-[8/11] animate-pulse bg-line/60" />
+                      )}
+                    </div>
                   </div>
                   <p className="mt-2 font-serif text-base text-ink sm:mt-3 sm:text-xl">{template.name}</p>
                   <p className="mt-0.5 text-xs text-ink-soft sm:text-sm">{template.subtitle}</p>
                 </button>
               );
             })}
+            <div className="w-3 shrink-0 sm:w-4" aria-hidden />
           </div>
         </div>
         {error ? <p className="mt-3 shrink-0 text-sm text-chili">{error}</p> : null}
