@@ -212,10 +212,12 @@ function posterCss(template: QrPrintTemplate): string {
       left: 50%;
       top: ${L.circleCy * 100}%;
       width: ${L.circleDiameter * 100}%;
-      aspect-ratio: 1;
+      height: 0;
+      padding-bottom: ${L.circleDiameter * 100}%;
       transform: translate(-50%, -50%);
       border-radius: 50%;
       background: ${template.circle};
+      box-sizing: content-box;
     }
     .qr-poster-qr {
       position: absolute;
@@ -223,15 +225,26 @@ function posterCss(template: QrPrintTemplate): string {
       left: 50%;
       top: ${L.qrCy * 100}%;
       width: ${L.qrSize * 100}%;
-      aspect-ratio: 1;
+      height: 0;
+      padding-bottom: ${L.qrSize * 100}%;
       transform: translate(-50%, -50%);
       background: #fff;
       border-radius: 11%;
-      padding: ${L.qrPad * 100}%;
-      box-sizing: border-box;
+      box-sizing: content-box;
       box-shadow: 0 8px 28px rgba(22, 19, 17, 0.12);
+      overflow: hidden;
     }
-    .qr-poster-qr img { width: 100%; height: 100%; display: block; }
+    .qr-poster-qr img {
+      position: absolute;
+      top: ${L.qrPad * 100}%;
+      left: ${L.qrPad * 100}%;
+      width: ${(1 - L.qrPad * 2) * 100}%;
+      height: ${(1 - L.qrPad * 2) * 100}%;
+      max-width: none;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+    }
     .qr-poster-tagline {
       position: absolute;
       z-index: 4;

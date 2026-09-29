@@ -1,4 +1,9 @@
-import { QR_POSTER_LAYOUT, QR_POSTER_SITE, type QrPosterCopy, type QrPrintTemplate } from "../lib/qr-print-templates";
+import {
+  QR_POSTER_LAYOUT,
+  QR_POSTER_SITE,
+  type QrPosterCopy,
+  type QrPrintTemplate,
+} from "../lib/qr-print-templates";
 
 export function QrPoster({
   template,
@@ -22,11 +27,13 @@ export function QrPoster({
       }}
     >
       <div
-        className="absolute left-1/2 z-[1] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 z-[1] box-content -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           top: `${L.circleCy * 100}%`,
           width: `${L.circleDiameter * 100}%`,
-          aspectRatio: "1",
+          height: 0,
+          paddingBottom: `${L.circleDiameter * 100}%`,
+          boxSizing: "content-box",
           background: template.circle,
         }}
       />
@@ -67,17 +74,29 @@ export function QrPoster({
         </div>
       ) : null}
       <div
-        className="absolute left-1/2 z-[4] box-border -translate-x-1/2 -translate-y-1/2 bg-white"
+        className="absolute left-1/2 z-[4] box-content -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-white"
         style={{
           top: `${L.qrCy * 100}%`,
           width: `${L.qrSize * 100}%`,
-          aspectRatio: "1",
+          height: 0,
+          paddingBottom: `${L.qrSize * 100}%`,
+          boxSizing: "content-box",
           borderRadius: "11%",
-          padding: `${L.qrPad * 100}%`,
           boxShadow: "0 8px 28px rgba(22, 19, 17, 0.12)",
         }}
       >
-        <img src={copy.qrDataUrl} alt="" className="block h-full w-full" />
+        <img
+          src={copy.qrDataUrl}
+          alt=""
+          className="absolute object-contain object-center"
+          style={{
+            top: `${L.qrPad * 100}%`,
+            left: `${L.qrPad * 100}%`,
+            width: `${(1 - L.qrPad * 2) * 100}%`,
+            height: `${(1 - L.qrPad * 2) * 100}%`,
+            maxWidth: "none",
+          }}
+        />
       </div>
       <p
         className="absolute left-1/2 z-[4] w-[82%] -translate-x-1/2 -translate-y-1/2 text-center uppercase text-white"
