@@ -12,14 +12,17 @@ function moveRow<T>(rows: T[], from: number, dir: -1 | 1): T[] | null {
   const to = from + dir;
   if (to < 0 || to >= rows.length) return null;
   const next = [...rows];
-  const [row] = next.splice(from, 1);
+  const row = next.splice(from, 1)[0];
+  if (row === undefined) return null;
   next.splice(to, 0, row);
   return next;
 }
 
 async function persistSort(path: string, rows: { id: string }[]) {
   for (let i = 0; i < rows.length; i++) {
-    await api(`${path}/${rows[i].id}`, {
+    const row = rows[i];
+    if (!row) continue;
+    await api(`${path}/${row.id}`, {
       method: "PATCH",
       body: JSON.stringify({ sortOrder: i }),
     });
