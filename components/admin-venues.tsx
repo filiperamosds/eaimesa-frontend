@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import Link from "next/link";
 import { planLabel, statusLabel } from "../lib/admin-copy";
 import {
   datetimeLocalToIsoUtc,
@@ -288,6 +289,12 @@ export function AdminVenues() {
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                <Link
+                  href={`/admin/cardapio?venue=${encodeURIComponent(v.id)}`}
+                  className="btn-ghost text-sm text-white/80"
+                >
+                  Importar cardápio
+                </Link>
                 <button
                   type="button"
                   disabled={pending === v.id}
