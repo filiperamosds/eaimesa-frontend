@@ -8,10 +8,64 @@ import type { CatalogCategory, Session } from "../lib/types";
 import { ItemCreateDialog } from "./item-create-dialog";
 import { ItemEditDialog } from "./item-edit-dialog";
 
+function moveRow<T>(rows: T[], from: number, dir: -1 | 1): T[] | null {
+  const to = from + dir;
+  if (to < 0 || to >= rows.length) return null;
+  const next = [...rows];
+  const [row] = next.splice(from, 1);
+  next.splice(to, 0, row);
+  return next;
+}
+
+async function persistSort(path: string, rows: { id: string }[]) {
+  for (let i = 0; i < rows.length; i++) {
+    await api(`${path}/${rows[i].id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ sortOrder: i }),
+    });
+  }
+}
+
+function OrderButtons({
+  label,
+  canUp,
+  canDown,
+  disabled,
+  onUp,
+  onDown,
+}: {
+  label: string;
+  canUp: boolean;
+  canDown: boolean;
+  disabled: boolean;
+  onUp: () => void;
+  onDown: () => void;
+}) {
+  const btn =
+    "rounded-md px-1.5 py-0.5 text-xs leading-none text-ink-soft hover:bg-paper-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30";
+  return (
+    <span className="inline-flex shrink-0 flex-col">
+      <button type="button" className={btn} disabled={disabled || !canUp} aria-label={`Subir ${label}`} onClick={onUp}>
+        ▲
+      </button>
+      <button
+        type="button"
+        className={btn}
+        disabled={disabled || !canDown}
+        aria-label={`Descer ${label}`}
+        onClick={onDown}
+      >
+        ▼
+      </button>
+    </span>
+  );
+}
+
 export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogCategory[]) => void }) {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sorting, setSorting] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [inventoryOn, setInventoryOn] = useState(false);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
@@ -62,6 +116,43 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
     }
   }
 
+  async function moveCategory(from: number, dir: -1 | 1) {
+    const next = moveRow(categories, from, dir);
+    if (!next || sorting) return;
+    setSorting(true);
+    setError(null);
+    setCategories(next);
+    onCategories?.(next);
+    try {
+      await persistSort("/v1/owner/catalog/categories", next);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível reordenar as categorias.");
+    } finally {
+      await load().catch(() => undefined);
+      setSorting(false);
+    }
+  }
+
+  async function moveItem(categoryId: string, from: number, dir: -1 | 1) {
+    const cat = categories.find((c) => c.id === categoryId);
+    if (!cat || sorting) return;
+    const items = moveRow(cat.items, from, dir);
+    if (!items) return;
+    const next = categories.map((c) => (c.id === categoryId ? { ...c, items } : c));
+    setSorting(true);
+    setError(null);
+    setCategories(next);
+    onCategories?.(next);
+    try {
+      await persistSort("/v1/owner/catalog/items", items);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Não foi possível reordenar os itens.");
+    } finally {
+      await load().catch(() => undefined);
+      setSorting(false);
+    }
+  }
+
   if (loading) return <p className="text-ink-soft">Carregando cardápio…</p>;
 
   return (
@@ -81,11 +172,20 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
       {error ? <p className="text-sm text-chili">{error}</p> : null}
       {categories.length === 0 ? (
         <p className="text-ink-soft">Nenhuma categoria ainda. Comece por Petiscos, Porções, Bebidas.</p>
-      ) : null}
-      {categories.map((cat) => (
+      ) : (
+        <p className="text-sm text-ink-soft">
+          Use as setas para definir quem aparece primeiro no cardápio público — categorias e itens.
+        </p>
+      )}
+      {categories.map((cat, index) => (
         <CategoryBlock
           key={cat.id}
           category={cat}
+          index={index}
+          total={categories.length}
+          sorting={sorting}
+          onMove={(dir) => void moveCategory(index, dir)}
+          onMoveItem={(from, dir) => void moveItem(cat.id, from, dir)}
           onChange={load}
           onError={setError}
           inventoryOn={inventoryOn}
@@ -99,6 +199,11 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
 
 function CategoryBlock({
   category,
+  index,
+  total,
+  sorting,
+  onMove,
+  onMoveItem,
   onChange,
   onError,
   inventoryOn,
@@ -106,6 +211,11 @@ function CategoryBlock({
   recipes,
 }: {
   category: CatalogCategory;
+  index: number;
+  total: number;
+  sorting: boolean;
+  onMove: (dir: -1 | 1) => void;
+  onMoveItem: (from: number, dir: -1 | 1) => void;
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
   inventoryOn: boolean;
@@ -155,6 +265,14 @@ function CategoryBlock({
   return (
     <section className="surface p-5">
       <div className="flex flex-wrap items-center gap-2">
+        <OrderButtons
+          label={`categoria ${category.name}`}
+          canUp={index > 0}
+          canDown={index < total - 1}
+          disabled={sorting}
+          onUp={() => onMove(-1)}
+          onDown={() => onMove(1)}
+        />
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -172,10 +290,14 @@ function CategoryBlock({
         </button>
       </div>
       <ul className="mt-4 divide-y divide-line">
-        {category.items.map((item) => (
+        {category.items.map((item, itemIndex) => (
           <ItemRow
             key={item.id}
             item={item}
+            index={itemIndex}
+            total={category.items.length}
+            sorting={sorting}
+            onMove={(dir) => onMoveItem(itemIndex, dir)}
             onChange={onChange}
             onError={onError}
             inventoryOn={inventoryOn}
@@ -205,6 +327,10 @@ function CategoryBlock({
 
 function ItemRow({
   item,
+  index,
+  total,
+  sorting,
+  onMove,
   onChange,
   onError,
   inventoryOn,
@@ -212,6 +338,10 @@ function ItemRow({
   recipe,
 }: {
   item: CatalogCategory["items"][number];
+  index: number;
+  total: number;
+  sorting: boolean;
+  onMove: (dir: -1 | 1) => void;
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
   inventoryOn: boolean;
@@ -249,6 +379,14 @@ function ItemRow({
     <li className="py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-3">
+          <OrderButtons
+            label={`item ${item.name}`}
+            canUp={index > 0}
+            canDown={index < total - 1}
+            disabled={sorting}
+            onUp={() => onMove(-1)}
+            onDown={() => onMove(1)}
+          />
           {photo ? (
             <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
           ) : (

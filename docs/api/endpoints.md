@@ -219,10 +219,10 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 | PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, thermalAutoPrintTables?, catalogDark?, representative? }` (desligar a última flag de auto-print tira os pedidos da fila de impressão) |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
-| PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` |
+| PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` — `sortOrder` é a ordem no cardápio público |
 | DELETE | `/v1/owner/catalog/categories/{id}` | 409 se ainda houver itens |
 | POST | `/v1/owner/catalog/items` | ver body abaixo |
-| PATCH | `/v1/owner/catalog/items/{id}` | campos parciais |
+| PATCH | `/v1/owner/catalog/items/{id}` | campos parciais; `sortOrder` é a ordem dentro da categoria |
 | POST | `/v1/owner/catalog/items/{id}/image` | multipart `file` (JPG/PNG/WebP, máx. 2 MB) |
 | DELETE | `/v1/owner/catalog/items/{id}` | remove item |
 | GET | `/v1/uploads/{file}` | Foto enviada (público, nome UUID) |
