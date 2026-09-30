@@ -69,6 +69,7 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sorting, setSorting] = useState(false);
+  const [ordering, setOrdering] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [inventoryOn, setInventoryOn] = useState(false);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
@@ -171,15 +172,24 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
         <button type="submit" className="btn-primary !bg-sage !py-2 text-sm shadow-none">
           Adicionar categoria
         </button>
+        {categories.length > 0 ? (
+          <button
+            type="button"
+            className="btn-secondary !py-2 text-sm"
+            onClick={() => setOrdering((on) => !on)}
+          >
+            {ordering ? "Concluir posições" : "Editar posições"}
+          </button>
+        ) : null}
       </form>
       {error ? <p className="text-sm text-chili">{error}</p> : null}
       {categories.length === 0 ? (
         <p className="text-ink-soft">Nenhuma categoria ainda. Comece por Petiscos, Porções, Bebidas.</p>
-      ) : (
+      ) : ordering ? (
         <p className="text-sm text-ink-soft">
           Use as setas para definir quem aparece primeiro no cardápio público — categorias e itens.
         </p>
-      )}
+      ) : null}
       {categories.map((cat, index) => (
         <CategoryBlock
           key={cat.id}
@@ -187,6 +197,7 @@ export function CatalogEditor({ onCategories }: { onCategories?: (rows: CatalogC
           index={index}
           total={categories.length}
           sorting={sorting}
+          ordering={ordering}
           onMove={(dir) => void moveCategory(index, dir)}
           onMoveItem={(from, dir) => void moveItem(cat.id, from, dir)}
           onChange={load}
@@ -205,6 +216,7 @@ function CategoryBlock({
   index,
   total,
   sorting,
+  ordering,
   onMove,
   onMoveItem,
   onChange,
@@ -217,6 +229,7 @@ function CategoryBlock({
   index: number;
   total: number;
   sorting: boolean;
+  ordering: boolean;
   onMove: (dir: -1 | 1) => void;
   onMoveItem: (from: number, dir: -1 | 1) => void;
   onChange: () => Promise<void>;
@@ -226,19 +239,41 @@ function CategoryBlock({
   recipes: Record<string, RecipeLine[]>;
 }) {
   const [name, setName] = useState(category.name);
+  const [editingName, setEditingName] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  useEffect(() => {
+    setName(category.name);
+  }, [category.name]);
+
   async function saveName() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      onError("Nome da categoria não pode ficar vazio.");
+      setName(category.name);
+      setEditingName(false);
+      return;
+    }
+    if (trimmed === category.name) {
+      setEditingName(false);
+      return;
+    }
     onError(null);
     try {
       await api(`/v1/owner/catalog/categories/${category.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name: trimmed }),
       });
+      setEditingName(false);
       await onChange();
     } catch (err) {
       onError(err instanceof ApiError ? err.message : "Falha ao salvar categoria.");
     }
+  }
+
+  function cancelName() {
+    setName(category.name);
+    setEditingName(false);
   }
 
   async function toggleActive() {
@@ -268,24 +303,63 @@ function CategoryBlock({
   return (
     <section className="surface p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <OrderButtons
-          label={`categoria ${category.name}`}
-          canUp={index > 0}
-          canDown={index < total - 1}
-          disabled={sorting}
-          onUp={() => onMove(-1)}
-          onDown={() => onMove(1)}
-        />
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={saveName}
-          className="font-serif text-2xl bg-transparent outline-none"
-        />
+        {ordering ? (
+          <OrderButtons
+            label={`categoria ${category.name}`}
+            canUp={index > 0}
+            canDown={index < total - 1}
+            disabled={sorting}
+            onUp={() => onMove(-1)}
+            onDown={() => onMove(1)}
+          />
+        ) : null}
+        {editingName ? (
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => void saveName()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void saveName();
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                cancelName();
+              }
+            }}
+            className="field min-w-40 flex-1 font-serif text-2xl"
+            autoFocus
+            aria-label="Nome da categoria"
+          />
+        ) : (
+          <h3 className="min-w-0 flex-1 font-serif text-2xl">{category.name}</h3>
+        )}
         <span className={`text-xs ${category.active ? "text-sage" : "text-ink-soft"}`}>
           {category.active ? "visível" : "oculta"}
         </span>
-        <button type="button" onClick={toggleActive} className="ml-auto text-sm text-ink-soft hover:text-ink">
+        {editingName ? (
+          <button
+            type="button"
+            className="text-sm text-ink-soft hover:text-ink"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={cancelName}
+          >
+            Cancelar
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="ml-auto text-sm text-ink-soft hover:text-ink"
+            onClick={() => {
+              setName(category.name);
+              setEditingName(true);
+            }}
+          >
+            Editar
+          </button>
+        )}
+        <button type="button" onClick={toggleActive} className="text-sm text-ink-soft hover:text-ink">
           {category.active ? "Ocultar" : "Mostrar"}
         </button>
         <button type="button" onClick={remove} className="text-sm text-chili">
@@ -300,6 +374,7 @@ function CategoryBlock({
             index={itemIndex}
             total={category.items.length}
             sorting={sorting}
+            ordering={ordering}
             onMove={(dir) => onMoveItem(itemIndex, dir)}
             onChange={onChange}
             onError={onError}
@@ -333,6 +408,7 @@ function ItemRow({
   index,
   total,
   sorting,
+  ordering,
   onMove,
   onChange,
   onError,
@@ -344,6 +420,7 @@ function ItemRow({
   index: number;
   total: number;
   sorting: boolean;
+  ordering: boolean;
   onMove: (dir: -1 | 1) => void;
   onChange: () => Promise<void>;
   onError: (m: string | null) => void;
@@ -382,14 +459,16 @@ function ItemRow({
     <li className="py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-3">
-          <OrderButtons
-            label={`item ${item.name}`}
-            canUp={index > 0}
-            canDown={index < total - 1}
-            disabled={sorting}
-            onUp={() => onMove(-1)}
-            onDown={() => onMove(1)}
-          />
+          {ordering ? (
+            <OrderButtons
+              label={`item ${item.name}`}
+              canUp={index > 0}
+              canDown={index < total - 1}
+              disabled={sorting}
+              onUp={() => onMove(-1)}
+              onDown={() => onMove(1)}
+            />
+          ) : null}
           {photo ? (
             <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
           ) : (
