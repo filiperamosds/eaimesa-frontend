@@ -19,7 +19,6 @@ import { GuestTabBar } from "./guest-tab-bar";
 import { GuestWaiterCallBar } from "./guest-waiter-call-bar";
 import { ItemModifiersDialog } from "./item-modifiers-dialog";
 import { OrderItemExtras } from "./order-item-extras";
-import { Logo } from "./site-chrome";
 
 type MenuItem = PublicMenu["categories"][number]["items"][number];
 
@@ -225,7 +224,6 @@ export function ModernMenuView({
     <div className="min-h-screen bg-paper">
       <header className="sticky top-0 z-30 border-b border-line/80 bg-card/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
-          <Logo className="shrink-0" href={isTable ? `/${menu.venue.slug}` : `/${menu.venue.slug}/delivery`} />
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Buscar no cardápio</span>
             <svg
