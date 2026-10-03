@@ -7,7 +7,9 @@ Login da **plataforma**, não do dono do estabelecimento. O operador vê vendas 
 - `/admin/login` — e-mail + senha; cookie `eaimesa_platform` (não é o cookie do dono). Sessão válida (`GET /v1/platform/auth/me`) vai direto a `/admin`.
 - `/admin` — dashboard: estabelecimentos por status/plano, MRR estimado, checkouts stub (30 dias)
 - `/admin/bares` — busca, filtro, **expiração** (trial / vigência). Clique no bar abre dialog (plano, datas, pagamentos, **slug**). Suspender / reativar / ajustar datas / importar cardápio / impersonate: [fatia 27](fatia-27-impersonate.md)
-- `/admin/planos` — criar SKU, nome, tipo (`kind`), preço, **promo opcional**, blurb, features, listado; trial e vigência globais
+- `/admin/planos` — lista clicável; **Adicionar** / clique abre dialog (SKU, tipo, preço, promo, módulos). Trial e vigência globais no topo.
+- `/admin/modulos` — lista clicável; **Adicionar** / clique abre o mesmo dialog para cadastrar ou editar.
+- `/admin/templates-qr` — lista clicável; **Adicionar** / clique abre o mesmo dialog (cores, frase, foto; **prévia** ao vivo).
 - `GET /v1/billing/plans` lê o **banco** (landing, cadastro e checkout usam isso). Landing e `/preco` buscam no **cliente** porque o front é export estático. Com promo: `promoPriceCents` + `effectivePriceCents`
 - `POST /v1/platform/plans` cria plano (id = slug do nome; `kind` = o que o estabelecimento pode fazer)
 - Checkout cobra o preço **efetivo** (promo se preenchida e menor que o cheio) e grava `billing_events` (stub `success`; Asaas `pending` até o webhook)
@@ -34,7 +36,9 @@ Mesmo `eaimesa-frontend`. Rotas `/admin/*` (slug `admin` já é reservado).
 | `/admin` | Dashboard |
 | `/admin/bares` | Tenants |
 | `/admin/equipe` | Operadores SaaS ([fatia 17](fatia-17-platform-equipe.md)) |
-| `/admin/planos` | Catálogo |
+| `/admin/planos` | Catálogo (lista + dialog) |
+| `/admin/modulos` | Módulos por plano (lista + dialog) |
+| `/admin/templates-qr` | Templates de QR (lista + dialog) |
 | `/admin/logs` | Logs Laravel ([fatia 13](fatia-13-log-viewer.md)) |
 | `/admin/integracoes` | Webhooks / eventos de integração ([fatia 16](fatia-16-integration-events.md)) |
 

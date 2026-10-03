@@ -8,7 +8,7 @@ Quem já está no console cadastra colegas operadores. **Não** há tela públic
 - `GET /v1/platform/users` — `{ users: [{ id, email, name, active, createdAt }] }`
 - `POST /v1/platform/users` — `{ email, password (mín. 8), name, active? }` → 201 o mesmo shape de um item
 - Cookie `eaimesa_platform` (mesmo layout/proteção das outras `/admin/*`)
-- Formulário **Convidar operador** + lista; toast de sucesso/erro; refetch após criar
+- Lista clicável; **Adicionar** / clique abre dialog (cadastro no **Adicionar**; clique mostra o operador). Refetch após criar
 - Seed bootstrap: `ops@eaimesa.local` / `Teste@123`
 
 ## Não inclui
@@ -34,5 +34,5 @@ Ver [endpoints](../api/endpoints.md). Rate limit do POST: 10/min/IP. E-mail úni
 
 1. Operador entra em `/admin/login` (`ops@eaimesa.local` no seed).
 2. Abre **Equipe**, vê a lista (`GET /v1/platform/users`).
-3. Preenche nome, e-mail e senha → `POST /v1/platform/users` com `active: true`.
-4. Toast de sucesso; a lista atualiza. O colega entra em `/admin/login` com o e-mail novo.
+3. **Adicionar** → nome, e-mail e senha no dialog → `POST /v1/platform/users` com `active: true`.
+4. Lista atualiza. O colega entra em `/admin/login` com o e-mail novo.

@@ -7,10 +7,9 @@ import {
   type PlatformUser,
 } from "@eaimesa/shared";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
-
-type ToastKind = "ok" | "err";
+import { AdminNightDialog } from "./admin-night-dialog";
 
 function formatCreated(iso: string | null): string {
   if (!iso) return "—";
@@ -19,7 +18,7 @@ function formatCreated(iso: string | null): string {
   return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
-function toastMessage(err: unknown): string {
+function errorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.code === ERROR_CODES.EMAIL_TAKEN) {
       return err.message || "Este e-mail já é operador da plataforma.";
@@ -32,51 +31,20 @@ function toastMessage(err: unknown): string {
   return "Não foi possível concluir.";
 }
 
-function AdminToast({
-  kind,
-  message,
-  onDismiss,
-}: {
-  kind: ToastKind;
-  message: string;
-  onDismiss: () => void;
-}) {
-  useEffect(() => {
-    const t = window.setTimeout(onDismiss, 4500);
-    return () => window.clearTimeout(t);
-  }, [message, onDismiss]);
-
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className={`fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl px-4 py-3 text-sm shadow-lg ${
-        kind === "ok" ? "bg-sage text-white" : "bg-chili text-white"
-      }`}
-    >
-      {message}
-    </div>
-  );
-}
-
 export function AdminEquipe() {
   const router = useRouter();
   const [users, setUsers] = useState<PlatformUser[] | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null);
+  const [editing, setEditing] = useState<PlatformUser | "new" | null>(null);
 
-  const dismissToast = useCallback(() => setToast(null), []);
-
-  function handleError(err: unknown) {
+  function handleAuth(err: unknown) {
     if (err instanceof ApiError && err.status === 401) {
       router.replace("/admin/login");
-      return;
+      return true;
     }
-    setToast({ kind: "err", message: toastMessage(err) });
+    return false;
   }
 
   async function load() {
@@ -85,28 +53,115 @@ export function AdminEquipe() {
   }
 
   useEffect(() => {
-    let cancelled = false;
-    api("/v1/platform/users")
-      .then((raw) => {
-        if (cancelled) return;
-        setUsers(platformUserListSchema.parse(raw).users);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        if (err instanceof ApiError && err.status === 401) {
-          router.replace("/admin/login");
-          return;
-        }
-        setToast({ kind: "err", message: toastMessage(err) });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    load().catch((err) => {
+      if (handleAuth(err)) return;
+      setError(errorMessage(err));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setToast(null);
+  if (!users) return <p className="text-white/55">{error ?? "Carregando…"}</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Console</p>
+          <h1 className="mt-2 font-serif text-3xl">Equipe</h1>
+        </div>
+        <button
+          type="button"
+          className="btn-secondary !bg-white/10 !text-white !py-2 text-sm"
+          onClick={() => {
+            setOk(null);
+            setEditing("new");
+          }}
+        >
+          Adicionar
+        </button>
+      </div>
+      <p className="mt-2 max-w-xl text-sm text-white/55">
+        Clique no operador para ver o cadastro. Só quem já está no console cadastra colegas — não existe
+        cadastro público de admin.
+      </p>
+      {error ? <p className="text-sm text-chili">{error}</p> : null}
+      {ok ? <p className="text-sm text-sage-soft">{ok}</p> : null}
+
+      <ul className="divide-y divide-white/10 rounded-2xl border border-white/10">
+        {users.map((u) => (
+          <li key={u.id}>
+            <button
+              type="button"
+              onClick={() => {
+                setOk(null);
+                setEditing(u);
+              }}
+              className="flex w-full flex-col gap-1 px-4 py-4 text-left transition-colors hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="font-medium">{u.name}</p>
+                <p className="mt-1 truncate text-sm text-white/55">
+                  {u.email} · {formatCreated(u.createdAt)}
+                </p>
+              </div>
+              <span
+                className={`mt-1 inline-block w-fit rounded-full border px-2 py-0.5 text-[11px] uppercase tracking-wider sm:mt-0 ${
+                  u.active ? "border-white/15 text-white/70" : "border-amber/40 text-amber"
+                }`}
+              >
+                {u.active ? "Ativo" : "Inativo"}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {users.length === 0 ? <p className="text-sm text-white/45">Nenhum operador ainda.</p> : null}
+
+      {editing ? (
+        <EquipeDialog
+          user={editing === "new" ? null : editing}
+          pending={pending}
+          onClose={() => setEditing(null)}
+          onSaved={async (msg) => {
+            setOk(msg);
+            setError(null);
+            await load();
+            setEditing(null);
+          }}
+          onAuthError={(err) => {
+            if (!handleAuth(err)) setError(errorMessage(err));
+          }}
+          setPending={setPending}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function EquipeDialog({
+  user,
+  pending,
+  onClose,
+  onSaved,
+  onAuthError,
+  setPending,
+}: {
+  user: PlatformUser | null;
+  pending: boolean;
+  onClose: () => void;
+  onSaved: (msg: string) => Promise<void>;
+  onAuthError: (err: unknown) => void;
+  setPending: (v: boolean) => void;
+}) {
+  const creating = user === null;
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  async function save() {
+    setLocalError(null);
     const parsed = createPlatformUserSchema.safeParse({
       name,
       email,
@@ -115,7 +170,7 @@ export function AdminEquipe() {
       active: true,
     });
     if (!parsed.success) {
-      setToast({ kind: "err", message: parsed.error.issues[0]?.message ?? "Confira os campos." });
+      setLocalError(parsed.error.issues[0]?.message ?? "Confira os campos.");
       return;
     }
     setPending(true);
@@ -124,136 +179,112 @@ export function AdminEquipe() {
         method: "POST",
         body: JSON.stringify(parsed.data),
       });
-      setName("");
-      setEmail("");
-      setPassword("");
-      setPasswordConfirmation("");
-      setToast({ kind: "ok", message: "Operador cadastrado. Ele já pode entrar em /admin/login." });
-      await load();
+      await onSaved("Operador cadastrado. Ele já pode entrar em /admin/login.");
     } catch (err) {
-      handleError(err);
+      if (err instanceof ApiError && err.status === 401) {
+        onAuthError(err);
+        return;
+      }
+      setLocalError(errorMessage(err));
     } finally {
       setPending(false);
     }
   }
 
-  if (!users) {
-    return <p className="text-white/55">{toast?.kind === "err" ? toast.message : "Carregando…"}</p>;
-  }
-
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-amber">Console</p>
-        <h1 className="mt-2 font-serif text-3xl">Equipe</h1>
-        <p className="mt-2 max-w-xl text-sm text-white/55">
-          Operadores da plataforma EaiMesa. Só quem já está logado no console cadastra colegas — não
-          existe cadastro público de admin.
+    <AdminNightDialog
+      kicker="Operador"
+      title={creating ? "Novo operador" : user.name}
+      pending={pending}
+      onClose={onClose}
+    >
+      {creating ? (
+        <p className="mt-1 text-sm text-white/45">
+          Nome, e-mail e senha (mínimo 8 caracteres, com confirmação). Entra ativo.
         </p>
+      ) : (
+        <p className="mt-1 text-sm text-white/45">Operador do console. Nome e e-mail não mudam por aqui.</p>
+      )}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <label className="text-sm">
+          <span className="mb-1 block text-white/60">Nome</span>
+          <input
+            className="field-night"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            required={creating}
+            minLength={2}
+            maxLength={80}
+            disabled={!creating}
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-white/60">E-mail</span>
+          <input
+            className="field-night"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
+            required={creating}
+            maxLength={190}
+            disabled={!creating}
+          />
+        </label>
       </div>
 
-      <form onSubmit={onSubmit} className="rounded-2xl border border-dashed border-amber/40 bg-white/5 p-5">
-        <p className="font-medium">Convidar operador</p>
-        <p className="mt-1 text-sm text-white/45">Nome, e-mail e senha (mínimo 8 caracteres, com confirmação). Entra ativo.</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="text-sm">
-            <span className="mb-1 block text-white/60">Nome</span>
+      {creating ? (
+        <>
+          <label className="mt-3 block text-sm">
+            <span className="mb-1 block text-white/60">Senha</span>
             <input
               className="field-night"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoComplete="name"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
               required
-              minLength={2}
-              maxLength={80}
+              minLength={8}
+              maxLength={128}
             />
           </label>
-          <label className="text-sm">
-            <span className="mb-1 block text-white/60">E-mail</span>
+          <label className="mt-3 block text-sm">
+            <span className="mb-1 block text-white/60">Confirmar senha</span>
             <input
               className="field-night"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="off"
+              type="password"
+              value={passwordConfirmation}
+              onChange={(e) => setPasswordConfirmation(e.target.value)}
+              autoComplete="new-password"
               required
-              maxLength={190}
+              minLength={8}
+              maxLength={128}
             />
           </label>
-        </div>
-        <label className="mt-3 block text-sm sm:max-w-sm">
-          <span className="mb-1 block text-white/60">Senha</span>
-          <input
-            className="field-night"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            required
-            minLength={8}
-            maxLength={128}
-          />
-        </label>
-        <label className="mt-3 block text-sm sm:max-w-sm">
-          <span className="mb-1 block text-white/60">Confirmar senha</span>
-          <input
-            className="field-night"
-            type="password"
-            value={passwordConfirmation}
-            onChange={(e) => setPasswordConfirmation(e.target.value)}
-            autoComplete="new-password"
-            required
-            minLength={8}
-            maxLength={128}
-          />
-        </label>
-        <button type="submit" disabled={pending} className="btn-primary mt-4 !py-2 text-sm">
-          {pending ? "Cadastrando…" : "Cadastrar operador"}
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-white/55">Criado em {formatCreated(user.createdAt)}</p>
+      )}
+
+      {localError ? <p className="mt-3 text-sm text-chili">{localError}</p> : null}
+
+      <div className="mt-6 flex flex-wrap justify-end gap-2">
+        <button type="button" disabled={pending} onClick={onClose} className="btn-ghost text-white/80">
+          {creating ? "Cancelar" : "Fechar"}
         </button>
-      </form>
-
-      <div className="overflow-x-auto rounded-2xl border border-white/10">
-        <table className="w-full min-w-[36rem] text-left text-sm">
-          <thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/40">
-            <tr>
-              <th className="px-4 py-3 font-medium">Nome</th>
-              <th className="px-4 py-3 font-medium">E-mail</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Criado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-white/45">
-                  Nenhum operador cadastrado.
-                </td>
-              </tr>
-            ) : (
-              users.map((u) => (
-                <tr key={u.id} className="border-b border-white/5 last:border-0">
-                  <td className="px-4 py-3 font-medium">{u.name}</td>
-                  <td className="px-4 py-3 text-white/70">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={
-                        u.active
-                          ? "rounded-full bg-sage/20 px-2 py-0.5 text-xs text-sage-soft"
-                          : "rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/45"
-                      }
-                    >
-                      {u.active ? "Ativo" : "Inativo"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums text-white/55">{formatCreated(u.createdAt)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        {creating ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => void save()}
+            className="btn-secondary !bg-white/10 !text-white !py-2 text-sm"
+          >
+            {pending ? "Cadastrando…" : "Criar"}
+          </button>
+        ) : null}
       </div>
-
-      {toast ? <AdminToast kind={toast.kind} message={toast.message} onDismiss={dismissToast} /> : null}
-    </div>
+    </AdminNightDialog>
   );
 }

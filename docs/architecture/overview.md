@@ -77,7 +77,7 @@ Não existem `apps/guest` nem `apps/staff`.
 | `/garcom` | Mesas do garçom |
 | `/garcom/pedidos` | Kanban do garçom |
 | `/admin/login`, `/admin` | Console da plataforma (operador) |
-| `/admin/bares`, `/admin/equipe`, `/admin/planos`, `/admin/logs`, `/admin/integracoes` | Tenants (dialog no clique: plano, pagamentos, datas, impersonate), operadores SaaS, catálogo, logs Laravel e webhooks |
+| `/admin/bares`, `/admin/equipe`, `/admin/planos`, `/admin/modulos`, `/admin/templates-qr`, `/admin/logs`, `/admin/integracoes` | Tenants (dialog no clique), operadores (lista + dialog), catálogo (lista + dialog), templates QR (lista + dialog), logs Laravel e webhooks |
 
 ## Integrações
 
