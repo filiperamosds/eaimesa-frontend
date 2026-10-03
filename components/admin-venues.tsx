@@ -1,28 +1,14 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import Link from "next/link";
 import { planLabel, statusLabel } from "../lib/admin-copy";
+import { AdminVenueDialog, type VenueRow } from "./admin-venue-dialog";
 import {
   datetimeLocalToIsoUtc,
   isoToDatetimeLocal,
   venueExpiryCopy,
 } from "../lib/admin-venue-expiry";
 import { api, ApiError } from "../lib/api";
-
-type VenueRow = {
-  id: string;
-  name: string;
-  slug: string;
-  plan: string;
-  planName: string;
-  subscriptionStatus: string;
-  acceptsOrders?: boolean;
-  ownerEmail: string;
-  trialEndsAt: string | null;
-  currentPeriodEndsAt: string | null;
-  createdAt: string;
-};
 
 type CatalogPlan = { id: string; name: string };
 
@@ -108,7 +94,7 @@ function AdminVenueExpiryDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -175,9 +161,10 @@ export function AdminVenues() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [selected, setSelected] = useState<VenueRow | null>(null);
   const [editing, setEditing] = useState<VenueRow | null>(null);
 
-  async function load() {
+  async function load(): Promise<VenueRow[]> {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (plan) params.set("plan", plan);
@@ -189,6 +176,7 @@ export function AdminVenues() {
     ]);
     setRows(data.venues);
     setPlans(catalog.plans);
+    return data.venues;
   }
 
   useEffect(() => {
@@ -202,7 +190,8 @@ export function AdminVenues() {
     setOk(null);
     try {
       await api(`/v1/platform/venues/${id}/${action}`, { method: "POST" });
-      await load();
+      const venues = await load();
+      setSelected((cur) => (cur ? (venues.find((row) => row.id === cur.id) ?? cur) : cur));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível atualizar.");
     } finally {
@@ -212,6 +201,7 @@ export function AdminVenues() {
 
   function applyUpdated(updated: VenueRow) {
     setRows((cur) => cur.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)));
+    setSelected((cur) => (cur?.id === updated.id ? { ...cur, ...updated } : cur));
     setEditing(null);
     setOk("Expiração atualizada.");
     setError(null);
@@ -258,79 +248,67 @@ export function AdminVenues() {
       </form>
       {error ? <p className="text-sm text-chili">{error}</p> : null}
       {ok ? <p className="text-sm text-sage-soft">{ok}</p> : null}
+      <p className="text-sm text-white/45">Clique no estabelecimento para ver plano, datas, pagamentos e ações.</p>
       <ul className="divide-y divide-white/10 rounded-2xl border border-white/10">
         {rows.map((v) => {
           const expiry = venueExpiryCopy(v);
           return (
-            <li
-              key={v.id}
-              className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">
-                  {v.name} <span className="text-white/40">/{v.slug}</span>
-                </p>
-                <p className="mt-1 text-sm text-white/55">
-                  {planLabel(v.plan, v.planName)} · {statusLabel(v.subscriptionStatus)} · {v.ownerEmail}
-                </p>
-              </div>
-              <div className="min-w-0 sm:w-44 sm:shrink-0">
-                <p className="text-[11px] uppercase tracking-wider text-white/35 sm:hidden">Expiração</p>
-                <p
-                  className={`truncate text-sm ${expiry.expired ? "text-chili" : "text-white/80"}`}
-                  title={expiry.title || expiry.text}
-                >
-                  {expiry.text}
-                </p>
-                {v.subscriptionStatus === "suspended" ? (
-                  <span className="mt-1 inline-block rounded-full border border-amber/40 px-2 py-0.5 text-[11px] uppercase tracking-wider text-amber">
-                    Suspenso
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                <Link
-                  href={`/admin/cardapio?venue=${encodeURIComponent(v.id)}`}
-                  className="btn-ghost text-sm text-white/80"
-                >
-                  Importar cardápio
-                </Link>
-                <button
-                  type="button"
-                  disabled={pending === v.id}
-                  onClick={() => {
-                    setOk(null);
-                    setEditing(v);
-                  }}
-                  className="btn-ghost text-sm text-white/80"
-                >
-                  Ajustar expiração
-                </button>
-                {v.subscriptionStatus === "suspended" ? (
-                  <button
-                    type="button"
-                    disabled={pending === v.id}
-                    onClick={() => void act(v.id, "unsuspend")}
-                    className="btn-secondary !bg-white/10 !text-white !py-2 text-sm"
+            <li key={v.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  setOk(null);
+                  setSelected(v);
+                }}
+                className="flex w-full flex-col gap-3 px-4 py-4 text-left transition-colors hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">
+                    {v.name} <span className="text-white/40">/{v.slug}</span>
+                  </p>
+                  <p className="mt-1 text-sm text-white/55">
+                    {planLabel(v.plan, v.planName)} · {statusLabel(v.subscriptionStatus)} · {v.ownerEmail}
+                  </p>
+                </div>
+                <div className="min-w-0 sm:w-44 sm:shrink-0">
+                  <p className="text-[11px] uppercase tracking-wider text-white/35 sm:hidden">Expiração</p>
+                  <p
+                    className={`truncate text-sm ${expiry.expired ? "text-chili" : "text-white/80"}`}
+                    title={expiry.title || expiry.text}
                   >
-                    Reativar
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={pending === v.id}
-                    onClick={() => void act(v.id, "suspend")}
-                    className="btn-ghost text-sm text-amber"
-                  >
-                    Suspender
-                  </button>
-                )}
-              </div>
+                    {expiry.text}
+                  </p>
+                  {v.subscriptionStatus === "suspended" ? (
+                    <span className="mt-1 inline-block rounded-full border border-amber/40 px-2 py-0.5 text-[11px] uppercase tracking-wider text-amber">
+                      Suspenso
+                    </span>
+                  ) : null}
+                </div>
+              </button>
             </li>
           );
         })}
       </ul>
       {rows.length === 0 ? <p className="text-sm text-white/45">Nenhum estabelecimento com esse filtro.</p> : null}
+      {selected ? (
+        <AdminVenueDialog
+          venue={selected}
+          pending={pending === selected.id}
+          blockDismiss={Boolean(editing)}
+          onClose={() => setSelected(null)}
+          onExpiry={(row) => {
+            setOk(null);
+            setEditing(row);
+          }}
+          onSuspend={(action) => void act(selected.id, action)}
+          onUpdated={(row) => {
+            setRows((cur) => cur.map((item) => (item.id === row.id ? { ...item, ...row } : item)));
+            setSelected(row);
+            setOk("Endereço do cardápio atualizado.");
+            setError(null);
+          }}
+        />
+      ) : null}
       {editing ? (
         <AdminVenueExpiryDialog venue={editing} onClose={() => setEditing(null)} onSaved={applyUpdated} />
       ) : null}

@@ -12,10 +12,12 @@ Login do dono e da equipe.
 - `email_verified_at` — null até o dono confirmar o código (fatia 18)
 - `password_set_at` — null enquanto o convite de staff estiver pendente
 
+Cookie `eaimesa_owner` (JWT): `sub`, `venueId`, `role`, `exp`. Fatia 27: claim opcional `impersonatorId` (`platform_users.id`). Sem tabela. TTL `IMPERSONATE_JWT_TTL_HOURS` (default 1) quando o claim existe.
+
 ### Venue
 
 - `id`, `owner_account_id` → Account
-- `name`, `slug` UNIQUE, `public_id` UNIQUE
+- `name`, `slug` UNIQUE, `public_id` UNIQUE — slug definido no cadastro; dono não altera (`SLUG_LOCKED`); console pode (`PATCH /v1/platform/venues/{id}`)
 - `plan`: id do catálogo (`cardapio`, `auto_atendimento` ou SKU criado no console). Sem CHECK nos dois ids seed.
 - `planKind` na API: `cardapio` | `auto_atendimento` (o que o estabelecimento pode fazer)
 - `subscription_status`: `trial` | `active` | `past_due` | `suspended`

@@ -38,8 +38,9 @@ Um único frontend (repo **eaimesa-frontend**) concentra marketing, autenticaç�
 
 ## Slug
 
-- O front gera o slug a partir do **nome** (`Seu Estabelecimento` → `seu-estabelecimento`). Campo URL fica desabilitado no cadastro e em Configurações → Estabelecimento.
-- Se o caminho já existir (ou for palavra reservada), acrescenta `-2`, `-3`… (`seu-estabelecimento-2`). Checagem: `GET /v1/public/venues/{slug}`.
+- O front gera o slug a partir do **nome** no **cadastro** (`Seu Estabelecimento` → `seu-estabelecimento`). Campo URL fica desabilitado no cadastro.
+- Depois do cadastro o dono **não** altera o slug. Pode mudar o **nome** em Configurações → Estabelecimento. Troca de endereço só no console (`PATCH /v1/platform/venues/{id}` `{ slug }`).
+- Se o caminho já existir no cadastro (ou for palavra reservada), acrescenta `-2`, `-3`… Checagem: `GET /v1/public/venues/{slug}`.
 - Formato: kebab-case, 3–48 caracteres (`seu-estabelecimento`).
 - Palavras reservadas (`login`, `painel`, `cadastro`, …) não podem ser o slug final.
 - `public_id` opaco continua no banco (estável se o slug mudar); a URL pública da fatia 1 é o **slug**.

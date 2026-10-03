@@ -6,7 +6,7 @@ Login da **plataforma**, não do dono do estabelecimento. O operador vê vendas 
 
 - `/admin/login` — e-mail + senha; cookie `eaimesa_platform` (não é o cookie do dono). Sessão válida (`GET /v1/platform/auth/me`) vai direto a `/admin`.
 - `/admin` — dashboard: estabelecimentos por status/plano, MRR estimado, checkouts stub (30 dias)
-- `/admin/bares` — busca, filtro, **expiração** (trial / vigência), suspender / reativar, **ajustar datas** (`PATCH /v1/platform/venues/{id}`)
+- `/admin/bares` — busca, filtro, **expiração** (trial / vigência). Clique no bar abre dialog (plano, datas, pagamentos, **slug**). Suspender / reativar / ajustar datas / importar cardápio / impersonate: [fatia 27](fatia-27-impersonate.md)
 - `/admin/planos` — criar SKU, nome, tipo (`kind`), preço, **promo opcional**, blurb, features, listado; trial e vigência globais
 - `GET /v1/billing/plans` lê o **banco** (landing, cadastro e checkout usam isso). Landing e `/preco` buscam no **cliente** porque o front é export estático. Com promo: `promoPriceCents` + `effectivePriceCents`
 - `POST /v1/platform/plans` cria plano (id = slug do nome; `kind` = o que o estabelecimento pode fazer)
@@ -17,7 +17,7 @@ Login da **plataforma**, não do dono do estabelecimento. O operador vê vendas 
 
 - Gateway real nesta fatia (Asaas: [fatia 12](fatia-12-pagamento-asaas.md))
 - SSO / 2FA
-- Impersonate o dono
+- Impersonate o dono (esta fatia **não** inclui; [fatia 27](fatia-27-impersonate.md))
 - Editar cardápio/mesas do estabelecimento
 - KYC, nota, reembolso
 - DELETE de plano (unlist esconde da vitrine)
@@ -45,7 +45,7 @@ Mesmo `eaimesa-frontend`. Rotas `/admin/*` (slug `admin` já é reservado).
 3. Dono paga no painel → evento entra em vendas; MRR sobe se `active`.
 4. Operador cria um plano ou preenche promo → landing/`/preco`/cadastro/checkout mostram **de R$ X por R$ Y** quando a promo está preenchida.
 5. Suspender um estabelecimento → `subscription_status=suspended`; cardápio público continua leitura.
-6. Ajustar expiração no modal: `trialEndsAt` e/ou `currentPeriodEndsAt` em ISO8601 UTC. Sem `subscriptionStatus` no body a API recalcula (`active` / `trial` / `past_due`). Estabelecimento `suspended` permanece bloqueado. **Não** altera cobrança no Asaas.
+6. Ajustar expiração no modal: `trialEndsAt` e/ou `currentPeriodEndsAt` em ISO8601 UTC. Sem `subscriptionStatus` no body a API recalcula (`active` / `trial` / `past_due`). Estabelecimento `suspended` permanece bloqueado. **Não** altera cobrança no Asaas. O modal de datas abre a partir do dialog do bar ([fatia 27](fatia-27-impersonate.md)).
 7. Cadastrar colega em `/admin/equipe` (`POST /v1/platform/users`). Sem tela pública de cadastro admin.
 
 Ver [ADR-013](../decisions/ADR-013-console-saas.md) e [ADR-014](../decisions/ADR-014-plan-kind-promo.md).

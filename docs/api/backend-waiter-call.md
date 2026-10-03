@@ -13,7 +13,7 @@ Não inventar paths diferentes destes no front.
 | `waiter_call_enabled` / `waiterCallEnabled` | bool | `false` |
 | `waiter_call_ttl_minutes` / `waiterCallTtlMinutes` | int 15–480 | `120` |
 
-`PATCH /v1/owner/venue` aceita esses campos (além de name/slug/representative/…).
+`PATCH /v1/owner/venue` aceita esses campos (além de name/representative/…). `slug` não é alterável pelo dono.
 
 ### VenueTable
 

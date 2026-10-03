@@ -1,9 +1,8 @@
 "use client";
 
-import { ERROR_CODES, planAllowsService, slugifyFromName, withSlugSuffix } from "@eaimesa/shared";
+import { planAllowsService } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
-import { useMenuSlugFromName } from "../lib/menu-slug";
 import { configureThermalPrinter, connectThermalPrinter, hasGrantedThermalPrinter } from "../lib/print-escpos";
 import { setThermalAutoPrintEnabled } from "../lib/thermal-print-pref";
 import type { CatalogCategory, Session, Venue } from "../lib/types";
@@ -13,7 +12,6 @@ export function ConfigBarPanels() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [service, setService] = useState(false);
   const [name, setName] = useState("");
-  const [nameTouched, setNameTouched] = useState(false);
   const [staffCanCloseTabs, setStaffCanCloseTabs] = useState(true);
   const [requireShiftOnOpenCash, setRequireShiftOnOpenCash] = useState(false);
   const [thermalPrint, setThermalPrint] = useState(false);
@@ -26,8 +24,6 @@ export function ConfigBarPanels() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const derivedSlug = useMenuSlugFromName(name, venue?.slug ?? null);
-  const slug = venue && !nameTouched ? venue.slug : derivedSlug;
 
   useEffect(() => {
     void Promise.all([
@@ -80,39 +76,24 @@ export function ConfigBarPanels() {
         }
       }
 
-      let nextSlug = slug;
       let v: Venue | null = null;
-      for (let attempt = 0; attempt < 8; attempt += 1) {
-        try {
-          const body: {
-            name: string;
-            slug: string;
-            staffCanCloseTabs?: boolean;
-            requireShiftOnOpenCash?: boolean;
-            thermalAutoPrint?: boolean;
-            thermalAutoPrintTables?: boolean;
-          } = {
-            name,
-            slug: nextSlug,
-          };
-          if (service) {
-            body.staffCanCloseTabs = staffCanCloseTabs;
-            body.requireShiftOnOpenCash = requireShiftOnOpenCash;
-            body.thermalAutoPrint = thermalPrint;
-            body.thermalAutoPrintTables = thermalPrintTables;
-          }
-          v = await api<Venue>("/v1/owner/venue", {
-            method: "PATCH",
-            body: JSON.stringify(body),
-          });
-          break;
-        } catch (err) {
-          const taken = err instanceof ApiError && err.code === ERROR_CODES.SLUG_TAKEN;
-          if (!taken || attempt === 7) throw err;
-          nextSlug = withSlugSuffix(slugifyFromName(name), attempt + 2);
-        }
+      const body: {
+        name: string;
+        staffCanCloseTabs?: boolean;
+        requireShiftOnOpenCash?: boolean;
+        thermalAutoPrint?: boolean;
+        thermalAutoPrintTables?: boolean;
+      } = { name };
+      if (service) {
+        body.staffCanCloseTabs = staffCanCloseTabs;
+        body.requireShiftOnOpenCash = requireShiftOnOpenCash;
+        body.thermalAutoPrint = thermalPrint;
+        body.thermalAutoPrintTables = thermalPrintTables;
       }
-      if (!v) throw new Error("Não foi possível salvar.");
+      v = await api<Venue>("/v1/owner/venue", {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
       if (service) {
         const saved = await api<{ groups: NonNullable<Venue["printGroups"]> }>("/v1/owner/print-groups", {
           method: "PUT",
@@ -134,7 +115,6 @@ export function ConfigBarPanels() {
       }
       setVenue(v);
       setName(v.name);
-      setNameTouched(false);
       if (service) {
         setStaffCanCloseTabs(v.staffCanCloseTabs !== false);
         setRequireShiftOnOpenCash(v.requireShiftOnOpenCash === true);
@@ -179,19 +159,16 @@ export function ConfigBarPanels() {
           <span className="mb-1 block font-medium">Nome</span>
           <input
             value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setNameTouched(true);
-            }}
+            onChange={(e) => setName(e.target.value)}
             className="field"
             required
           />
         </label>
         <label className="block text-sm">
           <span className="mb-1 block font-medium">URL do cardápio</span>
-          <input value={slug} className="field" disabled readOnly />
+          <input value={venue.slug} className="field" disabled readOnly />
           <p className="mt-1 text-xs text-ink-soft">
-            Cardápio em /{slug}. Se o caminho já existir, o sistema acrescenta um número.
+            Cardápio em /{venue.slug}. Definido no cadastro; só o suporte altera o endereço.
           </p>
         </label>
 

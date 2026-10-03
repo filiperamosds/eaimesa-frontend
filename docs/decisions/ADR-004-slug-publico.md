@@ -10,7 +10,7 @@ A visão inicial usava `venue_public_id` opaco na URL (`/d1de031d33`). Para o ca
 ## Decisão
 
 - URL pública do cardápio: `/{slug}` (ex. `/seu-estabelecimento`)
-- `slug` é único, **gerado a partir do nome** (`Seu Estabelecimento` → `seu-estabelecimento`; ocupado → `seu-estabelecimento-2`), kebab-case `[a-z0-9]+(-[a-z0-9]+)*`, 3–48 chars. A UI não deixa editar.
+- `slug` é único, **gerado a partir do nome no cadastro**. Depois disso o dono **não** altera (403 `SLUG_LOCKED`). Troca só no console (`PATCH /v1/platform/venues/{id}`).
 - `public_id` opaco **permanece** na tabela `venues` como identificador estável (claims/QR futuros podem usá-lo se o slug mudar)
 - Sem domínio customizado no MVP (`bar.com.br` próprio continua fora de escopo)
 
@@ -25,5 +25,5 @@ A visão inicial usava `venue_public_id` opaco na URL (`/d1de031d33`). Para o ca
 ## Consequências
 
 - Rotas de produto são slugs reservados (não podem ser nome de bar).
-- Troca de slug: URL antiga 404 até existir redirect (não na fatia 1).
+- Troca de slug: só operador em `/admin/bares`. URL antiga 404 até existir redirect.
 - Cardápio em `/{slug}` continua **não autorizando pedido**.

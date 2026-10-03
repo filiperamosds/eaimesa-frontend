@@ -79,6 +79,16 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
   }, [router, path]);
 
   async function logout() {
+    if (me?.impersonation) {
+      try {
+        await api("/v1/platform/impersonate/stop", { method: "POST" });
+      } catch {
+        await api("/v1/auth/logout", { method: "POST" });
+      }
+      router.push("/admin/bares");
+      router.refresh();
+      return;
+    }
     await api("/v1/auth/logout", { method: "POST" });
     router.push("/");
     router.refresh();
@@ -93,7 +103,7 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
   }
 
   const panel = isPanelMember(me);
-  const promptPayment = !panel && shouldPromptSubscriptionPayment(me.venue);
+  const promptPayment = !panel && !me.impersonation && shouldPromptSubscriptionPayment(me.venue);
   const onPagamento =
     path.startsWith("/painel/pagamento") ||
     path.startsWith("/painel/bar/plano") ||
@@ -136,7 +146,12 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
                   ? [{ type: "button", label: "Sair", onClick: () => void logout(), danger: true }]
                   : [
                       { type: "link", href: "/painel/configuracoes", label: "Configurações" },
-                      { type: "button", label: "Sair", onClick: () => void logout(), danger: true },
+                      {
+                        type: "button",
+                        label: me.impersonation ? "Sair da inspeção" : "Sair",
+                        onClick: () => void logout(),
+                        danger: true,
+                      },
                     ]
               }
             />
@@ -148,6 +163,22 @@ export function PainelShell({ children }: { children: React.ReactNode }) {
           </div>
         ) : null}
       </header>
+      {me.impersonation ? (
+        <div className="border-b border-amber/30 bg-amber/15">
+          <div className="mx-auto flex max-w-[88rem] flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-ink">Inspeção de suporte</p>
+              <p className="mt-0.5 text-sm text-ink-soft">
+                {me.impersonation.venueName} · {me.impersonation.byEmail}. Checkout, cartões e convite de equipe
+                estão bloqueados. A sessão dura 1 hora.
+              </p>
+            </div>
+            <button type="button" onClick={() => void logout()} className="btn-secondary !py-2 text-sm">
+              Sair da inspeção
+            </button>
+          </div>
+        </div>
+      ) : null}
       {prompt && !onPagamento ? (
         <div className="border-b border-chili/25 bg-chili/5">
           <div className="mx-auto flex max-w-[88rem] flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">

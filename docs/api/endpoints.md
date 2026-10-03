@@ -15,7 +15,7 @@ Formato: JSON. Erros:
 
 CORS: origin explícita do único front (`APP_URL`), `credentials: true`.
 
-## Implementado (fatias 1–26)
+## Implementado (fatias 1–27)
 
 ### Saúde
 
@@ -38,7 +38,7 @@ Cookie: `eaimesa_owner` (httpOnly, SameSite=Lax, Path=/). JWT inclui `role: owne
 | POST | `/v1/auth/staff-invite/{token}` | — | `{ password, passwordConfirmation }` → Set-Cookie staff |
 | POST | `/v1/auth/login` | — | E-mail/senha. `EMAIL_NOT_VERIFIED` / `INVITE_PENDING` / `STAFF_INACTIVE` |
 | POST | `/v1/auth/logout` | Cookie | Clear-Cookie |
-| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue; `member` se staff |
+| GET | `/v1/auth/me` | Cookie | `role` (`owner` \| `staff`), account, venue; `member` se staff; `impersonation` se inspeção (fatia 27) |
 
 #### POST /v1/auth/register (body)
 
@@ -216,7 +216,7 @@ Auth: cookie `eaimesa_owner`. Todas as queries filtram pelo `venue_id` da sessã
 | Método | Path | Descrição |
 |--------|------|-----------|
 | GET | `/v1/owner/venue` | Venue serializado (`staffCanCloseTabs`, `requireShiftOnOpenCash`, `thermalAutoPrint`, `thermalAutoPrintTables`, `catalogDark`, `printGroups`, …) |
-| PATCH | `/v1/owner/venue` | `{ name?, slug?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, thermalAutoPrintTables?, catalogDark?, representative? }` (desligar a última flag de auto-print tira os pedidos da fila de impressão) |
+| PATCH | `/v1/owner/venue` | `{ name?, staffCanCloseTabs?, requireShiftOnOpenCash?, thermalAutoPrint?, thermalAutoPrintTables?, catalogDark?, representative? }` (desligar a última flag de auto-print tira os pedidos da fila de impressão). `slug` diferente do atual → 403 `SLUG_LOCKED` |
 | GET | `/v1/owner/catalog` | Categorias + itens (inclui inativos) |
 | POST | `/v1/owner/catalog/categories` | `{ name, sortOrder? }` |
 | PATCH | `/v1/owner/catalog/categories/{id}` | `{ name?, sortOrder?, active? }` — `sortOrder` é a ordem no cardápio público |
@@ -620,9 +620,12 @@ Cookie: `eaimesa_platform`. Não autoriza `/v1/owner/*`.
 | POST | `/v1/platform/users` | Platform | Cadastra operador (`email`, `password` min 8, `name`; `active?`) |
 | GET | `/v1/platform/dashboard` | Platform | KPIs + checkouts recentes |
 | GET | `/v1/platform/venues` | Platform | Lista tenants (`q`, `plan`, `status`) |
-| PATCH | `/v1/platform/venues/{id}` | Platform | Ajuste admin de `trialEndsAt` / `currentPeriodEndsAt` / `subscriptionStatus` |
+| GET | `/v1/platform/venues/{id}` | Platform | Detalhe + últimos 12 pagamentos (`billing_events`) |
+| PATCH | `/v1/platform/venues/{id}` | Platform | Ajuste admin: `trialEndsAt` / `currentPeriodEndsAt` / `subscriptionStatus` / `slug` |
 | POST | `/v1/platform/venues/{id}/suspend` | Platform | `suspended` |
 | POST | `/v1/platform/venues/{id}/unsuspend` | Platform | Volta a `trial`/`active`/`past_due` |
+| POST | `/v1/platform/venues/{id}/impersonate` | Platform | Set-Cookie owner temporário (1h, `impersonatorId`) |
+| POST | `/v1/platform/impersonate/stop` | Platform | Clear-Cookie owner; `{ redirectPath: "/admin/bares" }` |
 | GET | `/v1/platform/plans` | Platform | Catálogo completo (inclui não listados; `kind`, `promoPriceCents`) |
 | POST | `/v1/platform/plans` | Platform | Cria SKU: `{ name, kind, priceCents, promoPriceCents?, blurb, features?, listed? }` |
 | PATCH | `/v1/platform/plans/{id}` | Platform | Nome, `kind`, preço, promo (`null` limpa), features, `listed` |
@@ -674,7 +677,17 @@ Resposta 201: o mesmo shape de um item. E-mail único → 409 `EMAIL_TAKEN`. Bod
 }
 ```
 
-`trialEndsAt` e `currentPeriodEndsAt` são ISO8601 UTC ou `null`. Front: `/admin/bares` mostra a data conforme o status (`trial` → trial; `active`/`past_due` → vigência, com fallback no trial; `suspended` → mesma lógica + badge).
+`trialEndsAt` e `currentPeriodEndsAt` são ISO8601 UTC ou `null`. Front: `/admin/bares` mostra a data conforme o status (`trial` → trial; `active`/`past_due` → vigência, com fallback no trial; `suspended` → mesma lógica + badge). Clique no bar abre dialog com plano, datas e pagamentos (`GET /v1/platform/venues/{id}`).
+
+#### GET /v1/platform/venues/{id}
+
+Cookie `eaimesa_platform`. `{ venue, payments[] }` — `payments` são os últimos 12 `billing_events` (`id`, `plan`, `planName`, `method`, `amountCents`, `provider`, `status`, `createdAt`). 404 `VENUE_NOT_FOUND`.
+
+#### POST /v1/platform/venues/{id}/impersonate · POST /v1/platform/impersonate/stop
+
+Cookie `eaimesa_platform`. Start seta `eaimesa_owner` (JWT com `impersonatorId`, TTL `IMPERSONATE_JWT_TTL_HOURS`, default 1). Rate 10/min/IP. Stop só apaga o cookie owner. Front: dialog do bar → `/painel`; faixa **Sair da inspeção**. Ver [fatia 27](../product/fatia-27-impersonate.md).
+
+Checkout, cartões, convite e reenvio de staff nessa sessão → 403 `IMPERSONATION_FORBIDDEN`. `GET /v1/auth/me` inclui `impersonation: { byEmail, venueName }` e não exige e-mail verificado.
 
 #### PATCH /v1/platform/venues/{id}
 
@@ -684,11 +697,14 @@ Cookie `eaimesa_platform`. Body camelCase; enviar **só** os campos que mudam (a
 {
   "trialEndsAt": "2026-09-15T23:59:59.000Z",
   "currentPeriodEndsAt": "2026-10-15T23:59:59.000Z",
-  "subscriptionStatus": "active"
+  "subscriptionStatus": "active",
+  "slug": "novo-endereco"
 }
 ```
 
 Resposta: o mesmo shape de um item de `venues[]`.
+
+`slug`: kebab-case 3–48, único, não reservado. Dono **não** altera (`PATCH /v1/owner/venue` → 403 `SLUG_LOCKED`). URL antiga 404. Front: campo no dialog de `/admin/bares`.
 
 Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futura; senão `trial` se o trial for futuro; senão `past_due`. **Não** recalcula se o estabelecimento já está `suspended` ou se o operador envia `subscriptionStatus`. Não sincroniza cobrança no Asaas — ajuste só no cadastro do estabelecimento. Front não envia `subscriptionStatus` ao salvar datas (deixa o recálculo com a API).
 
@@ -711,6 +727,7 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `VENUE_NOT_FOUND` | 404 |
 | `SLUG_TAKEN` | 409 |
 | `SLUG_RESERVED` | 400 |
+| `SLUG_LOCKED` | 403 |
 | `CATEGORY_NOT_EMPTY` | 409 |
 | `ORDER_NOT_FOUND` | 404 |
 | `TABLE_NOT_FOUND` | 404 |
@@ -724,6 +741,7 @@ Sem `subscriptionStatus`, a API recalcula: `active` se a vigência paga for futu
 | `PLAN_DOWNGRADE_LOCKED` | 409 |
 | `ALREADY_SUBSCRIBED` | 409 |
 | `BILLING_INACTIVE` | 403 |
+| `IMPERSONATION_FORBIDDEN` | 403 |
 | `PAYER_REQUIRED` | 400 |
 | `CARD_REQUIRED` | 400 |
 | `CREDIT_CARD_REQUIRED` | 400 |

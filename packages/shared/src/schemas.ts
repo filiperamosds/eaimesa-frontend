@@ -215,7 +215,6 @@ export const loginSchema = z.object({
 export const patchVenueSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
-    slug: slugSchema.optional(),
     staffCanCloseTabs: z.boolean().optional(),
     requireShiftOnOpenCash: z.boolean().optional(),
     thermalAutoPrint: z.boolean().optional(),
@@ -240,7 +239,6 @@ export const patchVenueSchema = z
   .refine(
     (b) =>
       b.name !== undefined ||
-      b.slug !== undefined ||
       b.staffCanCloseTabs !== undefined ||
       b.requireShiftOnOpenCash !== undefined ||
       b.thermalAutoPrint !== undefined ||

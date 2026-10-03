@@ -126,6 +126,9 @@ function checkoutErrorMessage(err: unknown): string {
     if (err.code === ERROR_CODES.CREDIT_CARD_REQUIRED || err.code === ERROR_CODES.CARD_REQUIRED) {
       return "Informe os dados do cartão ou use um cartão salvo.";
     }
+    if (err.code === ERROR_CODES.IMPERSONATION_FORBIDDEN) {
+      return err.message;
+    }
     return err.message;
   }
   return "Não foi possível concluir o pagamento.";
@@ -154,6 +157,7 @@ export function BillingPanel() {
   const path = usePathname();
   const [data, setData] = useState<BillingMe | null>(null);
   const [accountEmail, setAccountEmail] = useState("");
+  const [inspecting, setInspecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<CheckoutResult | null>(null);
   const [notice, setNotice] = useState<{ kind: NoticeKind; text: string } | null>(null);
@@ -222,6 +226,7 @@ export function BillingPanel() {
         if (cancelled) return;
         setData(me);
         if (session?.account.email) setAccountEmail(session.account.email);
+        setInspecting(Boolean(session?.impersonation));
 
         const params = new URLSearchParams(window.location.search);
         const wanted = params.get("plano") ?? params.get("plan");
@@ -432,7 +437,7 @@ export function BillingPanel() {
   const hosted = gateway.checkoutMode === "hosted";
   const checkoutMode: CheckoutMode = gateway.checkoutMode;
   const asaas = gateway.provider === "asaas" || hosted || checkoutMode === "inline";
-  const payDisabled = pending || polling || !gateway.available;
+  const payDisabled = pending || polling || !gateway.available || inspecting;
   const paidDays = data.paidPeriodDays ?? PAID_PERIOD_DAYS;
   const stacked = stackedPeriodCopy(data.venue, paidDays);
   const paidOpen = isPaidPeriodOpen(data.venue);
@@ -461,6 +466,11 @@ export function BillingPanel() {
 
   return (
     <section className="space-y-4">
+      {inspecting ? (
+        <p className="rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-sm text-ink-soft">
+          Inspeção de suporte: checkout, troca de plano e cartões não podem ser alterados.
+        </p>
+      ) : null}
       <div className="surface p-5">
         <p className="eyebrow">Plano</p>
         <h2 className="mt-2 font-serif text-2xl">{data.venue.planName ?? current}</h2>

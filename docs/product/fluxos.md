@@ -72,7 +72,7 @@ sequenceDiagram
 ## 1. Onboarding do estabelecimento (B2B)
 
 1. Dono cria conta (e-mail + senha + confirmar + nome e CPF do responsável) e **confirma o código** do e-mail. Sem confirmar, o login recusa e o trial não começa.
-2. Cadastra venue: **nome**; o slug sai do nome (`seu-estabelecimento`, ou `seu-estabelecimento-2` se já existir). URL do cardápio não é editável.
+2. Cadastra venue: **nome**; o slug sai do nome (`seu-estabelecimento`, ou `seu-estabelecimento-2` se já existir). URL do cardápio não é editável depois; troca só em `/admin/bares`.
 3. Escolhe um plano do catálogo (SKUs listados no `/admin/planos`; tipo Cardápio ou Auto atendimento). No cadastro desktop a escolha é na faixa preta, com o selecionado marcado. O trial (7 dias) começa **na confirmação do e-mail**. Landing/cadastro **não** pedem cartão. O painel destaca `/painel/pagamento` nos **últimos 3 dias** do trial (banner + e-mail) ou se o status for `past_due`. Stub marca `active` na hora; Asaas só depois do webhook. Pagamento ok/erro gera e-mail na conta (plano, valor, PIX ou cartão `**** last4`).
 4. Sistema gera `public_id` opaco interno; a URL pública é o slug.
 5. Dono cadastra cardápio (fatia 1), fila (fatia 2) e mesas (fatia 3).
@@ -217,7 +217,7 @@ Detalhe em [fatia-11-console-saas.md](fatia-11-console-saas.md).
 
 1. Operador entra em `/admin/login` (cookie `eaimesa_platform`). Sessão válida pula o form. Independente do cookie do estabelecimento (`eaimesa_owner`).
 2. Dashboard: estabelecimentos, MRR estimado, checkouts (stub e Asaas). Status/plano em português (Em trial, Ativo, Cardápio…).
-3. `/admin/bares`: lista com data de expiração; suspender / reativar; ajustar trial/vigência (`PATCH /v1/platform/venues/{id}` — admin; não mexe no Asaas).
+3. `/admin/bares`: clique no estabelecimento abre dialog (plano, datas, pagamentos). Suspender / reativar / ajustar trial/vigência / impersonate ([fatia 27](fatia-27-impersonate.md)). `PATCH /v1/platform/venues/{id}` — admin; não mexe no Asaas.
 4. `/admin/planos`: criar SKU, preço, promo; `GET /v1/billing/plans` alimenta landing, cadastro e checkout no **cliente** (export estático; de/por se houver promo).
 5. `/admin/logs`: páginas dos `*.log` da API; Limpar rotaciona para `laravel2.log` ([fatia 13](fatia-13-log-viewer.md)).
 6. `/admin/integracoes`: webhooks Asaas ([fatia 16](fatia-16-integration-events.md)).
@@ -280,4 +280,13 @@ sequenceDiagram
 2. Cliente pede em `/{slug}/delivery`. Wizard: itens → telefone; se novo, nome e CPF; escolhe ou cadastra endereço (CEP/ViaCEP); pagamento por último.
 3. Pedido cai no Kanban com selo Delivery. Cozinha marca **Saiu** (`delivered` = saiu da casa).
 4. Cliente acompanha pelo link secreto.
+
+## 5f. Impersonate (fatia 27)
+
+Detalhe em [fatia-27-impersonate.md](fatia-27-impersonate.md).
+
+1. Operador clica no bar em `/admin/bares`.
+2. Dialog mostra plano, datas e pagamentos; **Entrar como dono** emite JWT owner de 1 hora (`impersonatorId`).
+3. `/painel` mostra faixa de inspeção. Checkout, cartões e convite de equipe recusam (`IMPERSONATION_FORBIDDEN`).
+4. **Sair da inspeção** apaga o cookie owner e volta a `/admin/bares`. O cookie platform permanece.
 

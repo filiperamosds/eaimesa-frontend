@@ -47,6 +47,8 @@ export type Session = {
     categoryIds?: string[];
     printViaGroups?: boolean;
   };
+  /** Fatia 27 — inspeção de suporte (cookie owner temporário com `impersonatorId`). */
+  impersonation?: { byEmail: string; venueName: string } | null;
 };
 
 export type LoginResponse = Session & {

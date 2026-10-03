@@ -27,6 +27,13 @@ export function paymentMethodLabel(method: string): string {
   return method;
 }
 
+export function billingEventStatusLabel(status: string): string {
+  if (status === "success") return "Pago";
+  if (status === "pending") return "Pendente";
+  if (status === "failed") return "Falhou";
+  return status;
+}
+
 export function statusLabel(status: string): string {
   return SUBSCRIPTION_STATUS_LABEL[status] ?? status;
 }

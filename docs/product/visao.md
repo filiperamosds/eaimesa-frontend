@@ -41,11 +41,11 @@ Tudo no **mesmo** frontend (repo **eaimesa-frontend**). Ver [ADR-003](../decisio
 - **Caixa** — mesma tela `/garcom`; sempre pode fechar comanda e mesa.
 - **Painel** — login no monitor da cozinha ou do bar; só o Kanban das categorias que o dono marcou.
 - **Cliente / mesa** — lê o cardápio, junta-se com o PIN e pede. Não cria conta.
-- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê estabelecimentos, vendas da assinatura, catálogo, equipe de operadores, logs da API e webhooks. Não atende o salão nem edita o cardápio de um estabelecimento.
+- **Operador EaiMesa** — entra em `/admin` (`platform_users`, cookie distinto). Vê estabelecimentos, vendas da assinatura, catálogo, equipe de operadores, logs da API e webhooks. Pode inspecionar o painel do dono ([fatia 27](fatia-27-impersonate.md)). Não atende o salão.
 
 ## Fatia atual vs MVP
 
-Implementação **agora**: [fatia 25 — modo escuro do cardápio](fatia-25-modo-escuro-cardapio.md).
+Implementação **agora**: [fatia 27 — inspeção do painel](fatia-27-impersonate.md).
 
 ### MVP (quando as fatias somarem)
 

@@ -3,7 +3,7 @@
 import { memberRoleLabel, PLAN_BAR_MAX_STAFF, type MemberRole } from "@eaimesa/shared";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
-import type { CatalogCategory, StaffMember } from "../lib/types";
+import type { CatalogCategory, StaffMember, Session } from "../lib/types";
 import { CategoryChecklist } from "./category-checklist";
 
 type StaffPayload = {
@@ -28,6 +28,7 @@ export function StaffEditor() {
   const [role, setRole] = useState<MemberRole>("staff");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [printViaGroups, setPrintViaGroups] = useState(false);
+  const [inspecting, setInspecting] = useState(false);
 
   async function load() {
     const [team, catalog] = await Promise.all([
@@ -44,10 +45,14 @@ export function StaffEditor() {
     load()
       .catch((e) => setError(e instanceof ApiError ? e.message : "Erro ao carregar."))
       .finally(() => setLoading(false));
+    api<Session>("/v1/auth/me")
+      .then((session) => setInspecting(Boolean(session.impersonation)))
+      .catch(() => setInspecting(false));
   }, []);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
+    if (inspecting) return;
     setError(null);
     if (role === "panel" && !printViaGroups && categoryIds.length === 0) {
       setError("Selecione ao menos uma categoria para o Kanban deste painel.");
@@ -76,6 +81,7 @@ export function StaffEditor() {
   }
 
   async function resendInvite(row: StaffMember) {
+    if (inspecting) return;
     setError(null);
     try {
       await api(`/v1/owner/staff/${row.id}/resend-invite`, { method: "POST" });
@@ -178,6 +184,11 @@ export function StaffEditor() {
       <p className="mb-6 text-sm text-ink-soft">
         {activeCount}/{maxActive} pessoas ativas
       </p>
+      {inspecting ? (
+        <p className="mb-4 rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-sm text-ink-soft">
+          Inspeção de suporte: convite e reenvio de convite estão bloqueados.
+        </p>
+      ) : null}
       <form onSubmit={add} className="surface mb-8 space-y-3 p-4">
         <p className="font-medium">Nova pessoa</p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -250,7 +261,7 @@ export function StaffEditor() {
             </label>
           </div>
         ) : null}
-        <button type="submit" className="btn-primary !py-2 text-sm">
+        <button type="submit" disabled={inspecting} className="btn-primary !py-2 text-sm">
           Enviar convite
         </button>
       </form>
@@ -292,6 +303,7 @@ export function StaffEditor() {
                   {row.invitePending ? (
                     <button
                       type="button"
+                      disabled={inspecting}
                       onClick={() => void resendInvite(row)}
                       className="btn-ghost text-sm"
                     >

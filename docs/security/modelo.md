@@ -41,12 +41,14 @@
 | Código de e-mail / convite | Código 6 dígitos hashed, 15 min; convite em query `token` (hash SHA-256, 7 dias). Sem cookie até confirmar |
 | SMTP | From `nao-responder@eaimesa.com`; sem Reply-To; `suporte@eaimesa.com` só no rodapé |
 | Estender trial/vigência no console | Cookie `eaimesa_platform`; 404 se o id não existe; **não** cobra no Asaas |
+| Impersonate (fatia 27) | Cookie platform para start/stop; JWT owner temporário (`impersonatorId`, 1h). Checkout/cartões/convite → 403 `IMPERSONATION_FORBIDDEN`. Cookie platform **não** autoriza `/v1/owner/*` |
+| Troca de slug | Depois do cadastro só cookie `eaimesa_platform` (`PATCH /v1/platform/venues/{id}`). Dono → 403 `SLUG_LOCKED` |
 
 ## Headers e cookies
 
 - HTTPS + HSTS em produção
 - Cookie dono: `Secure` (prod); `HttpOnly`; `SameSite=Lax`; `Path=/`
-- Cookie platform: `eaimesa_platform` — mesmo atributo, **JWT e secret distintos**. Convive com `eaimesa_owner` no mesmo browser. Logout de um **não** apaga o outro.
+- Cookie platform: `eaimesa_platform` — mesmo atributo, **JWT e secret distintos**. Convive com `eaimesa_owner` no mesmo browser. Logout de um **não** apaga o outro. Impersonate **seta** um owner temporário sem apagar o platform.
 - Cookie guest: `eaimesa_guest` — terceiro cookie; também convive.
 - CORS: origens do front (`APP_URL` e `CORS_ALLOWED_ORIGINS`), `credentials: true`. `APP_URL` é o site (ex. `https://eaimesa.com`), **não** `https://api.eaimesa.com`.
 - Não usar o mesmo JWT para dono e guest
@@ -63,6 +65,7 @@
 | Pedido guest | 20/min/IP |
 | Pedido delivery | 20 / 10 min / IP+venue |
 | Checkout / pagador | 10/min/venue |
+| Impersonate start | 10/min/IP |
 
 Na fatia 1 o limiter de login pode ser in-memory (um processo).
 

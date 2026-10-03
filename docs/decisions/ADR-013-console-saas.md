@@ -31,3 +31,4 @@ O spec de segurança pedia SSO + 2FA. Ainda não há IdP.
 - Landing e cadastro precisam ler o catálogo (não só `PLANS` hardcoded).
 - Suspender usa `venues.subscription_status = suspended` (já previsto).
 - Dois cookies no mesmo browser: operador pode estar no `/admin` e o dono no `/painel` (ou a mesma pessoa com as duas contas). `/login` e `/admin/login` só olham o cookie respectivo.
+- Impersonate de suporte (fatia 27) **seta** um JWT owner temporário sem apagar o platform. Ver [ADR-045](ADR-045-impersonate-suporte.md).
